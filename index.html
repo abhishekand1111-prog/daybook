@@ -1,0 +1,1603 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Daybook</title>
+<meta name="description" content="Money, reading, fitness and the day, in one place.">
+<meta name="theme-color" content="#0c0e11">
+<meta name="robots" content="noindex">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Daybook">
+<link rel="manifest" href="manifest.json?v=1">
+<link rel="icon" href="icons/favicon-32.png?v=1">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1">
+<style>
+:root{
+  --bg:#f3f4f6;--card:#fff;--card2:#f7f8fa;--ink:#111418;--mute:#6b7280;--line:#e4e7eb;
+  --acc:#15803d;--accbg:#dcfce7;--accink:#fff;
+  --warn:#b45309;--warnbg:#fef3c7;--bad:#dc2626;--badbg:#fee2e2;--info:#2563eb;--infobg:#dbeafe;
+  --chip:#eceef1;--shadow:0 1px 2px rgba(0,0,0,.05),0 6px 18px rgba(0,0,0,.04);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c0e11;--card:#161a1f;--card2:#1c2026;--ink:#eef0f3;--mute:#8d949e;--line:#262b32;
+    --acc:#3ddc84;--accbg:#12301f;--accink:#05210f;
+    --warn:#f5a524;--warnbg:#33260b;--bad:#f87171;--badbg:#3a1616;--info:#60a5fa;--infobg:#132640;
+    --chip:#22272e;--shadow:none;color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c0e11;--card:#161a1f;--card2:#1c2026;--ink:#eef0f3;--mute:#8d949e;--line:#262b32;
+  --acc:#3ddc84;--accbg:#12301f;--accink:#05210f;
+  --warn:#f5a524;--warnbg:#33260b;--bad:#f87171;--badbg:#3a1616;--info:#60a5fa;--infobg:#132640;
+  --chip:#22272e;--shadow:none;color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--info)}
+.wrap{max-width:560px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 104px)}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 14px}
+.top h1{font-size:24px;margin:0;letter-spacing:-.02em}
+.top .sub{color:var(--mute);font-size:13px}
+.icon-btn{border:0;background:var(--card);border-radius:12px;width:40px;height:40px;display:grid;place-items:center;box-shadow:var(--shadow);cursor:pointer}
+.icon-btn svg{width:20px;height:20px}
+.card{background:var(--card);border-radius:18px;padding:16px;margin:0 0 12px;box-shadow:var(--shadow)}
+.card.flat{background:var(--card2);box-shadow:none}
+.h2{display:flex;align-items:center;justify-content:space-between;font-weight:650;font-size:15px;margin:0 0 10px}
+.h2 .link{font-weight:500;font-size:13px;color:var(--acc);background:none;border:0;cursor:pointer;padding:4px}
+.sec{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);margin:18px 2px 8px;font-weight:600}
+.muted{color:var(--mute)}.small{font-size:13px}.tiny{font-size:12px}
+.big{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.mid{font-size:20px;font-weight:650;letter-spacing:-.01em}
+.row{display:flex;align-items:center;gap:10px}
+.between{justify-content:space-between}
+.grow{flex:1;min-width:0}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.good{color:var(--acc)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+.bar{height:8px;border-radius:99px;background:var(--chip);overflow:hidden;margin-top:8px}
+.bar>i{display:block;height:100%;border-radius:99px;background:var(--acc)}
+.bar.warn>i{background:var(--warn)}.bar.bad>i{background:var(--bad)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.stat{background:var(--card);border-radius:16px;padding:12px 14px;box-shadow:var(--shadow)}
+.stat .k{font-size:12px;color:var(--mute)}.stat .v{font-size:19px;font-weight:650;margin-top:2px}
+.item{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line);cursor:pointer;background:none;border-left:0;border-right:0;border-bottom:0;width:100%;text-align:left}
+.item:first-child{border-top:0}
+.item .em{width:38px;height:38px;border-radius:12px;background:var(--chip);display:grid;place-items:center;font-size:18px;flex:none}
+.item .amt{font-weight:650;white-space:nowrap}
+.item .t{font-weight:550}
+.badge{display:inline-block;font-size:11px;font-weight:600;padding:2px 7px;border-radius:99px;background:var(--chip);color:var(--mute);vertical-align:middle}
+.badge.good{background:var(--accbg);color:var(--acc)}.badge.warn{background:var(--warnbg);color:var(--warn)}.badge.bad{background:var(--badbg);color:var(--bad)}.badge.info{background:var(--infobg);color:var(--info)}
+.alert{display:flex;gap:10px;align-items:flex-start;border-radius:14px;padding:11px 13px;margin:0 0 8px;font-size:14px}
+.alert.warn{background:var(--warnbg);color:var(--warn)}.alert.bad{background:var(--badbg);color:var(--bad)}.alert.info{background:var(--infobg);color:var(--info)}.alert.good{background:var(--accbg);color:var(--acc)}
+.alert b{font-weight:650}
+.seg{display:flex;background:var(--chip);border-radius:12px;padding:3px;margin:0 0 12px;gap:2px;overflow-x:auto;scrollbar-width:none}
+.seg::-webkit-scrollbar{display:none}
+.seg button{flex:1;border:0;background:none;padding:8px 10px;border-radius:9px;font-size:14px;font-weight:550;color:var(--mute);cursor:pointer;white-space:nowrap}
+.seg button.on{background:var(--card);color:var(--ink);box-shadow:var(--shadow)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.chips.scroll{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-left:-16px;margin-right:-16px;padding:0 16px}
+.chips.scroll::-webkit-scrollbar{display:none}
+.chip{border:1px solid transparent;background:var(--chip);border-radius:99px;padding:7px 12px;font-size:13.5px;cursor:pointer;white-space:nowrap}
+.chip.on{background:var(--accbg);color:var(--acc);border-color:var(--acc);font-weight:600}
+.btn{border:0;background:var(--acc);color:var(--accink);font-weight:650;border-radius:14px;padding:13px 16px;cursor:pointer;font-size:15px}
+.btn.ghost{background:var(--chip);color:var(--ink)}
+.btn.bad{background:var(--badbg);color:var(--bad)}
+.btn.sm{padding:8px 12px;font-size:13.5px;border-radius:11px}
+.btn.block{width:100%}
+.btn:disabled{opacity:.5}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btns .btn{flex:1}
+.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.quick button{border:0;background:var(--card);border-radius:16px;padding:12px 4px 10px;box-shadow:var(--shadow);cursor:pointer;font-size:12px;font-weight:550;display:flex;flex-direction:column;align-items:center;gap:4px}
+.quick button span{font-size:22px}
+.fld{display:block;margin:0 0 12px}
+.fld>span{display:block;font-size:12.5px;color:var(--mute);margin:0 0 5px;font-weight:550}
+.lbl{font-size:12.5px;color:var(--mute);margin:0 0 6px;font-weight:550}
+input:not([type=checkbox]):not([type=file]),select,textarea{width:100%;border:1px solid var(--line);background:var(--card2);border-radius:12px;padding:11px 12px;font-size:16px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--acc)}
+textarea{resize:vertical;min-height:70px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.amtin{display:flex;align-items:center;gap:6px;border-bottom:2px solid var(--line);margin:4px 0 16px;padding-bottom:4px}
+.amtin span{font-size:28px;color:var(--mute);font-weight:600}
+.amtin input{border:0!important;background:none!important;font-size:34px!important;font-weight:700;padding:4px 0!important}
+.check{display:flex;align-items:center;gap:10px;margin:0 0 12px;font-size:14.5px;cursor:pointer}
+.check input{width:20px;height:20px;accent-color:var(--acc)}
+.hint{font-size:12.5px;color:var(--mute);margin:-4px 0 12px}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center;padding:6px 6px calc(env(safe-area-inset-bottom) + 6px);z-index:20}
+nav.tabs .in{display:flex;max-width:560px;width:100%}
+nav.tabs button{flex:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--mute);padding:6px 0;cursor:pointer;font-weight:550}
+nav.tabs button svg{width:22px;height:22px}
+nav.tabs button.on{color:var(--acc)}
+svg.i{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.fab{position:fixed;right:max(16px,calc(50% - 264px));bottom:calc(env(safe-area-inset-bottom) + 76px);width:56px;height:56px;border-radius:18px;border:0;background:var(--acc);color:var(--accink);font-size:30px;line-height:1;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:21;cursor:pointer;display:grid;place-items:center}
+.sheet{position:fixed;inset:0;z-index:40;display:none}
+.sheet.open{display:block}
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.45)}
+.panel{position:absolute;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;background:var(--card);border-radius:22px 22px 0 0;max-height:92vh;overflow-y:auto;padding:8px 16px calc(env(safe-area-inset-bottom) + 20px);animation:up .18s ease-out}
+@keyframes up{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+.grab{width:40px;height:5px;border-radius:9px;background:var(--line);margin:4px auto 10px}
+.shead{display:flex;align-items:center;justify-content:space-between;margin:0 0 14px}
+.shead h3{margin:0;font-size:18px}
+.x{border:0;background:var(--chip);border-radius:10px;width:34px;height:34px;cursor:pointer;font-size:18px}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 142px);transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;pointer-events:none;transition:.2s;z-index:60;max-width:calc(100% - 32px);text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%)}
+.toast.warn{background:var(--warn);color:#fff}.toast.bad{background:var(--bad);color:#fff}
+.month{display:flex;align-items:center;justify-content:space-between;margin:0 0 12px}
+.month button{border:0;background:var(--card);width:36px;height:36px;border-radius:11px;box-shadow:var(--shadow);cursor:pointer;font-size:18px}
+.month b{font-size:15px}
+.ring{position:relative;width:96px;height:96px;flex:none}
+.ring svg{width:96px;height:96px;transform:rotate(-90deg)}
+.ring .c{position:absolute;inset:0;display:grid;place-items:center;text-align:center;font-weight:700;font-size:22px;line-height:1}
+.ring .c small{display:block;font-size:11px;color:var(--mute);font-weight:550;margin-top:3px}
+.tasks .task{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line);cursor:pointer;width:100%;background:none;border-left:0;border-right:0;border-bottom:0;text-align:left}
+.tasks .task:first-child{border-top:0}
+.tick-box{width:24px;height:24px;border-radius:8px;border:2px solid var(--line);display:grid;place-items:center;flex:none;font-size:14px;color:var(--accink)}
+.task.done .tick-box{background:var(--acc);border-color:var(--acc)}
+.task.done .tl{color:var(--mute);text-decoration:line-through}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center}
+.week .d{font-size:11px;color:var(--mute)}
+.week .dot{margin:4px auto 0;width:34px;height:34px;border-radius:11px;background:var(--chip);display:grid;place-items:center;font-size:11px;font-weight:650}
+.week .dot.on{background:var(--acc);color:var(--accink)}
+.week .dot.part{background:var(--accbg);color:var(--acc)}
+.week .dot.today{outline:2px solid var(--acc);outline-offset:1px}
+.bars{display:flex;align-items:flex-end;gap:6px;height:120px;margin-top:8px}
+.bars .b{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:4px}
+.bars .b i{display:block;width:100%;max-width:34px;background:var(--acc);border-radius:7px 7px 3px 3px;min-height:2px}
+.bars .b.dim i{opacity:.45}
+.bars .b span{font-size:10.5px;color:var(--mute)}
+.bars .b em{font-size:10px;color:var(--mute);font-style:normal}
+.donut{display:flex;gap:16px;align-items:center}
+.donut svg{width:130px;height:130px;flex:none;transform:rotate(-90deg)}
+.legend{flex:1;min-width:0;font-size:13px}
+.legend div{display:flex;align-items:center;gap:8px;margin:3px 0}
+.legend i{width:10px;height:10px;border-radius:3px;flex:none}
+.pickup{border-left:3px solid var(--acc);padding:2px 0 2px 12px;margin:8px 0}
+.pickup .k{font-size:12px;color:var(--mute);font-weight:600}
+.concept{padding:10px 0;border-top:1px solid var(--line)}
+.concept:first-child{border-top:0}
+.links a{display:block;word-break:break-all;font-size:13.5px;margin:3px 0}
+.timer{display:flex;align-items:center;gap:12px;background:var(--accbg);color:var(--acc);border-radius:16px;padding:12px 14px;margin:0 0 12px}
+.timer .tick{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.empty{text-align:center;color:var(--mute);padding:26px 10px;font-size:14px}
+.empty .e{font-size:34px;margin-bottom:6px}
+.auth{max-width:380px;margin:12vh auto 0;padding:0 16px}
+.auth .logo{width:64px;height:64px;border-radius:18px;background:var(--acc);color:var(--accink);display:grid;place-items:center;font-size:32px;font-weight:800;margin:0 auto 14px}
+.load{display:grid;place-items:center;height:70vh;color:var(--mute)}
+.moods{display:flex;gap:6px;margin:0 0 12px}
+.moods button{flex:1;min-width:0;border:1px solid transparent;background:var(--chip);border-radius:12px;padding:8px 0;font-size:22px;cursor:pointer}
+.moods button.on{border-color:var(--acc);background:var(--accbg)}
+.daynav{display:flex;align-items:center;gap:6px}
+.daynav button{border:0;background:var(--card);width:32px;height:32px;border-radius:10px;box-shadow:var(--shadow);cursor:pointer}
+.pre{white-space:pre-wrap;word-break:break-word}
+hr{border:0;border-top:1px solid var(--line);margin:14px 0}
+</style>
+</head>
+<body>
+<div id="app"><div class="load">Loading…</div></div>
+<div class="sheet" id="sheet"><div class="scrim" data-act="close"></div><div class="panel" id="panel"></div></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore-compat.js"></script>
+<script>
+(function(){
+'use strict';
+var APP_VERSION = 'v1';
+
+// ---------- utils ----------
+function $(s, r){ return (r || document).querySelector(s); }
+function $$(s, r){ return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function pad(n){ return (n < 10 ? '0' : '') + n; }
+function iso(d){ return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function pd(s){ var p = String(s).split('-'); return new Date(+p[0], +p[1] - 1, +(p[2] || 1)); }
+function today(){ return iso(new Date()); }
+function addDays(s, n){ var d = pd(s); d.setDate(d.getDate() + n); return iso(d); }
+function ymOf(s){ return String(s).slice(0, 7); }
+function addMonths(ym, n){ var p = ym.split('-'); var d = new Date(+p[0], +p[1] - 1 + n, 1); return d.getFullYear() + '-' + pad(d.getMonth() + 1); }
+function daysIn(ym){ var p = ym.split('-'); return new Date(+p[0], +p[1], 0).getDate(); }
+function diffDays(a, b){ return Math.round((pd(b) - pd(a)) / 864e5); }
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function sum(arr, k){ var t = 0; arr.forEach(function(x){ t += +(k ? x[k] : x) || 0; }); return t; }
+function num(v){
+  v = String(v == null ? '' : v).replace(/,/g, '').trim();
+  if (/^[\d.\s+]+$/.test(v) && v.indexOf('+') > -1) return sum(v.split('+').map(parseFloat));
+  var n = parseFloat(v); return isNaN(n) ? 0 : n;
+}
+function money(n, dec){
+  var v = Math.round((+n || 0) * 100) / 100, neg = v < 0; v = Math.abs(v);
+  return (neg ? '-' : '') + (S.cfg.cur || '₹') + v.toLocaleString('en-IN', {maximumFractionDigits: dec === 0 ? 0 : 2});
+}
+function monthName(ym){ return pd(ym + '-01').toLocaleDateString('en-IN', {month:'long', year:'numeric'}); }
+function monShort(ym){ return pd(ym + '-01').toLocaleDateString('en-IN', {month:'short'}); }
+function dShort(s){ return pd(s).toLocaleDateString('en-IN', {day:'numeric', month:'short'}); }
+function dLong(s){ return pd(s).toLocaleDateString('en-IN', {weekday:'long', day:'numeric', month:'long'}); }
+function dayLabel(s){
+  var t = today();
+  if (s === t) return 'Today';
+  if (s === addDays(t, -1)) return 'Yesterday';
+  if (s === addDays(t, 1)) return 'Tomorrow';
+  return pd(s).toLocaleDateString('en-IN', {weekday:'short', day:'numeric', month:'short'});
+}
+function inDays(s){
+  var n = diffDays(today(), s);
+  if (n === 0) return 'today';
+  if (n === 1) return 'tomorrow';
+  if (n === -1) return 'yesterday';
+  return n > 0 ? 'in ' + n + ' days' : Math.abs(n) + ' days ago';
+}
+function lines(v){ return String(v || '').split(/\n+/).map(function(x){ return x.trim(); }).filter(Boolean); }
+function linkHref(u){ u = String(u).trim(); if (/^www\./i.test(u)) u = 'https://' + u; return /^https?:\/\//i.test(u) ? u : ''; }
+function linkHtml(u){
+  var h = linkHref(u);
+  return h ? '<a href="' + esc(h) + '" target="_blank" rel="noopener noreferrer">' + esc(u) + '</a>' : '<div class="small">' + esc(u) + '</div>';
+}
+function mins(m){ m = Math.round(+m || 0); if (m < 60) return m + ' min'; return Math.floor(m / 60) + 'h ' + (m % 60 ? (m % 60) + 'm' : ''); }
+function lsGet(k, d){ try { var v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }
+function lsSet(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+function lsDel(k){ try { localStorage.removeItem(k); } catch (e) {} }
+
+var ICON = {
+  today:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  money:'<rect x="2" y="6" width="20" height="13" rx="3"/><path d="M2 10h20M6 15h4"/>',
+  books:'<path d="M4 19.5V5a2 2 0 0 1 2-2h14v15H6.5A2.5 2.5 0 0 0 4 20.5 2.5 2.5 0 0 0 6.5 23H20v-5"/>',
+  fit:'<path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11"/>',
+  stats:'<path d="M4 20V11M10 20V4M16 20v-7M22 20H2"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'
+};
+function svg(name){ return '<svg class="i" viewBox="0 0 24 24">' + ICON[name] + '</svg>'; }
+var PALETTE = ['#22c55e','#3b82f6','#f59e0b','#ef4444','#a855f7','#14b8a6','#ec4899','#84cc16','#f97316','#06b6d4','#8b5cf6','#eab308','#64748b','#10b981'];
+
+// ---------- defaults ----------
+var DEFAULT_CATS = [
+  {id:'food', name:'Food & dining', emoji:'🍔'},
+  {id:'groc', name:'Groceries', emoji:'🛒'},
+  {id:'travel', name:'Transport', emoji:'🚕'},
+  {id:'fuel', name:'Fuel', emoji:'⛽'},
+  {id:'bills', name:'Bills & recharge', emoji:'💡'},
+  {id:'rent', name:'Rent & home', emoji:'🏠'},
+  {id:'shop', name:'Shopping', emoji:'🛍️'},
+  {id:'health', name:'Health', emoji:'💊'},
+  {id:'fun', name:'Entertainment', emoji:'🎬'},
+  {id:'subs', name:'Subscriptions', emoji:'🔁'},
+  {id:'trip', name:'Travel', emoji:'✈️'},
+  {id:'edu', name:'Learning', emoji:'📚'},
+  {id:'gift', name:'Gifts & family', emoji:'🎁'},
+  {id:'other', name:'Other', emoji:'📦'}
+];
+var ACTS = [
+  {id:'run', name:'Run', emoji:'🏃', f:['mins','km']},
+  {id:'skip', name:'Skipping', emoji:'🪢', f:['mins','count']},
+  {id:'gym', name:'Gym', emoji:'🏋️', f:['mins','focus']},
+  {id:'walk', name:'Walk', emoji:'🚶', f:['mins','km']},
+  {id:'cycle', name:'Cycling', emoji:'🚴', f:['mins','km']},
+  {id:'yoga', name:'Yoga', emoji:'🧘', f:['mins']},
+  {id:'sport', name:'Sport', emoji:'⚽', f:['mins']},
+  {id:'other', name:'Other', emoji:'💪', f:['mins']}
+];
+var FOCUS = ['Chest','Back','Legs','Shoulders','Arms','Core','Full body','Cardio'];
+var MOODS = ['😞','😐','🙂','😄','🔥'];
+var PAYS = ['UPI','Card','Cash','Bank'];
+var PER = {
+  week:{label:'Weekly', short:'/wk', m:0},
+  month:{label:'Monthly', short:'/mo', m:1},
+  quarter:{label:'3 months', short:'/3 mo', m:3},
+  half:{label:'6 months', short:'/6 mo', m:6},
+  year:{label:'Yearly', short:'/yr', m:12}
+};
+var SUB_PRESETS = ['Netflix','Spotify','Prime','Hotstar','YouTube Premium','iCloud','Google One','ChatGPT','Claude','Jio','Airtel','Gym'];
+var GOAL_EMOJI = ['🎯','🛟','🏍️','🚗','🏠','✈️','💻','📱','💍','🎓'];
+var DEFAULT_CFG = {
+  cur:'₹', total:0, alertPct:80, budgets:{}, cats:DEFAULT_CATS,
+  readMin:20, moveMin:30, moveDays:5,
+  habits:[{id:'wake', name:'Up by 6:30', emoji:'⏰'}, {id:'water', name:'8 glasses of water', emoji:'💧'}]
+};
+var GUESS = [
+  ['food', /zomato|swiggy|domino|pizza|kfc|mcdonald|burger|cafe|restaurant|dhaba|starbucks|chai|biryani|eatsure|lunch|dinner|breakfast/i],
+  ['groc', /blinkit|zepto|bigbasket|instamart|dmart|jiomart|grocery|kirana|reliance fresh|milk|vegetable|fruit/i],
+  ['travel', /uber|\bola\b|rapido|metro|irctc|redbus|\bauto\b|\bcab\b|parking|fastag|toll/i],
+  ['fuel', /petrol|diesel|fuel|hpcl|bpcl|iocl|indian ?oil|\bshell\b/i],
+  ['subs', /netflix|spotify|prime video|hotstar|jiocinema|youtube|apple\.com|icloud|google one|chatgpt|openai|claude|anthropic|sonyliv|zee5|subscription/i],
+  ['bills', /electric|pspcl|uhbvn|dhbvn|bescom|water bill|gas bill|broadband|wifi|recharge|\bjio\b|airtel|vodafone|bsnl|\bbill\b/i],
+  ['shop', /amazon|flipkart|myntra|ajio|meesho|nykaa|tata cliq|decathlon|croma|shopping/i],
+  ['health', /apollo|pharm|medplus|1mg|netmeds|hospital|clinic|doctor|\blab\b|medic/i],
+  ['fun', /bookmyshow|pvr|inox|movie|steam|playstation/i],
+  ['trip', /makemytrip|goibibo|indigo|air india|vistara|akasa|hotel|oyo|airbnb|flight|cleartrip/i],
+  ['rent', /\brent\b|maintenance|society/i],
+  ['edu', /udemy|coursera|course|\bbook|kindle|tuition/i]
+];
+function guessCat(t){
+  if (!t) return '';
+  for (var i = 0; i < GUESS.length; i++) if (GUESS[i][1].test(t)) return GUESS[i][0];
+  return '';
+}
+
+// ---------- state ----------
+var S = {
+  authed:false, authChecked:false, ready:false, user:null, recs:{}, cfg:JSON.parse(JSON.stringify(DEFAULT_CFG)),
+  tab:lsGet('db-tab', 'today'), mseg:lsGet('db-mseg', 'overview'), bseg:'reading', iseg:'money', sseg:'active',
+  month:ymOf(today()), imonth:ymOf(today()), day:today(), q:'', fcat:'', synced:false, syncErr:'',
+  timer:lsGet('db-timer', null), rolled:false, catTouched:false
+};
+
+// ---------- backends ----------
+var LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && /[?&]local=1/.test(location.search);
+var Store = LOCAL ? localBackend() : fbBackend();
+
+function fbBackend(){
+  var col = null, unsub = null;
+  function writeErr(e){ S.syncErr = (e && e.code) || String(e); renderSoon(); toast('Could not save: ' + S.syncErr, 'bad'); }
+  return {
+    start: function(){
+      if (!window.firebase){ S.authChecked = true; S.fbMissing = true; render(); return; }
+      firebase.initializeApp({
+        apiKey: "AIzaSyBbEjsvTcWKqQs5pGsSdVYTxWtwKdr3zcU",
+        authDomain: "diahnosis-room.firebaseapp.com",
+        projectId: "diahnosis-room",
+        storageBucket: "diahnosis-room.firebasestorage.app",
+        messagingSenderId: "197732013160",
+        appId: "1:197732013160:web:86f938ffbabb1858fa57dd"
+      });
+      firebase.firestore().enablePersistence({synchronizeTabs:true}).catch(function(){});
+      firebase.auth().onAuthStateChanged(function(u){
+        if (unsub){ unsub(); unsub = null; }
+        S.user = u; S.authed = !!u; S.authChecked = true; S.recs = {}; S.ready = false; S.rolled = false;
+        if (!u){ render(); return; }
+        render();
+        col = firebase.firestore().collection('users').doc(u.uid).collection('daybook');
+        unsub = col.onSnapshot({includeMetadataChanges:true}, function(snap){
+          snap.docChanges().forEach(function(ch){
+            if (ch.type === 'removed') delete S.recs[ch.doc.id]; else S.recs[ch.doc.id] = ch.doc.data();
+          });
+          S.synced = !snap.metadata.fromCache; S.pending = snap.metadata.hasPendingWrites; S.syncErr = '';
+          dataArrived();
+        }, function(err){ S.syncErr = err.code || String(err); S.ready = true; render(); });
+        // Offline start: roll subscriptions from cache if the server never answers.
+        setTimeout(function(){ if (S.ready && !S.rolled){ S.rolled = true; rollSubs(); } }, 5000);
+      });
+    },
+    put: function(id, o){ return col.doc(id).set(o).catch(writeErr); },
+    del: function(id){ return col.doc(id).delete().catch(writeErr); },
+    signIn: function(e, p){ return firebase.auth().signInWithEmailAndPassword(e, p); },
+    signOut: function(){ return firebase.auth().signOut(); }
+  };
+}
+
+function localBackend(){
+  var KEY = 'daybook-local';
+  function save(){ lsSet(KEY, S.recs); }
+  return {
+    start: function(){
+      S.authChecked = true; S.authed = true; S.user = {email:'local test mode'};
+      S.recs = lsGet(KEY, {}) || {};
+      if (/[?&]seed=1/.test(location.search) && !Object.keys(S.recs).length){ seed(); save(); }
+      S.synced = true; dataArrived();
+    },
+    put: function(id, o){ S.recs[id] = o; save(); return Promise.resolve(); },
+    del: function(id){ delete S.recs[id]; save(); return Promise.resolve(); },
+    signIn: function(){ return Promise.resolve(); },
+    signOut: function(){ lsDel(KEY); location.reload(); return Promise.resolve(); }
+  };
+}
+
+function dataArrived(){
+  var c = S.recs.config || {};
+  var cfg = JSON.parse(JSON.stringify(DEFAULT_CFG));
+  for (var k in c) if (k !== 't' && k !== 'at') cfg[k] = c[k];
+  if (!cfg.cats || !cfg.cats.length) cfg.cats = DEFAULT_CATS;
+  S.cfg = cfg;
+  S.ready = true;
+  if (!S.rolled && S.synced){ S.rolled = true; rollSubs(); }
+  renderSoon();
+}
+
+function put(id, o){
+  o.at = Date.now();
+  S.recs[id] = o;
+  Store.put(id, o);
+  renderSoon();
+}
+function del(id){
+  delete S.recs[id];
+  Store.del(id);
+  renderSoon();
+}
+function saveCfg(patch){
+  var c = {};
+  ['cur','total','alertPct','budgets','cats','readMin','moveMin','moveDays','habits'].forEach(function(k){ c[k] = S.cfg[k]; });
+  for (var k in patch) c[k] = patch[k];
+  c.t = 'config';
+  put('config', c);
+  dataArrived();
+}
+
+// ---------- record access ----------
+function list(t){
+  var o = [];
+  for (var k in S.recs){ var r = S.recs[k]; if (r && r.t === t){ var x = {}; for (var j in r) x[j] = r[j]; x.id = k; o.push(x); } }
+  return o;
+}
+function strip(r){ var o = {}; for (var k in r) if (k !== 'id') o[k] = r[k]; return o; }
+function exps(){ return list('exp'); }
+function subs(){ return list('sub'); }
+function goals(){ return list('goal'); }
+function books(){ return list('book'); }
+function reads(){ return list('read'); }
+function works(){ return list('work'); }
+function cats(){ return S.cfg.cats || DEFAULT_CATS; }
+function cat(id){ var c = cats().filter(function(x){ return x.id === id; })[0]; return c || {id:id || 'other', name:'Other', emoji:'📦'}; }
+function catColor(id){ var i = cats().map(function(x){ return x.id; }).indexOf(id); return PALETTE[(i < 0 ? 12 : i) % PALETTE.length]; }
+function act(id){ return ACTS.filter(function(a){ return a.id === id; })[0] || ACTS[ACTS.length - 1]; }
+function monthExps(ym){ return exps().filter(function(e){ return ymOf(e.date) === ym; }); }
+function dayRec(d){ return S.recs['day_' + d] || {t:'day', date:d}; }
+
+// ---------- subscriptions ----------
+function subMonthly(s){ var p = PER[s.per] || PER.month; return p.m ? s.amt / p.m : s.amt * 52 / 12; }
+function nextDate(s, date){
+  if (s.per === 'week') return addDays(date, 7);
+  var m = (PER[s.per] || PER.month).m, d = pd(date), anchor = s.anchor || d.getDate();
+  var y = d.getFullYear(), mo = d.getMonth() + m, last = new Date(y, mo + 1, 0).getDate();
+  return iso(new Date(y, mo, Math.min(anchor, last)));
+}
+// Renewals that have passed get logged as expenses (ids are fixed, so two phones can't double-log).
+function rollSubs(){
+  var t = today();
+  subs().forEach(function(s){
+    if (s.status !== 'active' || !s.autoLog || !s.next || s.next >= t) return;
+    var next = s.next, guard = 0;
+    while (next < t && guard++ < 60){
+      var eid = 'exp_s_' + s.id + '_' + next;
+      if (!S.recs[eid]) put(eid, {t:'exp', amt:s.amt, cat:s.cat || 'subs', note:s.name, date:next, pay:s.pay || 'Card', subId:s.id});
+      next = nextDate(s, next);
+    }
+    var r = strip(s); r.next = next; r.trial = false; put(s.id, r);
+  });
+}
+function subState(s){
+  var n = diffDays(today(), s.next);
+  if (s.status === 'paused') return {txt:'Paused', cls:''};
+  if (s.status === 'cancelled') return {txt:'Cancelled', cls:''};
+  if (n < 0) return {txt:'Due ' + inDays(s.next) + ' · mark paid', cls:'bad'};
+  if (s.trial) return {txt:'Trial ends ' + inDays(s.next), cls:n <= 3 ? 'bad' : 'warn'};
+  if (n === 0) return {txt:'Renews today', cls:'warn'};
+  if (n <= (s.remind || 3)) return {txt:'Renews ' + inDays(s.next), cls:'warn'};
+  return {txt:'Renews ' + dShort(s.next), cls:''};
+}
+function upcomingSubs(days){
+  var lim = addDays(today(), days);
+  return subs().filter(function(s){ return s.status === 'active' && s.next && s.next <= lim; })
+    .sort(function(a, b){ return a.next < b.next ? -1 : 1; });
+}
+
+// ---------- budgets ----------
+function spentCat(catId, ym){ return sum(monthExps(ym).filter(function(e){ return e.cat === catId; }), 'amt'); }
+function budgetRows(ym){
+  var b = S.cfg.budgets || {};
+  return cats().filter(function(c){ return +b[c.id] > 0; }).map(function(c){
+    var sp = spentCat(c.id, ym), lim = +b[c.id];
+    return {c:c, spent:sp, lim:lim, pct:sp / lim * 100};
+  });
+}
+function barCls(p){ return p >= 100 ? 'bad' : p >= (S.cfg.alertPct || 80) ? 'warn' : ''; }
+function budgetCheck(catId, ym){
+  if (ym !== ymOf(today())) return;
+  var b = +(S.cfg.budgets || {})[catId], ap = S.cfg.alertPct || 80;
+  if (b > 0){
+    var sp = spentCat(catId, ym), p = sp / b * 100, c = cat(catId);
+    if (p >= 100){ toast(c.emoji + ' ' + c.name + ' is over budget: ' + money(sp, 0) + ' of ' + money(b, 0), 'bad'); return; }
+    if (p >= ap){ toast(c.emoji + ' ' + c.name + ': ' + Math.round(p) + '% of budget used', 'warn'); return; }
+  }
+  var tot = +S.cfg.total;
+  if (tot > 0){
+    var all = sum(monthExps(ym), 'amt'), tp = all / tot * 100;
+    if (tp >= 100) toast('Monthly budget crossed: ' + money(all, 0) + ' of ' + money(tot, 0), 'bad');
+    else if (tp >= ap) toast(Math.round(tp) + '% of this month\'s budget used', 'warn');
+  }
+}
+
+// ---------- reading / fitness / day ----------
+function readMinsOn(d){ return sum(reads().filter(function(r){ return r.date === d; }), 'mins'); }
+function moveMinsOn(d){ return sum(works().filter(function(w){ return w.date === d; }), 'mins'); }
+function streak(test){
+  var d = today(), n = 0;
+  if (!test(d)) d = addDays(d, -1);
+  while (test(d) && n < 3650){ n++; d = addDays(d, -1); }
+  return n;
+}
+function readStreak(){ var m = S.cfg.readMin || 1; return streak(function(d){ return readMinsOn(d) >= m; }); }
+function moveStreak(){ var m = S.cfg.moveMin || 1; return streak(function(d){ return moveMinsOn(d) >= m; }); }
+function weekStart(d){ var x = pd(d), w = (x.getDay() + 6) % 7; x.setDate(x.getDate() - w); return iso(x); }
+function dayChecks(d){
+  var c = S.cfg, out = [];
+  var rm = readMinsOn(d), mm = moveMinsOn(d), day = dayRec(d);
+  out.push({k:'read', label:'Read ' + c.readMin + ' min', done:rm >= c.readMin, prog:rm + ' / ' + c.readMin + ' min', act:'add-read'});
+  out.push({k:'move', label:'Move ' + c.moveMin + ' min', done:mm >= c.moveMin, prog:mm + ' / ' + c.moveMin + ' min', act:'add-work'});
+  if (+c.total > 0){
+    var lim = c.total / daysIn(ymOf(d)), sp = sum(exps().filter(function(e){ return e.date === d; }), 'amt');
+    out.push({k:'spend', label:'Spend under ' + money(lim, 0), done:sp <= lim, prog:money(sp, 0) + ' spent', act:'add-exp', auto:true});
+  }
+  out.push({k:'note', label:'Write the day note', done:!!(day.note && day.note.trim()), prog:'', act:'note'});
+  (c.habits || []).forEach(function(h){
+    out.push({k:'h_' + h.id, label:(h.emoji ? h.emoji + ' ' : '') + h.name, done:!!(day.habits && day.habits[h.id]), habit:h.id});
+  });
+  return out;
+}
+function dayScore(d){ var ch = dayChecks(d); return ch.length ? Math.round(ch.filter(function(x){ return x.done; }).length / ch.length * 100) : 0; }
+function bookPct(b){ return b.pages > 0 ? Math.min(100, Math.round((b.page || 0) / b.pages * 100)) : 0; }
+
+// ---------- render ----------
+var rq = false;
+function renderSoon(){ if (rq) return; rq = true; setTimeout(function(){ rq = false; render(); }, 0); }
+function render(){
+  var app = $('#app');
+  if (!S.authChecked){ app.innerHTML = '<div class="load">Loading…</div>'; return; }
+  if (S.fbMissing){ app.innerHTML = '<div class="auth"><div class="logo">D</div><p class="muted" style="text-align:center">Could not load. Check your internet once, then reopen the app.</p></div>'; return; }
+  if (!S.authed){ app.innerHTML = authHtml(); return; }
+  if (!S.ready){ app.innerHTML = '<div class="load">Loading your data…</div>'; return; }
+  var ae = document.activeElement, keep = ae && ae.id === 'q' ? {v:ae.value, s:ae.selectionStart} : null;
+  var body = S.tab === 'money' ? moneyHtml() : S.tab === 'books' ? booksHtml() : S.tab === 'fit' ? fitHtml() : S.tab === 'stats' ? statsHtml() : todayHtml();
+  app.innerHTML = '<div class="wrap">' + bannerHtml() + body + '</div>' + navHtml() + fabHtml();
+  if (S.tab === 'money' && S.mseg === 'exp') fillExpList();
+  if (keep){ var q = $('#q'); if (q){ q.focus(); try { q.setSelectionRange(keep.s, keep.s); } catch (e) {} } }
+  tick();
+}
+function bannerHtml(){
+  if (!S.syncErr) return '';
+  var msg = S.syncErr === 'permission-denied'
+    ? '<b>Sync is blocked.</b> Firestore rules don\'t allow Daybook yet. Paste the updated rules file in the Firebase console.'
+    : '<b>Sync problem:</b> ' + esc(S.syncErr);
+  return '<div class="alert bad">⚠️<div>' + msg + '</div></div>';
+}
+function topHtml(title, sub, right){
+  return '<div class="top"><div class="grow"><h1>' + title + '</h1>' + (sub ? '<div class="sub">' + sub + '</div>' : '') + '</div>' +
+    (right || '') + '<button class="icon-btn" data-act="settings" aria-label="Settings">' + svg('gear') + '</button></div>';
+}
+function navHtml(){
+  var tabs = [['today','Today'],['money','Money'],['books','Books'],['fit','Fitness'],['stats','Insights']];
+  return '<nav class="tabs"><div class="in">' + tabs.map(function(t){
+    return '<button class="' + (S.tab === t[0] ? 'on' : '') + '" data-act="tab" data-v="' + t[0] + '">' + svg(t[0]) + t[1] + '</button>';
+  }).join('') + '</div></nav>';
+}
+function fabHtml(){
+  var a = '';
+  if (S.tab === 'today') a = 'quick';
+  else if (S.tab === 'money') a = S.mseg === 'subs' ? 'add-sub' : S.mseg === 'goals' ? 'add-goal' : 'add-exp';
+  else if (S.tab === 'books') a = 'add-book';
+  else if (S.tab === 'fit') a = 'add-work';
+  return a ? '<button class="fab" data-act="' + a + '" aria-label="Add">+</button>' : '';
+}
+function seg(name, opts, val){
+  return '<div class="seg">' + opts.map(function(o){
+    return '<button class="' + (o[0] === val ? 'on' : '') + '" data-act="seg" data-name="' + name + '" data-v="' + o[0] + '">' + o[1] + '</button>';
+  }).join('') + '</div>';
+}
+function empty(e, t, btn){ return '<div class="empty"><div class="e">' + e + '</div>' + t + (btn ? '<div style="margin-top:12px">' + btn + '</div>' : '') + '</div>'; }
+function ring(pct, label, sub){
+  var p = Math.max(0, Math.min(100, pct)), col = p >= 100 ? 'var(--acc)' : p >= 50 ? 'var(--acc)' : 'var(--warn)';
+  return '<div class="ring"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.9155" fill="none" stroke="var(--chip)" stroke-width="3.4"/>' +
+    '<circle cx="18" cy="18" r="15.9155" fill="none" stroke="' + col + '" stroke-width="3.4" stroke-linecap="round" stroke-dasharray="' + p + ' 100"/></svg>' +
+    '<div class="c"><div>' + label + '<small>' + sub + '</small></div></div></div>';
+}
+function bar(pct, cls){ return '<div class="bar ' + (cls || '') + '"><i style="width:' + Math.max(0, Math.min(100, pct)) + '%"></i></div>'; }
+
+// ---------- auth ----------
+function authHtml(){
+  return '<div class="auth"><div class="logo">D</div><h1 style="text-align:center;margin:0 0 4px">Daybook</h1>' +
+    '<p class="muted" style="text-align:center;margin:0 0 22px">Money, books, fitness and your day.</p>' +
+    '<label class="fld"><span>Email</span><input id="a-email" type="email" autocomplete="username"></label>' +
+    '<label class="fld"><span>Password</span><input id="a-pass" type="password" autocomplete="current-password"></label>' +
+    '<div id="a-err" class="hint bad" style="margin:0 0 10px"></div>' +
+    '<button class="btn block" data-act="signin">Sign in</button>' +
+    '<p class="tiny muted" style="text-align:center;margin-top:14px">Same account as your Diagnosis Room app.</p></div>';
+}
+
+// ---------- TODAY ----------
+function todayHtml(){
+  var d = S.day, t = today(), checks = dayChecks(d), done = checks.filter(function(x){ return x.done; }).length;
+  var pct = checks.length ? Math.round(done / checks.length * 100) : 0, day = dayRec(d);
+  var hi = new Date().getHours(), greet = hi < 12 ? 'Good morning' : hi < 17 ? 'Good afternoon' : 'Good evening';
+  var nav = '<div class="daynav"><button data-act="day-prev" aria-label="Previous day">‹</button>' +
+    (d !== t ? '<button data-act="day-today" style="width:auto;padding:0 10px;font-size:13px">Today</button><button data-act="day-next" aria-label="Next day">›</button>' : '') + '</div>';
+  var h = topHtml(d === t ? greet : dayLabel(d), dLong(d), nav);
+
+  h += timerHtml();
+
+  h += '<div class="card"><div class="row" style="gap:16px">' + ring(pct, pct + '%', 'day score') +
+    '<div class="grow"><div class="mid">' + done + ' of ' + checks.length + ' done</div><div class="small muted">' +
+    (pct >= 100 ? 'Full day. Well played. 🔥' : pct >= 60 ? 'Good going, keep it up.' : d === t ? 'Tick things off as you go.' : 'How that day went.') + '</div>' +
+    '<div class="small" style="margin-top:6px">📖 ' + readStreak() + '-day reading streak · 💪 ' + moveStreak() + '-day move streak</div></div></div>' +
+    '<hr><div class="tasks">' + checks.map(function(c){
+      return '<button class="task ' + (c.done ? 'done' : '') + '" data-act="' + (c.habit ? 'habit' : c.act) + '" data-v="' + (c.habit || '') + '">' +
+        '<span class="tick-box">' + (c.done ? '✓' : '') + '</span><span class="grow tl">' + esc(c.label) + '</span>' +
+        (c.prog ? '<span class="small muted">' + esc(c.prog) + '</span>' : '') + '</button>';
+    }).join('') + '</div></div>';
+
+  if (d === t){
+    h += '<div class="quick">' +
+      '<button data-act="add-exp"><span>💸</span>Expense</button>' +
+      '<button data-act="add-read"><span>📖</span>Reading</button>' +
+      '<button data-act="add-work"><span>🏃</span>Workout</button>' +
+      '<button data-act="note"><span>📝</span>Note</button></div>';
+  }
+
+  // Day note
+  h += '<div class="card"><div class="h2">Note for the day<button class="link" data-act="note">' + (day.note || (day.links && day.links.length) ? 'Edit' : 'Write') + '</button></div>' +
+    '<div class="moods">' + MOODS.map(function(m, i){ return '<button class="' + (day.mood === i + 1 ? 'on' : '') + '" data-act="mood" data-v="' + (i + 1) + '">' + m + '</button>'; }).join('') + '</div>' +
+    (day.note ? '<div class="pre">' + esc(day.note) + '</div>' : '<div class="small muted">A remark, a lesson, what went well, what to fix tomorrow.</div>') +
+    (day.links && day.links.length ? '<div class="links" style="margin-top:8px">' + day.links.map(linkHtml).join('') + '</div>' : '') +
+    (day.weight ? '<div class="small muted" style="margin-top:6px">⚖️ ' + esc(day.weight) + ' kg</div>' : '') + '</div>';
+
+  // Continue reading
+  var rb = books().filter(function(b){ return b.status === 'reading'; }).sort(function(a, b){ return (b.lastRead || '') > (a.lastRead || '') ? 1 : -1; })[0];
+  if (rb){
+    h += '<div class="card"><div class="h2">Continue reading<button class="link" data-act="book" data-id="' + rb.id + '">Open</button></div>' +
+      '<div class="row"><div class="em" style="font-size:24px">📘</div><div class="grow"><div class="t ell">' + esc(rb.title) + '</div>' +
+      '<div class="small muted">' + (rb.pages ? 'Page ' + (rb.page || 0) + ' of ' + rb.pages + ' · ' + bookPct(rb) + '%' : (rb.author ? esc(rb.author) : '')) + '</div></div></div>' +
+      (rb.pages ? bar(bookPct(rb)) : '') +
+      (rb.nextStart ? '<div class="pickup"><div class="k">START HERE</div>' + esc(rb.nextStart) + '</div>' : rb.leftOff ? '<div class="pickup"><div class="k">LEFT OFF AT</div>' + esc(rb.leftOff) + '</div>' : '') +
+      (!S.timer ? '<button class="btn sm block" style="margin-top:6px" data-act="timer-start" data-id="' + rb.id + '">▶ Start reading timer</button>' : '') + '</div>';
+  }
+
+  // Money today
+  var spentDay = exps().filter(function(e){ return e.date === d; }), up = d === t ? upcomingSubs(3) : [];
+  h += '<div class="card"><div class="h2">Money ' + (d === t ? 'today' : 'that day') + '<button class="link" data-act="tab" data-v="money">Money</button></div>' +
+    '<div class="row between"><div><div class="mid">' + money(sum(spentDay, 'amt')) + '</div><div class="small muted">' + spentDay.length + ' expense' + (spentDay.length === 1 ? '' : 's') + '</div></div>' +
+    (+S.cfg.total > 0 ? '<div style="text-align:right"><div class="small muted">Left this month</div><div class="t">' + money(S.cfg.total - sum(monthExps(ymOf(t)), 'amt'), 0) + '</div></div>' : '') + '</div>' +
+    up.map(function(s){ var st = subState(s); return '<button class="item" data-act="sub" data-id="' + s.id + '"><div class="em">🔁</div><div class="grow"><div class="t ell">' + esc(s.name) + '</div><div class="small ' + st.cls + '">' + st.txt + '</div></div><div class="amt">' + money(s.amt) + '</div></button>'; }).join('') + '</div>';
+
+  // Workouts that day
+  var w = works().filter(function(x){ return x.date === d; });
+  if (w.length) h += '<div class="card"><div class="h2">Workouts</div>' + w.map(workItem).join('') + '</div>';
+  return h;
+}
+
+function timerHtml(){
+  if (!S.timer) return '';
+  var b = S.recs[S.timer.bookId];
+  return '<div class="timer"><div style="font-size:22px">📖</div><div class="grow"><div class="small" style="font-weight:600">Reading' + (b ? ': ' + esc(b.title) : '') + '</div><div class="tick">0:00</div></div>' +
+    '<button class="btn sm" data-act="timer-stop">Stop &amp; log</button><button class="x" data-act="timer-cancel" aria-label="Cancel timer">×</button></div>';
+}
+function tick(){
+  if (!S.timer) return;
+  var s = Math.max(0, Math.floor((Date.now() - S.timer.start) / 1000));
+  var txt = (s >= 3600 ? Math.floor(s / 3600) + ':' + pad(Math.floor(s / 60) % 60) : Math.floor(s / 60)) + ':' + pad(s % 60);
+  $$('.tick').forEach(function(el){ el.textContent = txt; });
+}
+setInterval(tick, 1000);
+
+// ---------- MONEY ----------
+function moneyHtml(){
+  var h = topHtml('Money', monthName(ymOf(today())));
+  h += seg('mseg', [['overview','Overview'],['exp','Expenses'],['subs','Subscriptions'],['goals','Goals']], S.mseg);
+  if (S.mseg === 'exp') return h + expHtml();
+  if (S.mseg === 'subs') return h + subsHtml();
+  if (S.mseg === 'goals') return h + goalsHtml();
+  return h + overviewHtml();
+}
+function overviewHtml(){
+  var ym = ymOf(today()), me = monthExps(ym), spent = sum(me, 'amt'), tot = +S.cfg.total, h = '';
+  var dLeft = daysIn(ym) - pd(today()).getDate() + 1;
+  var subM = sum(subs().filter(function(s){ return s.status === 'active'; }).map(subMonthly));
+  h += '<div class="card"><div class="small muted">Spent this month</div><div class="big">' + money(spent) + '</div>';
+  if (tot > 0){
+    var p = spent / tot * 100, left = tot - spent;
+    h += bar(p, barCls(p)) + '<div class="row between small" style="margin-top:6px"><span class="muted">of ' + money(tot, 0) + '</span><span class="' + (left < 0 ? 'bad' : '') + '">' +
+      (left >= 0 ? money(left, 0) + ' left · ' + money(left / dLeft, 0) + '/day' : money(-left, 0) + ' over') + '</span></div>';
+  } else {
+    h += '<div class="small muted" style="margin-top:4px"><button class="btn sm ghost" data-act="budgets">Set a monthly budget</button></div>';
+  }
+  h += '</div>';
+
+  // alerts
+  var al = '';
+  budgetRows(ym).forEach(function(r){
+    if (r.pct >= 100) al += '<div class="alert bad">🚨<div><b>' + esc(r.c.name) + '</b> is over budget: ' + money(r.spent, 0) + ' of ' + money(r.lim, 0) + '</div></div>';
+    else if (r.pct >= (S.cfg.alertPct || 80)) al += '<div class="alert warn">⚠️<div><b>' + esc(r.c.name) + '</b> at ' + Math.round(r.pct) + '% of budget, ' + money(r.lim - r.spent, 0) + ' left</div></div>';
+  });
+  subs().forEach(function(s){
+    if (s.status !== 'active') return;
+    var n = diffDays(today(), s.next);
+    if (s.trial && n <= 7 && n >= 0) al += '<div class="alert warn">⏳<div><b>' + esc(s.name) + '</b> trial ends ' + inDays(s.next) + '. Cancel before then if you don\'t want it.</div></div>';
+    else if (!s.autoLog && n < 0) al += '<div class="alert bad">🔔<div><b>' + esc(s.name) + '</b> was due ' + inDays(s.next) + '. Tap it to mark paid.</div></div>';
+  });
+  h += al;
+
+  h += '<div class="stats"><div class="stat"><div class="k">Subscriptions</div><div class="v">' + money(subM, 0) + '<span class="small muted">/mo</span></div></div>' +
+    '<div class="stat"><div class="k">Daily average</div><div class="v">' + money(spent / pd(today()).getDate(), 0) + '</div></div></div>';
+
+  var up = upcomingSubs(14);
+  h += '<div class="card"><div class="h2">Upcoming renewals<button class="link" data-act="seg" data-name="mseg" data-v="subs">All</button></div>' +
+    (up.length ? up.map(subItem).join('') : '<div class="small muted">Nothing in the next 14 days.</div>') + '</div>';
+
+  var br = budgetRows(ym);
+  h += '<div class="card"><div class="h2">Budgets<button class="link" data-act="budgets">Edit</button></div>' +
+    (br.length ? br.map(function(r){
+      return '<div style="margin:0 0 12px"><div class="row between small"><span>' + r.c.emoji + ' ' + esc(r.c.name) + '</span><span class="' + barCls(r.pct) + '">' + money(r.spent, 0) + ' / ' + money(r.lim, 0) + '</span></div>' + bar(r.pct, barCls(r.pct)) + '</div>';
+    }).join('') : '<div class="small muted">Set limits per category (food, shopping…) and you\'ll get a warning at ' + (S.cfg.alertPct || 80) + '%.</div>') + '</div>';
+
+  var rec = exps().sort(byDateDesc).slice(0, 6);
+  h += '<div class="card"><div class="h2">Recent<button class="link" data-act="seg" data-name="mseg" data-v="exp">All</button></div>' +
+    (rec.length ? rec.map(expItem).join('') : '<div class="small muted">No expenses yet. Tap + to add one.</div>') + '</div>';
+  return h;
+}
+function byDateDesc(a, b){ return a.date === b.date ? (b.at || 0) - (a.at || 0) : a.date < b.date ? 1 : -1; }
+function expItem(e){
+  var c = cat(e.cat);
+  return '<button class="item" data-act="exp" data-id="' + e.id + '"><div class="em">' + c.emoji + '</div><div class="grow"><div class="t ell">' + esc(e.note || c.name) + '</div>' +
+    '<div class="small muted">' + dayLabel(e.date) + ' · ' + esc(c.name) + (e.pay ? ' · ' + esc(e.pay) : '') + (e.subId ? ' · 🔁' : '') + '</div></div><div class="amt">' + money(e.amt) + '</div></button>';
+}
+function expHtml(){
+  var me = monthExps(S.month), h = '';
+  h += '<div class="month"><button data-act="month" data-v="-1">‹</button><b>' + monthName(S.month) + '</b><button data-act="month" data-v="1">›</button></div>';
+  h += '<input id="q" placeholder="Search notes, amounts…" value="' + esc(S.q) + '" style="margin-bottom:10px">';
+  var used = {}; me.forEach(function(e){ used[e.cat] = 1; });
+  h += '<div class="chips scroll"><button class="chip ' + (!S.fcat ? 'on' : '') + '" data-act="fcat" data-v="">All</button>' +
+    cats().filter(function(c){ return used[c.id]; }).map(function(c){ return '<button class="chip ' + (S.fcat === c.id ? 'on' : '') + '" data-act="fcat" data-v="' + c.id + '">' + c.emoji + ' ' + esc(c.name) + '</button>'; }).join('') + '</div>';
+  h += '<div id="explist"></div>';
+  return h;
+}
+function fillExpList(){
+  var el = $('#explist'); if (!el) return;
+  var q = S.q.trim().toLowerCase();
+  var arr = monthExps(S.month).filter(function(e){
+    if (S.fcat && e.cat !== S.fcat) return false;
+    if (q && (e.note || '').toLowerCase().indexOf(q) < 0 && String(e.amt).indexOf(q) < 0 && cat(e.cat).name.toLowerCase().indexOf(q) < 0) return false;
+    return true;
+  }).sort(byDateDesc);
+  if (!arr.length){ el.innerHTML = '<div class="card">' + empty('🧾', q || S.fcat ? 'No matches.' : 'No expenses in ' + monthName(S.month) + '.') + '</div>'; return; }
+  var h = '<div class="card flat" style="padding:12px 16px"><div class="row between"><span class="muted small">' + arr.length + (arr.length === 1 ? ' expense' : ' expenses') + '</span><b>' + money(sum(arr, 'amt')) + '</b></div></div>';
+  var groups = {}, order = [];
+  arr.forEach(function(e){ if (!groups[e.date]){ groups[e.date] = []; order.push(e.date); } groups[e.date].push(e); });
+  order.forEach(function(d){
+    h += '<div class="sec row between"><span>' + dayLabel(d) + '</span><span>' + money(sum(groups[d], 'amt')) + '</span></div><div class="card" style="padding:4px 16px">' + groups[d].map(expItem).join('') + '</div>';
+  });
+  el.innerHTML = h;
+}
+function subItem(s){
+  var st = subState(s);
+  return '<button class="item" data-act="sub" data-id="' + s.id + '"><div class="em">' + (cat(s.cat).emoji || '🔁') + '</div><div class="grow"><div class="t ell">' + esc(s.name) +
+    (s.trial ? ' <span class="badge warn">trial</span>' : '') + '</div><div class="small ' + st.cls + '">' + st.txt + '</div></div>' +
+    '<div style="text-align:right"><div class="amt">' + money(s.amt) + '<span class="small muted">' + (PER[s.per] || PER.month).short + '</span></div><div class="tiny muted">' + money(subMonthly(s) * 12, 0) + '/yr</div></div></button>';
+}
+function subsHtml(){
+  var all = subs(), act = all.filter(function(s){ return s.status === 'active'; }), h = '';
+  var m = sum(act.map(subMonthly));
+  h += '<div class="stats"><div class="stat"><div class="k">Per month</div><div class="v">' + money(m, 0) + '</div></div><div class="stat"><div class="k">Per year</div><div class="v">' + money(m * 12, 0) + '</div></div></div>';
+  h += seg('sseg', [['active','Active (' + act.length + ')'],['cost','By cost'],['off','Paused & cancelled']], S.sseg);
+  var arr = S.sseg === 'off' ? all.filter(function(s){ return s.status !== 'active'; }) : act.slice();
+  if (S.sseg === 'cost') arr.sort(function(a, b){ return subMonthly(b) - subMonthly(a); });
+  else arr.sort(function(a, b){ return (a.next || '') < (b.next || '') ? -1 : 1; });
+  if (!arr.length) return h + '<div class="card">' + empty('🔁', S.sseg === 'off' ? 'Nothing paused or cancelled.' : 'Add Netflix, Spotify, gym, rent, insurance… anything that repeats.', S.sseg === 'off' ? '' : '<button class="btn sm" data-act="add-sub">Add subscription</button>') + '</div>';
+  if (S.sseg === 'cost' && m > 0) h += '<div class="small muted" style="margin:0 2px 8px">Top of the list costs the most per year. Worth keeping?</div>';
+  return h + '<div class="card" style="padding:4px 16px">' + arr.map(subItem).join('') + '</div>';
+}
+function goalsHtml(){
+  var g = goals().sort(function(a, b){ return (a.done ? 1 : 0) - (b.done ? 1 : 0) || (a.at || 0) - (b.at || 0); });
+  if (!g.length) return '<div class="card">' + empty('🎯', 'Saving for something? An emergency fund, a bike, a trip.', '<button class="btn sm" data-act="add-goal">Add a goal</button>') + '</div>';
+  var tS = sum(g, 'saved'), tT = sum(g, 'target');
+  var h = '<div class="stats"><div class="stat"><div class="k">Saved</div><div class="v">' + money(tS, 0) + '</div></div><div class="stat"><div class="k">Still to save</div><div class="v">' + money(Math.max(0, tT - tS), 0) + '</div></div></div>';
+  return h + g.map(goalCard).join('');
+}
+function goalNeed(g){
+  var left = g.target - (g.saved || 0);
+  if (left <= 0) return 'Reached 🎉';
+  if (!g.due) return money(left, 0) + ' to go';
+  var months = Math.max(1, (pd(g.due) - pd(today())) / (864e5 * 30.44));
+  return money(left / months, 0) + '/month to reach by ' + pd(g.due).toLocaleDateString('en-IN', {month:'short', year:'numeric'});
+}
+function goalCard(g){
+  var p = g.target > 0 ? (g.saved || 0) / g.target * 100 : 0;
+  return '<button class="card" style="display:block;width:100%;text-align:left;border:0;cursor:pointer" data-act="goal" data-id="' + g.id + '"><div class="row"><div class="em" style="width:42px;height:42px;border-radius:13px;background:var(--chip);display:grid;place-items:center;font-size:21px">' + (g.emoji || '🎯') + '</div>' +
+    '<div class="grow"><div class="t">' + esc(g.name) + '</div><div class="small muted">' + goalNeed(g) + '</div></div><div style="text-align:right"><div class="t">' + Math.round(p) + '%</div></div></div>' +
+    bar(p) + '<div class="row between small" style="margin-top:6px"><span>' + money(g.saved || 0, 0) + '</span><span class="muted">' + money(g.target, 0) + '</span></div></button>';
+}
+
+// ---------- BOOKS ----------
+function booksHtml(){
+  var all = books(), h = topHtml('Books', readStreak() + '-day streak · goal ' + S.cfg.readMin + ' min a day');
+  h += timerHtml();
+  var t = today(), rm = readMinsOn(t), ws = weekStart(t);
+  var wk = []; for (var i = 0; i < 7; i++) wk.push(addDays(ws, i));
+  h += '<div class="card"><div class="row between"><div><div class="small muted">Read today</div><div class="mid">' + mins(rm) + ' <span class="small muted">/ ' + S.cfg.readMin + ' min</span></div></div>' +
+    '<div style="text-align:right"><div class="small muted">This week</div><div class="t">' + mins(sum(wk.map(readMinsOn))) + '</div></div></div>' + bar(rm / (S.cfg.readMin || 1) * 100) +
+    '<div class="week" style="margin-top:12px">' + wk.map(function(d){
+      var m = readMinsOn(d), cls = m >= S.cfg.readMin ? 'on' : m > 0 ? 'part' : '';
+      return '<div><div class="d">' + pd(d).toLocaleDateString('en-IN', {weekday:'narrow'}) + '</div><div class="dot ' + cls + (d === t ? ' today' : '') + '">' + (m || '') + '</div></div>';
+    }).join('') + '</div></div>';
+  var cnt = {reading:0, want:0, done:0}; all.forEach(function(b){ cnt[b.status] = (cnt[b.status] || 0) + 1; });
+  h += seg('bseg', [['reading','Reading ' + cnt.reading],['want','Up next ' + cnt.want],['done','Finished ' + cnt.done],['learn','Learned']], S.bseg);
+  if (S.bseg === 'learn') return h + learnedHtml();
+  var arr = all.filter(function(b){ return b.status === S.bseg; }).sort(function(a, b){ return (b.lastRead || b.finished || '') > (a.lastRead || a.finished || '') ? 1 : -1; });
+  if (!arr.length) return h + '<div class="card">' + empty('📚', S.bseg === 'reading' ? 'What are you reading right now?' : S.bseg === 'want' ? 'Books you want to read next.' : 'Finished books show up here.', S.bseg !== 'done' ? '<button class="btn sm" data-act="add-book">Add a book</button>' : '') + '</div>';
+  return h + arr.map(bookCard).join('');
+}
+function bookCard(b){
+  var tot = sum(reads().filter(function(r){ return r.bookId === b.id; }), 'mins');
+  return '<button class="card" style="display:block;width:100%;text-align:left;border:0;cursor:pointer" data-act="book" data-id="' + b.id + '"><div class="row"><div class="em" style="width:42px;height:54px;border-radius:8px;background:var(--chip);display:grid;place-items:center;font-size:22px">📘</div>' +
+    '<div class="grow"><div class="t">' + esc(b.title) + '</div><div class="small muted">' + esc(b.author || '') + (b.author && tot ? ' · ' : '') + (tot ? mins(tot) + ' read' : '') + '</div>' +
+    (b.status === 'reading' && b.pages ? '<div class="small">Page ' + (b.page || 0) + ' of ' + b.pages + '</div>' : '') +
+    (b.status === 'done' && b.finished ? '<div class="small good">Finished ' + dShort(b.finished) + '</div>' : '') + '</div>' +
+    (b.status === 'reading' && b.pages ? '<div class="t">' + bookPct(b) + '%</div>' : '') + '</div>' +
+    (b.status === 'reading' && b.pages ? bar(bookPct(b)) : '') +
+    (b.status === 'reading' && (b.nextStart || b.leftOff) ? '<div class="pickup small"><div class="k">' + (b.nextStart ? 'START HERE' : 'LEFT OFF AT') + '</div>' + esc(b.nextStart || b.leftOff) + '</div>' : '') + '</button>';
+}
+function learnedHtml(){
+  var items = [];
+  reads().forEach(function(r){ (r.concepts || []).forEach(function(c){ items.push({c:c, r:r}); }); });
+  items.sort(function(a, b){ return a.r.date < b.r.date ? 1 : -1; });
+  if (!items.length) return '<div class="card">' + empty('💡', 'When you log a reading session, add the concepts you learned. They collect here.') + '</div>';
+  return '<div class="card"><div class="h2">' + items.length + ' concepts</div>' + items.map(function(x){
+    var b = S.recs[x.r.bookId];
+    return '<div class="concept"><div>💡 ' + esc(x.c) + '</div><div class="tiny muted">' + (b ? esc(b.title) + ' · ' : '') + dShort(x.r.date) + '</div></div>';
+  }).join('') + '</div>';
+}
+
+// ---------- FITNESS ----------
+function workItem(w){
+  var a = act(w.type), bits = [mins(w.mins)];
+  if (w.km) bits.push(w.km + ' km');
+  if (w.km && w.mins && (w.type === 'run' || w.type === 'walk')) bits.push(pace(w.mins, w.km) + '/km');
+  if (w.count) bits.push(w.count + ' skips');
+  if (w.focus) bits.push(w.focus);
+  return '<button class="item" data-act="work" data-id="' + w.id + '"><div class="em">' + a.emoji + '</div><div class="grow"><div class="t">' + esc(a.name) + '</div><div class="small muted ell">' + bits.join(' · ') + (w.note ? ' · ' + esc(w.note) : '') + '</div></div><div class="small muted">' + dayLabel(w.date) + '</div></button>';
+}
+function pace(m, km){ var s = Math.round(m * 60 / km); return Math.floor(s / 60) + ':' + pad(s % 60); }
+function fitHtml(){
+  var t = today(), ws = weekStart(t), all = works(), h = topHtml('Fitness', moveStreak() + '-day streak · goal ' + S.cfg.moveMin + ' min a day');
+  var wk = []; for (var i = 0; i < 7; i++) wk.push(addDays(ws, i));
+  var activeDays = wk.filter(function(d){ return moveMinsOn(d) > 0; }).length, tm = moveMinsOn(t);
+  h += '<div class="card"><div class="row between"><div><div class="small muted">Today</div><div class="mid">' + mins(tm) + ' <span class="small muted">/ ' + S.cfg.moveMin + ' min</span></div></div>' +
+    '<div style="text-align:right"><div class="small muted">Active days this week</div><div class="t ' + (activeDays >= S.cfg.moveDays ? 'good' : '') + '">' + activeDays + ' / ' + S.cfg.moveDays + '</div></div></div>' + bar(tm / (S.cfg.moveMin || 1) * 100) +
+    '<div class="week" style="margin-top:12px">' + wk.map(function(d){
+      var m = moveMinsOn(d), cls = m >= S.cfg.moveMin ? 'on' : m > 0 ? 'part' : '';
+      var em = works().filter(function(w){ return w.date === d; }).map(function(w){ return act(w.type).emoji; })[0] || '';
+      return '<div><div class="d">' + pd(d).toLocaleDateString('en-IN', {weekday:'narrow'}) + '</div><div class="dot ' + cls + (d === t ? ' today' : '') + '">' + (m ? em : '') + '</div></div>';
+    }).join('') + '</div></div>';
+
+  var ym = ymOf(t), mw = all.filter(function(w){ return ymOf(w.date) === ym; });
+  var runs = mw.filter(function(w){ return w.type === 'run'; }), skips = mw.filter(function(w){ return w.type === 'skip'; }), gym = mw.filter(function(w){ return w.type === 'gym'; });
+  h += '<div class="sec">' + monthName(ym) + '</div><div class="stats">' +
+    '<div class="stat"><div class="k">🏃 Run</div><div class="v">' + (Math.round(sum(runs, 'km') * 10) / 10) + ' km</div><div class="tiny muted">' + runs.length + ' runs</div></div>' +
+    '<div class="stat"><div class="k">🪢 Skipping</div><div class="v">' + sum(skips, 'count').toLocaleString('en-IN') + '</div><div class="tiny muted">' + skips.length + ' sessions</div></div>' +
+    '<div class="stat"><div class="k">🏋️ Gym</div><div class="v">' + gym.length + '</div><div class="tiny muted">' + mins(sum(gym, 'mins')) + '</div></div>' +
+    '<div class="stat"><div class="k">⏱ Active time</div><div class="v">' + mins(sum(mw, 'mins')) + '</div><div class="tiny muted">' + mw.length + ' workouts</div></div></div>';
+
+  // personal bests
+  var allRuns = all.filter(function(w){ return w.type === 'run' && w.km > 0; });
+  var longest = allRuns.slice().sort(function(a, b){ return b.km - a.km; })[0];
+  var fastest = allRuns.filter(function(w){ return w.km >= 1 && w.mins > 0; }).sort(function(a, b){ return a.mins / a.km - b.mins / b.km; })[0];
+  var mostSkip = all.filter(function(w){ return w.type === 'skip' && w.count > 0; }).sort(function(a, b){ return b.count - a.count; })[0];
+  if (longest || mostSkip){
+    h += '<div class="card"><div class="h2">Personal bests 🏆</div>' +
+      (longest ? '<div class="row between small" style="margin:4px 0"><span>Longest run</span><b>' + longest.km + ' km · ' + dShort(longest.date) + '</b></div>' : '') +
+      (fastest ? '<div class="row between small" style="margin:4px 0"><span>Fastest pace</span><b>' + pace(fastest.mins, fastest.km) + ' /km · ' + dShort(fastest.date) + '</b></div>' : '') +
+      (mostSkip ? '<div class="row between small" style="margin:4px 0"><span>Most skips</span><b>' + mostSkip.count.toLocaleString('en-IN') + ' · ' + dShort(mostSkip.date) + '</b></div>' : '') + '</div>';
+  }
+
+  var rec = all.sort(byDateDesc).slice(0, 30);
+  h += '<div class="card"><div class="h2">Log</div>' + (rec.length ? rec.map(workItem).join('') : empty('🏃', 'Log a run, skipping, gym or anything that moves you.')) + '</div>';
+  return h;
+}
+
+// ---------- INSIGHTS ----------
+function statsHtml(){
+  var h = topHtml('Insights', '');
+  h += seg('iseg', [['money','Money'],['life','Reading, fitness & days']], S.iseg);
+  return h + (S.iseg === 'life' ? lifeStats() : moneyStats());
+}
+function moneyStats(){
+  var ym = S.imonth, me = monthExps(ym), tot = sum(me, 'amt'), prev = sum(monthExps(addMonths(ym, -1)), 'amt'), h = '';
+  h += '<div class="month"><button data-act="imonth" data-v="-1">‹</button><b>' + monthName(ym) + '</b><button data-act="imonth" data-v="1">›</button></div>';
+  var days = ym === ymOf(today()) ? pd(today()).getDate() : daysIn(ym);
+  var ch = prev > 0 ? Math.round((tot - prev) / prev * 100) : null;
+  h += '<div class="stats"><div class="stat"><div class="k">Total spent</div><div class="v">' + money(tot, 0) + '</div></div>' +
+    '<div class="stat"><div class="k">vs last month</div><div class="v ' + (ch == null ? '' : ch > 0 ? 'bad' : 'good') + '">' + (ch == null ? '–' : (ch > 0 ? '▲ ' : '▼ ') + Math.abs(ch) + '%') + '</div></div>' +
+    '<div class="stat"><div class="k">Per day</div><div class="v">' + money(tot / days, 0) + '</div></div>' +
+    '<div class="stat"><div class="k">Expenses</div><div class="v">' + me.length + '</div></div></div>';
+
+  // by category donut
+  var by = {}; me.forEach(function(e){ by[e.cat] = (by[e.cat] || 0) + (+e.amt || 0); });
+  var rows = Object.keys(by).map(function(k){ return {id:k, v:by[k]}; }).sort(function(a, b){ return b.v - a.v; });
+  if (rows.length){
+    var acc = 0, circles = rows.map(function(r){
+      var p = r.v / tot * 100, c = '<circle cx="18" cy="18" r="15.9155" fill="none" stroke="' + catColor(r.id) + '" stroke-width="5" stroke-dasharray="' + p + ' ' + (100 - p) + '" stroke-dashoffset="' + (-acc) + '"/>';
+      acc += p; return c;
+    }).join('');
+    h += '<div class="card"><div class="h2">Where it went</div><div class="donut"><svg viewBox="0 0 36 36">' + circles + '</svg><div class="legend">' +
+      rows.slice(0, 7).map(function(r){ var c = cat(r.id); return '<div><i style="background:' + catColor(r.id) + '"></i><span class="grow ell">' + c.emoji + ' ' + esc(c.name) + '</span><b>' + Math.round(r.v / tot * 100) + '%</b></div>'; }).join('') +
+      '</div></div><hr>' + rows.map(function(r){ var c = cat(r.id); return '<div class="row between small" style="margin:6px 0"><span>' + c.emoji + ' ' + esc(c.name) + '</span><span>' + money(r.v, 0) + '</span></div>'; }).join('') + '</div>';
+  }
+
+  // 6 month trend
+  var ms = []; for (var i = 5; i >= 0; i--) ms.push(addMonths(ym, -i));
+  var vals = ms.map(function(m){ return sum(monthExps(m), 'amt'); }), mx = Math.max.apply(null, vals.concat([1]));
+  h += '<div class="card"><div class="h2">Last 6 months</div><div class="bars">' + ms.map(function(m, i){
+    return '<div class="b ' + (m === ym ? '' : 'dim') + '"><em>' + (vals[i] ? (vals[i] >= 1000 ? Math.round(vals[i] / 1000) + 'k' : Math.round(vals[i])) : '') + '</em><i style="height:' + (vals[i] / mx * 100) + '%"></i><span>' + monShort(m) + '</span></div>';
+  }).join('') + '</div></div>';
+
+  // subs load + pay split + top
+  var subSpent = sum(me.filter(function(e){ return e.subId || e.cat === 'subs'; }), 'amt');
+  var pay = {}; me.forEach(function(e){ pay[e.pay || 'Other'] = (pay[e.pay || 'Other'] || 0) + (+e.amt || 0); });
+  h += '<div class="card"><div class="h2">How you paid</div>' + Object.keys(pay).sort(function(a, b){ return pay[b] - pay[a]; }).map(function(k){
+    return '<div class="row between small" style="margin:6px 0"><span>' + esc(k) + '</span><span>' + money(pay[k], 0) + ' · ' + Math.round(pay[k] / (tot || 1) * 100) + '%</span></div>';
+  }).join('') + (tot ? '<hr><div class="row between small"><span>🔁 Subscriptions share</span><b>' + Math.round(subSpent / tot * 100) + '%</b></div>' : '<div class="small muted">No data this month.</div>') + '</div>';
+  var top = me.slice().sort(function(a, b){ return b.amt - a.amt; }).slice(0, 5);
+  if (top.length) h += '<div class="card"><div class="h2">Biggest expenses</div>' + top.map(expItem).join('') + '</div>';
+  h += '<div class="btns"><button class="btn ghost" data-act="csv" data-v="month">⬇ ' + monShort(ym) + ' CSV</button><button class="btn ghost" data-act="csv" data-v="all">⬇ All expenses CSV</button></div>';
+  return h;
+}
+function lifeStats(){
+  var t = today(), h = '';
+  var ds = []; for (var i = 13; i >= 0; i--) ds.push(addDays(t, -i));
+  var sc = ds.map(dayScore);
+  h += '<div class="card"><div class="h2">Day score, last 14 days</div><div class="bars">' + ds.map(function(d, i){
+    return '<div class="b ' + (d === t ? '' : 'dim') + '"><em>' + (sc[i] || '') + '</em><i style="height:' + sc[i] + '%"></i><span>' + pd(d).getDate() + '</span></div>';
+  }).join('') + '</div><div class="small muted" style="margin-top:8px">Average ' + Math.round(sum(sc) / sc.length) + '%</div></div>';
+
+  var wks = []; for (var j = 7; j >= 0; j--) wks.push(addDays(weekStart(t), -7 * j));
+  function weekSum(fn, w){ var s = 0; for (var k = 0; k < 7; k++) s += fn(addDays(w, k)); return s; }
+  var rv = wks.map(function(w){ return weekSum(readMinsOn, w); }), mv = wks.map(function(w){ return weekSum(moveMinsOn, w); });
+  var rmx = Math.max.apply(null, rv.concat([1])), mmx = Math.max.apply(null, mv.concat([1]));
+  function wkBars(v, mx){ return '<div class="bars">' + wks.map(function(w, i){ return '<div class="b ' + (i === wks.length - 1 ? '' : 'dim') + '"><em>' + (v[i] || '') + '</em><i style="height:' + (v[i] / mx * 100) + '%"></i><span>' + pd(w).getDate() + '/' + (pd(w).getMonth() + 1) + '</span></div>'; }).join('') + '</div>'; }
+  h += '<div class="card"><div class="h2">Reading minutes per week</div>' + wkBars(rv, rmx) + '</div>';
+  h += '<div class="card"><div class="h2">Active minutes per week</div>' + wkBars(mv, mmx) + '</div>';
+
+  var yr = t.slice(0, 4), fin = books().filter(function(b){ return b.status === 'done' && String(b.finished || '').slice(0, 4) === yr; });
+  var conc = 0; reads().forEach(function(r){ conc += (r.concepts || []).length; });
+  var moods = []; for (var m = 0; m < 30; m++){ var dr = S.recs['day_' + addDays(t, -m)]; if (dr && dr.mood) moods.push(dr.mood); }
+  h += '<div class="stats"><div class="stat"><div class="k">Books finished ' + yr + '</div><div class="v">' + fin.length + '</div></div>' +
+    '<div class="stat"><div class="k">Concepts learned</div><div class="v">' + conc + '</div></div>' +
+    '<div class="stat"><div class="k">Reading streak</div><div class="v">' + readStreak() + ' days</div></div>' +
+    '<div class="stat"><div class="k">Mood, 30 days</div><div class="v">' + (moods.length ? MOODS[Math.round(sum(moods) / moods.length) - 1] : '–') + '</div></div></div>';
+  return h;
+}
+
+// ---------- sheets ----------
+var sheetOpen = false;
+function openSheet(html, focusSel){
+  $('#panel').innerHTML = '<div class="grab"></div>' + html;
+  $('#panel').scrollTop = 0;
+  if (!sheetOpen){ sheetOpen = true; $('#sheet').classList.add('open'); try { history.pushState({sheet:1}, ''); } catch (e) {} }
+  if (focusSel) setTimeout(function(){ var f = $(focusSel); if (f) f.focus(); }, 60);
+}
+function hideSheet(){ sheetOpen = false; $('#sheet').classList.remove('open'); $('#panel').innerHTML = ''; S.catTouched = false; }
+function closeSheet(){ if (history.state && history.state.sheet) history.back(); else hideSheet(); }
+window.addEventListener('popstate', function(){ if (sheetOpen) hideSheet(); });
+function shead(t){ return '<div class="shead"><h3>' + t + '</h3><button class="x" data-act="close" aria-label="Close">×</button></div>'; }
+function fld(label, inner){ return '<label class="fld"><span>' + label + '</span>' + inner + '</label>'; }
+function chips(name, opts, val, cls){
+  return '<div class="chips ' + (cls || '') + '" data-name="' + name + '">' + opts.map(function(o){
+    var v = Array.isArray(o) ? o[0] : o, l = Array.isArray(o) ? o[1] : o;
+    return '<button type="button" class="chip ' + (String(v) === String(val) ? 'on' : '') + '" data-act="chip" data-v="' + esc(v) + '">' + l + '</button>';
+  }).join('') + '</div>';
+}
+function catChips(val){ return chips('cat', cats().map(function(c){ return [c.id, c.emoji + ' ' + esc(c.name)]; }), val); }
+function getChip(name){ var c = $('.chips[data-name="' + name + '"] .chip.on'); return c ? c.getAttribute('data-v') : ''; }
+function setChip(name, v){ $$('.chips[data-name="' + name + '"] .chip').forEach(function(c){ c.classList.toggle('on', c.getAttribute('data-v') === String(v)); }); }
+function val(id){ var e = $('#' + id); return e ? e.value : ''; }
+
+// expense
+function expForm(e){
+  e = e || {date:today(), pay:'UPI'};
+  var h = shead(e.id ? 'Edit expense' : 'Add expense');
+  if (!e.id) h += '<button class="btn sm ghost" data-act="sms-open" style="margin-bottom:10px">📩 Paste a bank SMS</button>' +
+    '<div id="smsbox" hidden><textarea id="sms" rows="3" placeholder="Paste the debit SMS or UPI message here"></textarea><div class="btns" style="margin:8px 0 6px"><button class="btn sm" data-act="sms-parse">Fill from SMS</button></div><div id="smsmsg" class="hint"></div></div>';
+  h += '<div class="amtin"><span>' + esc(S.cfg.cur) + '</span><input id="f-amt" inputmode="decimal" placeholder="0" value="' + (e.amt || '') + '"></div>' +
+    fld('What for', '<input id="f-note" placeholder="e.g. Zomato dinner" value="' + esc(e.note || '') + '">') +
+    '<div class="lbl">Category</div>' + catChips(e.cat) +
+    '<div class="two">' + fld('Date', '<input id="f-date" type="date" value="' + e.date + '">') + '<div><div class="lbl">Paid by</div>' + chips('pay', PAYS, e.pay) + '</div></div>' +
+    '<input type="hidden" id="f-id" value="' + (e.id || '') + '">' +
+    (e.subId && S.recs[e.subId] ? '<div class="hint">🔁 Logged from subscription: ' + esc(S.recs[e.subId].name) + '</div>' : '') +
+    '<div class="btns">' + (e.id ? '<button class="btn bad" data-act="exp-del" data-id="' + e.id + '">Delete</button>' : '') + '<button class="btn" data-act="exp-save">Save</button></div>';
+  openSheet(h, e.id ? null : '#f-amt');
+  S.catTouched = !!e.cat;
+}
+function parseSms(t){
+  var out = {};
+  var m = t.match(/(?:rs\.?|inr|₹)\s*([\d,]+(?:\.\d{1,2})?)/i) || t.match(/([\d,]+(?:\.\d{1,2})?)\s*(?:rs|inr)\b/i);
+  if (m) out.amt = parseFloat(m[1].replace(/,/g, ''));
+  out.credit = /\b(credited|received|deposited|refund(ed)?)\b/i.test(t) && !/\b(debited|spent|sent|paid|withdrawn|purchase)\b/i.test(t);
+  var mm = t.match(/\b(?:towards|to|at)\s+(?:vpa\s+|a\/c\s+)?(.+)/i);
+  if (mm){
+    var mer = mm[1].split(/\s+(?:on|ref|upi|avl|avbl|bal|via|from|using|dated|txn|for)\b|[,;]|\.\s|\.$|\s\d{1,2}[-\/]/i)[0];
+    if (mer.indexOf('@') > -1) mer = mer.split('@')[0];
+    mer = mer.replace(/[^A-Za-z0-9 &'.-]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (mer && mer.length <= 40) out.note = mer.toLowerCase().replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+  }
+  var MON = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12}, y, mo, d, x;
+  if ((x = t.match(/\b(20\d{2})-(\d{2})-(\d{2})/))){ y = +x[1]; mo = +x[2]; d = +x[3]; }
+  else if ((x = t.match(/\b(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})\b/))){ d = +x[1]; mo = +x[2]; y = +x[3]; }
+  else if ((x = t.match(/\b(\d{1,2})[- ]?([A-Za-z]{3})[a-z]*[- ,]?(\d{2,4})\b/)) && MON[x[2].toLowerCase()]){ d = +x[1]; mo = MON[x[2].toLowerCase()]; y = +x[3]; }
+  if (y){
+    if (y < 100) y += 2000;
+    var ds = y + '-' + pad(mo) + '-' + pad(d), dt = pd(ds);
+    if (mo >= 1 && mo <= 12 && d >= 1 && d <= 31 && dt.getDate() === d && ds <= today() && diffDays(ds, today()) < 370) out.date = ds;
+  }
+  out.pay = /\bupi\b|vpa/i.test(t) ? 'UPI' : /card/i.test(t) ? 'Card' : /atm|cash/i.test(t) ? 'Cash' : 'Bank';
+  out.cat = guessCat((out.note || '') + ' ' + t);
+  return out;
+}
+
+// subscription
+function subForm(s){
+  s = s || {per:'month', next:addDays(today(), 30), cat:'subs', pay:'Card', autoLog:true, remind:3, status:'active'};
+  var h = shead(s.id ? 'Edit subscription' : 'Add subscription');
+  if (!s.id) h += '<div class="chips scroll" style="margin-bottom:12px">' + SUB_PRESETS.map(function(p){ return '<button class="chip" data-act="preset" data-v="' + p + '">' + p + '</button>'; }).join('') + '</div>';
+  h += fld('Name', '<input id="s-name" placeholder="Netflix, gym, rent, insurance…" value="' + esc(s.name || '') + '">') +
+    '<div class="amtin"><span>' + esc(S.cfg.cur) + '</span><input id="s-amt" inputmode="decimal" placeholder="0" value="' + (s.amt || '') + '"></div>' +
+    '<div class="lbl">Repeats</div>' + chips('per', Object.keys(PER).map(function(k){ return [k, PER[k].label]; }), s.per) +
+    fld(s.trial ? 'Trial ends on' : 'Next renewal', '<input id="s-next" type="date" value="' + s.next + '">') +
+    '<label class="check"><input type="checkbox" id="s-trial"' + (s.trial ? ' checked' : '') + '> Free trial right now (first charge on that date)</label>' +
+    '<label class="check"><input type="checkbox" id="s-auto"' + (s.autoLog !== false ? ' checked' : '') + '> Charged automatically. Log it as an expense on each renewal.</label>' +
+    '<div class="hint">Untick for bills you pay by hand (rent, insurance). They\'ll show as due until you mark them paid.</div>' +
+    '<div class="lbl">Remind me</div>' + chips('remind', [[1,'1 day before'],[3,'3 days'],[7,'1 week']], s.remind || 3) +
+    '<div class="lbl">Category</div>' + catChips(s.cat) +
+    '<div class="lbl">Paid by</div>' + chips('pay', PAYS, s.pay) +
+    fld('Note', '<input id="s-note" placeholder="Plan, account, how to cancel…" value="' + esc(s.note || '') + '">') +
+    '<input type="hidden" id="s-id" value="' + (s.id || '') + '">' +
+    '<div class="btns"><button class="btn" data-act="sub-save">Save</button></div>';
+  openSheet(h, s.id ? null : '#s-name');
+}
+function subSheet(s){
+  var st = subState(s), p = PER[s.per] || PER.month;
+  var paid = exps().filter(function(e){ return e.subId === s.id; }).sort(byDateDesc);
+  var h = shead(esc(s.name)) +
+    '<div class="big">' + money(s.amt) + '<span class="mid muted"> ' + p.short + '</span></div>' +
+    '<div class="small ' + st.cls + '" style="margin:4px 0 14px">' + st.txt + (s.status === 'active' ? ' · ' + dLong(s.next) : '') + '</div>' +
+    '<div class="card flat"><div class="row between small" style="margin:3px 0"><span class="muted">Per month</span><b>' + money(subMonthly(s), 0) + '</b></div>' +
+    '<div class="row between small" style="margin:3px 0"><span class="muted">Per year</span><b>' + money(subMonthly(s) * 12, 0) + '</b></div>' +
+    '<div class="row between small" style="margin:3px 0"><span class="muted">Paid so far (logged)</span><b>' + money(sum(paid, 'amt'), 0) + '</b></div>' +
+    '<div class="row between small" style="margin:3px 0"><span class="muted">Category · paid by</span><span>' + cat(s.cat).emoji + ' ' + esc(cat(s.cat).name) + ' · ' + esc(s.pay || '') + '</span></div>' +
+    '<div class="row between small" style="margin:3px 0"><span class="muted">Logging</span><span>' + (s.autoLog ? 'Automatic on renewal' : 'Manual, mark paid') + '</span></div>' +
+    (s.note ? '<div class="small pre" style="margin-top:6px">' + esc(s.note) + '</div>' : '') + '</div>';
+  if (s.status === 'active') h += '<div class="btns" style="margin-bottom:8px"><button class="btn" data-act="sub-paid" data-id="' + s.id + '">✓ Mark paid now</button><button class="btn ghost" data-act="sub-ics" data-id="' + s.id + '">📅 Add reminder</button></div>' +
+    '<div class="hint">📅 adds a repeating event to your phone calendar that alerts you ' + (s.remind || 3) + ' day' + ((s.remind || 3) > 1 ? 's' : '') + ' before.</div>';
+  h += '<div class="btns" style="margin-bottom:8px"><button class="btn ghost" data-act="sub-edit" data-id="' + s.id + '">Edit</button>' +
+    (s.status === 'active' ? '<button class="btn ghost" data-act="sub-status" data-v="paused" data-id="' + s.id + '">Pause</button><button class="btn ghost" data-act="sub-status" data-v="cancelled" data-id="' + s.id + '">Cancelled it</button>'
+      : '<button class="btn ghost" data-act="sub-status" data-v="active" data-id="' + s.id + '">Resume</button>') + '</div>' +
+    '<div class="btns"><button class="btn bad" data-act="sub-del" data-id="' + s.id + '">Delete</button></div>';
+  if (paid.length) h += '<div class="sec">Payments</div>' + paid.slice(0, 12).map(function(e){ return '<div class="row between small" style="padding:6px 0;border-top:1px solid var(--line)"><span>' + dShort(e.date) + ' ' + pd(e.date).getFullYear() + '</span><span>' + money(e.amt) + '</span></div>'; }).join('');
+  openSheet(h);
+}
+function icsFor(s){
+  var p = PER[s.per] || PER.month, rem = s.remind || 3;
+  var rule = s.per === 'week' ? 'FREQ=WEEKLY' : p.m === 12 ? 'FREQ=YEARLY' : 'FREQ=MONTHLY;INTERVAL=' + p.m;
+  var d = s.next.replace(/-/g, ''), e = addDays(s.next, 1).replace(/-/g, '');
+  var stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+  var name = String(s.name).replace(/[,;\\]/g, ' ');
+  return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Daybook//EN','BEGIN:VEVENT',
+    'UID:' + s.id + '@daybook','DTSTAMP:' + stamp,'DTSTART;VALUE=DATE:' + d,'DTEND;VALUE=DATE:' + e,
+    (s.trial ? '' : 'RRULE:' + rule),
+    'SUMMARY:' + (s.trial ? 'Trial ends: ' : 'Renews: ') + name + ' ' + money(s.amt).replace('₹', 'Rs '),
+    'DESCRIPTION:From Daybook',
+    'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:' + name + (s.trial ? ' trial ends' : ' renews') + ' soon','TRIGGER:-P' + (rem - 1 > 0 ? (rem - 1) + 'D' : '') + 'T15H','END:VALARM',
+    'END:VEVENT','END:VCALENDAR'].filter(Boolean).join('\r\n');
+}
+
+// goal
+function goalForm(g){
+  g = g || {emoji:'🎯'};
+  var h = shead(g.id ? 'Edit goal' : 'New savings goal') +
+    '<div class="lbl">Icon</div>' + chips('gem', GOAL_EMOJI.map(function(e){ return [e, '<span style="font-size:18px">' + e + '</span>']; }), g.emoji) +
+    fld('Saving for', '<input id="g-name" placeholder="Emergency fund, new bike…" value="' + esc(g.name || '') + '">') +
+    '<div class="two">' + fld('Target', '<input id="g-target" inputmode="decimal" value="' + (g.target || '') + '">') + fld(g.id ? 'Saved' : 'Already saved', '<input id="g-saved" inputmode="decimal" value="' + (g.saved || '') + '">') + '</div>' +
+    fld('By (optional)', '<input id="g-due" type="date" value="' + (g.due || '') + '">') +
+    '<input type="hidden" id="g-id" value="' + (g.id || '') + '"><div class="btns"><button class="btn" data-act="goal-save">Save</button></div>';
+  openSheet(h, g.id ? null : '#g-name');
+}
+function goalSheet(g){
+  var p = g.target > 0 ? (g.saved || 0) / g.target * 100 : 0;
+  var h = shead((g.emoji || '🎯') + ' ' + esc(g.name)) +
+    '<div class="big">' + money(g.saved || 0, 0) + '<span class="mid muted"> / ' + money(g.target, 0) + '</span></div>' + bar(p) +
+    '<div class="small muted" style="margin:8px 0 14px">' + goalNeed(g) + '</div>' +
+    '<div class="amtin"><span>' + esc(S.cfg.cur) + '</span><input id="g-add" inputmode="decimal" placeholder="Amount"></div>' +
+    '<div class="btns" style="margin-bottom:10px"><button class="btn" data-act="goal-add" data-v="1" data-id="' + g.id + '">+ Add money</button><button class="btn ghost" data-act="goal-add" data-v="-1" data-id="' + g.id + '">− Take out</button></div>' +
+    '<div class="btns"><button class="btn ghost" data-act="goal-edit" data-id="' + g.id + '">Edit</button><button class="btn bad" data-act="goal-del" data-id="' + g.id + '">Delete</button></div>';
+  var log = (g.log || []).slice().reverse();
+  if (log.length) h += '<div class="sec">History</div>' + log.slice(0, 20).map(function(l){ return '<div class="row between small" style="padding:6px 0;border-top:1px solid var(--line)"><span>' + dShort(l.d) + '</span><span class="' + (l.a < 0 ? 'bad' : 'good') + '">' + (l.a < 0 ? '−' : '+') + money(Math.abs(l.a), 0) + '</span></div>'; }).join('');
+  openSheet(h);
+}
+
+// book
+function bookForm(b){
+  b = b || {status:S.bseg === 'want' ? 'want' : 'reading'};
+  var h = shead(b.id ? 'Edit book' : 'Add a book') +
+    fld('Title', '<input id="b-title" value="' + esc(b.title || '') + '">') +
+    fld('Author', '<input id="b-author" value="' + esc(b.author || '') + '">') +
+    '<div class="two">' + fld('Total pages', '<input id="b-pages" inputmode="numeric" value="' + (b.pages || '') + '">') + fld('On page', '<input id="b-page" inputmode="numeric" value="' + (b.page || '') + '">') + '</div>' +
+    '<div class="lbl">Status</div>' + chips('bstatus', [['reading','Reading'],['want','Up next'],['done','Finished']], b.status) +
+    fld('Where I left off', '<textarea id="b-left" rows="2" placeholder="Chapter 4, the part about habit stacking">' + esc(b.leftOff || '') + '</textarea>') +
+    fld('Where to start next time', '<textarea id="b-next" rows="2" placeholder="Start at Ch 5, page 121. Re-read the summary first.">' + esc(b.nextStart || '') + '</textarea>') +
+    fld('Why I\'m reading it / notes', '<textarea id="b-notes" rows="2">' + esc(b.notes || '') + '</textarea>') +
+    fld('Links (one per line)', '<textarea id="b-links" rows="2" placeholder="https://…">' + esc((b.links || []).join('\n')) + '</textarea>') +
+    '<input type="hidden" id="b-id" value="' + (b.id || '') + '"><div class="btns">' + (b.id ? '<button class="btn bad" data-act="book-del" data-id="' + b.id + '">Delete</button>' : '') + '<button class="btn" data-act="book-save">Save</button></div>';
+  openSheet(h, b.id ? null : '#b-title');
+}
+function bookSheet(b){
+  var rs = reads().filter(function(r){ return r.bookId === b.id; }).sort(byDateDesc);
+  var tot = sum(rs, 'mins'), concepts = [], links = (b.links || []).slice();
+  rs.forEach(function(r){ (r.concepts || []).forEach(function(c){ concepts.push({c:c, d:r.date}); }); (r.links || []).forEach(function(l){ if (links.indexOf(l) < 0) links.push(l); }); });
+  var h = shead('📘 ' + esc(b.title)) +
+    '<div class="small muted" style="margin:-8px 0 10px">' + esc(b.author || '') + (tot ? ' · ' + mins(tot) + ' over ' + rs.length + ' session' + (rs.length > 1 ? 's' : '') : '') + '</div>';
+  if (b.pages) h += '<div class="row between small"><span>Page ' + (b.page || 0) + ' of ' + b.pages + '</span><b>' + bookPct(b) + '%</b></div>' + bar(bookPct(b));
+  if (b.status !== 'done') h += '<div class="card flat" style="margin-top:12px">' +
+    '<div class="pickup"><div class="k">LEFT OFF AT</div>' + (b.leftOff ? esc(b.leftOff) : '<span class="muted">Not set</span>') + '</div>' +
+    '<div class="pickup"><div class="k">START HERE NEXT</div>' + (b.nextStart ? esc(b.nextStart) : '<span class="muted">Not set</span>') + '</div></div>';
+  h += '<div class="btns" style="margin:12px 0 8px">' + (b.status !== 'done' && !S.timer ? '<button class="btn" data-act="timer-start" data-id="' + b.id + '">▶ Start timer</button>' : '') +
+    '<button class="btn ' + (b.status !== 'done' && !S.timer ? 'ghost' : '') + '" data-act="add-read" data-id="' + b.id + '">+ Log session</button></div>' +
+    '<div class="btns"><button class="btn ghost" data-act="book-edit" data-id="' + b.id + '">Edit book</button>' +
+    (b.status === 'want' ? '<button class="btn ghost" data-act="book-status" data-v="reading" data-id="' + b.id + '">Start reading</button>' : b.status === 'reading' ? '<button class="btn ghost" data-act="book-status" data-v="done" data-id="' + b.id + '">Finished it</button>' : '') + '</div>';
+  if (b.notes) h += '<div class="sec">Notes</div><div class="pre small">' + esc(b.notes) + '</div>';
+  if (concepts.length) h += '<div class="sec">Concepts learned (' + concepts.length + ')</div>' + concepts.map(function(x){ return '<div class="concept small">💡 ' + esc(x.c) + ' <span class="tiny muted">· ' + dShort(x.d) + '</span></div>'; }).join('');
+  if (links.length) h += '<div class="sec">Links</div><div class="links">' + links.map(linkHtml).join('') + '</div>';
+  if (rs.length) h += '<div class="sec">Sessions</div>' + rs.map(function(r){
+    return '<button class="item" data-act="read" data-id="' + r.id + '"><div class="em">📖</div><div class="grow"><div class="t">' + mins(r.mins) + (r.to ? ' · to p.' + r.to : '') + '</div>' +
+      '<div class="small muted ell">' + dayLabel(r.date) + (r.note ? ' · ' + esc(r.note) : '') + ((r.concepts || []).length ? ' · 💡' + r.concepts.length : '') + '</div></div></button>';
+  }).join('');
+  openSheet(h);
+}
+function readForm(r){
+  var reading = books().filter(function(b){ return b.status !== 'done'; });
+  if (!r.id && !r.bookId && !reading.length){ bookForm(); toast('Add the book first'); return; }
+  r = r || {};
+  var bookId = r.bookId || (reading.sort(function(a, b){ return (b.lastRead || '') > (a.lastRead || '') ? 1 : -1; })[0] || {}).id;
+  var b = S.recs[bookId] || {};
+  var h = shead(r.id ? 'Edit reading session' : 'Log reading') +
+    (r.id ? '' : '<div class="lbl">Book</div>' + chips('rbook', (reading.length ? reading : books()).map(function(x){ return [x.id, '📘 ' + esc(x.title)]; }), bookId)) +
+    '<div class="two">' + fld('Minutes read', '<input id="r-mins" inputmode="numeric" value="' + (r.mins || '') + '" placeholder="' + S.cfg.readMin + '">') + fld('Date', '<input id="r-date" type="date" value="' + (r.date || today()) + '">') + '</div>' +
+    '<div class="two">' + fld('From page', '<input id="r-from" inputmode="numeric" value="' + (r.from || (r.id ? '' : b.page || '')) + '">') + fld('To page', '<input id="r-to" inputmode="numeric" value="' + (r.to || '') + '">') + '</div>' +
+    (r.id ? '' : fld('Where I left off', '<textarea id="r-left" rows="2" placeholder="Stopped mid-way through ch 6, on the example about…">' + esc(b.leftOff || '') + '</textarea>') +
+      fld('Where to start next time', '<textarea id="r-next" rows="2" placeholder="Start at page 140, section 3">' + esc(b.nextStart || '') + '</textarea>')) +
+    fld('New concepts learned (one per line)', '<textarea id="r-concepts" rows="3" placeholder="Habit stacking: link a new habit to an existing one">' + esc((r.concepts || []).join('\n')) + '</textarea>') +
+    fld('Links (one per line)', '<textarea id="r-links" rows="2" placeholder="Article, video, notes doc…">' + esc((r.links || []).join('\n')) + '</textarea>') +
+    fld('Note / remark', '<textarea id="r-note" rows="2">' + esc(r.note || '') + '</textarea>') +
+    '<input type="hidden" id="r-id" value="' + (r.id || '') + '"><input type="hidden" id="r-bid" value="' + (r.bookId || bookId || '') + '">' +
+    '<div class="btns">' + (r.id ? '<button class="btn bad" data-act="read-del" data-id="' + r.id + '">Delete</button>' : '') + '<button class="btn" data-act="read-save">Save</button></div>';
+  openSheet(h, r.mins ? '#r-to' : '#r-mins');
+}
+
+// workout
+function workForm(w){
+  w = w || {type:lsGet('db-lastact', 'run'), date:today()};
+  var a = act(w.type);
+  var h = shead(w.id ? 'Edit workout' : 'Log workout') +
+    chips('wtype', ACTS.map(function(x){ return [x.id, x.emoji + ' ' + x.name]; }), w.type) +
+    '<div id="wfields">' + workFields(a, w) + '</div>' +
+    fld('Date', '<input id="w-date" type="date" value="' + w.date + '">') +
+    fld('Note', '<input id="w-note" placeholder="Felt strong, knee was fine…" value="' + esc(w.note || '') + '">') +
+    '<input type="hidden" id="w-id" value="' + (w.id || '') + '">' +
+    '<div class="btns">' + (w.id ? '<button class="btn bad" data-act="work-del" data-id="' + w.id + '">Delete</button>' : '') + '<button class="btn" data-act="work-save">Save</button></div>';
+  openSheet(h, w.id ? null : '#w-mins');
+}
+function workFields(a, w){
+  var h = '<div class="two">' + fld('Minutes', '<input id="w-mins" inputmode="numeric" value="' + (w.mins || '') + '">');
+  if (a.f.indexOf('km') > -1) h += fld('Distance (km)', '<input id="w-km" inputmode="decimal" value="' + (w.km || '') + '">');
+  if (a.f.indexOf('count') > -1) h += fld('Skips', '<input id="w-count" inputmode="numeric" value="' + (w.count || '') + '">');
+  h += '</div>';
+  if (a.f.indexOf('focus') > -1) h += '<div class="lbl">Focus</div>' + chips('wfocus', FOCUS, w.focus);
+  return h;
+}
+
+// day note
+function noteForm(){
+  var d = dayRec(S.day);
+  var h = shead('Note · ' + dayLabel(S.day)) +
+    '<div class="moods">' + MOODS.map(function(m, i){ return '<button type="button" class="' + (d.mood === i + 1 ? 'on' : '') + '" data-act="mood-pick" data-v="' + (i + 1) + '">' + m + '</button>'; }).join('') + '</div>' +
+    '<input type="hidden" id="n-mood" value="' + (d.mood || '') + '">' +
+    fld('Note / remark', '<textarea id="n-note" rows="6" placeholder="What went well, what you learned, what to fix tomorrow…">' + esc(d.note || '') + '</textarea>') +
+    fld('Links (one per line)', '<textarea id="n-links" rows="2" placeholder="https://…">' + esc((d.links || []).join('\n')) + '</textarea>') +
+    fld('Weight (kg, optional)', '<input id="n-weight" inputmode="decimal" value="' + esc(d.weight || '') + '">') +
+    '<div class="btns"><button class="btn" data-act="note-save">Save</button></div>';
+  openSheet(h, '#n-note');
+}
+function quickSheet(){
+  openSheet(shead('Add') + '<div class="quick" style="grid-template-columns:1fr 1fr">' +
+    '<button data-act="add-exp"><span>💸</span>Expense</button><button data-act="add-read"><span>📖</span>Reading</button>' +
+    '<button data-act="add-work"><span>🏃</span>Workout</button><button data-act="note"><span>📝</span>Day note</button>' +
+    '<button data-act="add-sub"><span>🔁</span>Subscription</button><button data-act="add-book"><span>📘</span>Book</button></div>');
+}
+
+// settings
+function settingsSheet(){
+  var theme = lsGet('db-theme', 'auto');
+  var sync = LOCAL ? 'Local test mode (data stays in this browser)' : S.syncErr ? '⚠️ ' + esc(S.syncErr) : S.synced ? (S.pending ? 'Saving…' : '✓ Synced') : 'Offline. Changes are kept on the phone and sync later.';
+  var h = shead('Settings') +
+    '<div class="card flat"><div class="row between small"><span class="muted">Signed in</span><span>' + esc((S.user && S.user.email) || '') + '</span></div>' +
+    '<div class="row between small" style="margin-top:4px"><span class="muted">Sync</span><span>' + sync + '</span></div></div>' +
+    '<div class="sec">Money</div><div class="btns" style="margin-bottom:8px"><button class="btn ghost" data-act="budgets">Budgets &amp; alerts</button><button class="btn ghost" data-act="cats">Categories</button></div>' +
+    fld('Currency symbol', '<input id="set-cur" value="' + esc(S.cfg.cur) + '" maxlength="4">') +
+    '<div class="sec">Daily targets</div><div class="three">' +
+    fld('Read (min)', '<input id="set-read" inputmode="numeric" value="' + S.cfg.readMin + '">') +
+    fld('Move (min)', '<input id="set-move" inputmode="numeric" value="' + S.cfg.moveMin + '">') +
+    fld('Active days/wk', '<input id="set-days" inputmode="numeric" value="' + S.cfg.moveDays + '">') + '</div>' +
+    '<button class="btn sm" data-act="set-save">Save targets</button>' +
+    '<div class="sec">Daily habits (count toward the day score)</div>' +
+    (S.cfg.habits || []).map(function(hb){ return '<div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span>' + esc(hb.emoji || '') + ' ' + esc(hb.name) + '</span><button class="btn sm bad" data-act="habit-del" data-v="' + hb.id + '">Remove</button></div>'; }).join('') +
+    '<div class="row" style="margin-top:8px"><input id="hb-emoji" placeholder="🙂" style="width:64px" maxlength="4"><input id="hb-name" placeholder="Meditate 10 min, no sugar…" class="grow"><button class="btn sm" data-act="habit-add">Add</button></div>' +
+    '<div class="sec">Look</div>' + chips('theme', [['auto','Auto'],['light','Light'],['dark','Dark']], theme) +
+    '<div class="sec">Backup</div><div class="btns" style="margin-bottom:8px"><button class="btn ghost" data-act="backup">⬇ Download backup</button><button class="btn ghost" data-act="restore">⬆ Restore</button></div>' +
+    '<input type="file" id="restore-file" accept="application/json,.json" hidden>' +
+    '<div class="btns" style="margin-top:14px"><button class="btn bad" data-act="signout">Sign out</button></div>' +
+    '<p class="tiny muted" style="text-align:center;margin-top:14px">Daybook ' + APP_VERSION + '</p>';
+  openSheet(h);
+}
+function budgetsSheet(){
+  var b = S.cfg.budgets || {}, ym = ymOf(today());
+  var h = shead('Budgets &amp; alerts') +
+    '<div class="two">' + fld('Monthly budget (all)', '<input id="bu-total" inputmode="decimal" value="' + (S.cfg.total || '') + '" placeholder="e.g. 40000">') + fld('Warn me at (%)', '<input id="bu-pct" inputmode="numeric" value="' + (S.cfg.alertPct || 80) + '">') + '</div>' +
+    '<div class="hint">The monthly budget also sets the daily "spend under" target on Today.</div><div class="sec">Per category (leave blank for none)</div>' +
+    cats().map(function(c){ return '<div class="row" style="margin-bottom:8px"><span class="grow small">' + c.emoji + ' ' + esc(c.name) + '<div class="tiny muted">' + money(spentCat(c.id, ym), 0) + ' this month</div></span><input data-bud="' + c.id + '" inputmode="decimal" value="' + (b[c.id] || '') + '" style="width:120px"></div>'; }).join('') +
+    '<div class="btns"><button class="btn" data-act="budgets-save">Save</button></div>';
+  openSheet(h);
+}
+function catsSheet(){
+  var h = shead('Categories') + cats().map(function(c, i){
+    return '<div class="row" style="margin-bottom:8px"><input data-cem="' + i + '" value="' + esc(c.emoji) + '" style="width:58px;text-align:center" maxlength="4"><input data-cname="' + i + '" value="' + esc(c.name) + '" class="grow">' +
+      (c.id === 'other' ? '' : '<button class="x" data-act="cat-del" data-v="' + i + '" aria-label="Remove">×</button>') + '</div>';
+  }).join('') +
+    '<div class="row" style="margin:12px 0"><input id="nc-em" placeholder="🐶" style="width:58px;text-align:center" maxlength="4"><input id="nc-name" placeholder="New category" class="grow"><button class="btn sm ghost" data-act="cat-add">Add</button></div>' +
+    '<div class="btns"><button class="btn" data-act="cats-save">Save</button></div>';
+  openSheet(h);
+}
+function collectCats(){
+  return cats().map(function(c, i){
+    var em = $('[data-cem="' + i + '"]'), nm = $('[data-cname="' + i + '"]');
+    return {id:c.id, emoji:em ? em.value.trim() || c.emoji : c.emoji, name:nm ? nm.value.trim() || c.name : c.name};
+  });
+}
+
+// ---------- downloads ----------
+function download(name, text, type){
+  var blob = new Blob([text], {type:type || 'text/plain'}), a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+function csvCell(v){ v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+
+// ---------- actions ----------
+var A = {
+  tab:function(el){ S.tab = el.dataset.v; lsSet('db-tab', S.tab); if (S.tab === 'today') S.day = today(); closeIfOpen(); render(); window.scrollTo(0, 0); },
+  seg:function(el){
+    var n = el.dataset.name; S[n] = el.dataset.v;
+    if (n === 'mseg') lsSet('db-mseg', S.mseg);
+    if (n === 'mseg' && S.tab !== 'money'){ S.tab = 'money'; lsSet('db-tab', 'money'); }
+    render();
+  },
+  settings:function(){ settingsSheet(); },
+  close:function(){ closeSheet(); },
+  chip:function(el){
+    var box = el.parentNode, name = box.dataset.name;
+    $$('.chip', box).forEach(function(c){ c.classList.remove('on'); }); el.classList.add('on');
+    if (name === 'cat') S.catTouched = true;
+    if (name === 'wtype'){ var w = {mins:val('w-mins')}; $('#wfields').innerHTML = workFields(act(el.dataset.v), w); }
+    if (name === 'theme'){ lsSet('db-theme', el.dataset.v); applyTheme(); }
+    if (name === 'rbook'){ var b = S.recs[el.dataset.v] || {}; var f = $('#r-from'); if (f) f.value = b.page || ''; var l = $('#r-left'); if (l) l.value = b.leftOff || ''; var n = $('#r-next'); if (n) n.value = b.nextStart || ''; }
+  },
+  signin:function(){
+    var e = val('a-email').trim(), p = val('a-pass'), err = $('#a-err');
+    if (!e || !p){ err.textContent = 'Enter your email and password.'; return; }
+    err.textContent = 'Signing in…';
+    Store.signIn(e, p).catch(function(x){ err.textContent = x && x.code === 'auth/invalid-credential' ? 'Wrong email or password.' : (x && x.message) || 'Could not sign in.'; });
+  },
+  signout:function(){ if (confirm('Sign out of Daybook on this phone?')){ closeSheet(); Store.signOut(); } },
+  quick:function(){ quickSheet(); },
+
+  // day
+  'day-prev':function(){ S.day = addDays(S.day, -1); render(); },
+  'day-next':function(){ if (S.day < today()) S.day = addDays(S.day, 1); render(); },
+  'day-today':function(){ S.day = today(); render(); },
+  habit:function(el){
+    var d = dayRec(S.day), r = strip(d); r.t = 'day'; r.date = S.day; r.habits = Object.assign({}, d.habits || {});
+    r.habits[el.dataset.v] = !r.habits[el.dataset.v]; put('day_' + S.day, r);
+  },
+  mood:function(el){ var d = dayRec(S.day), r = strip(d); r.t = 'day'; r.date = S.day; var m = +el.dataset.v; r.mood = d.mood === m ? 0 : m; put('day_' + S.day, r); },
+  'mood-pick':function(el){ $$('.moods button', $('#panel')).forEach(function(b){ b.classList.remove('on'); }); el.classList.add('on'); $('#n-mood').value = el.dataset.v; },
+  note:function(){ if (S.tab !== 'today'){ S.day = today(); } noteForm(); },
+  'note-save':function(){
+    var d = dayRec(S.day), r = strip(d); r.t = 'day'; r.date = S.day;
+    r.note = val('n-note').trim(); r.links = lines(val('n-links')); r.mood = +val('n-mood') || 0; r.weight = val('n-weight').trim();
+    put('day_' + S.day, r); closeSheet(); toast('Saved');
+  },
+
+  // expenses
+  'add-exp':function(){ expForm(); },
+  exp:function(el){ var e = list('exp').filter(function(x){ return x.id === el.dataset.id; })[0]; if (e) expForm(e); },
+  'sms-open':function(){ var b = $('#smsbox'); b.hidden = !b.hidden; if (!b.hidden) $('#sms').focus(); },
+  'sms-parse':function(){
+    var t = val('sms'), r = parseSms(t), msg = $('#smsmsg');
+    if (!r.amt){ msg.textContent = 'Couldn\'t find an amount in that message.'; return; }
+    if (r.credit){ msg.textContent = 'That looks like money received, not spent. Filled it in anyway, so check it.'; }
+    else msg.textContent = 'Filled in. Check and save.';
+    $('#f-amt').value = r.amt;
+    if (r.note) $('#f-note').value = r.note;
+    if (r.date) $('#f-date').value = r.date;
+    if (r.pay) setChip('pay', r.pay);
+    if (r.cat){ setChip('cat', r.cat); S.catTouched = true; }
+  },
+  'exp-save':function(){
+    var amt = num(val('f-amt'));
+    if (!(amt > 0)){ toast('Enter an amount', 'warn'); return; }
+    var note = val('f-note').trim(), c = getChip('cat') || guessCat(note) || 'other';
+    var id = val('f-id') || 'exp_' + uid(), old = S.recs[id] || {};
+    var rec = {t:'exp', amt:amt, cat:c, note:note, date:val('f-date') || today(), pay:getChip('pay') || 'UPI'};
+    if (old.subId) rec.subId = old.subId;
+    put(id, rec); closeSheet(); toast('Saved ' + money(amt));
+    setTimeout(function(){ budgetCheck(c, ymOf(rec.date)); }, 1600);
+  },
+  'exp-del':function(el){ if (confirm('Delete this expense?')){ del(el.dataset.id); closeSheet(); } },
+  month:function(el){ S.month = addMonths(S.month, +el.dataset.v); render(); },
+  imonth:function(el){ S.imonth = addMonths(S.imonth, +el.dataset.v); render(); },
+  fcat:function(el){ S.fcat = el.dataset.v; render(); },
+
+  // subscriptions
+  'add-sub':function(){ subForm(); },
+  preset:function(el){
+    $('#s-name').value = el.dataset.v;
+    var cg = guessCat(el.dataset.v); if (cg) setChip('cat', cg);
+    if (el.dataset.v === 'Gym'){ setChip('cat', 'health'); }
+    $('#s-amt').focus();
+  },
+  sub:function(el){ var s = subs().filter(function(x){ return x.id === el.dataset.id; })[0]; if (s) subSheet(s); },
+  'sub-edit':function(el){ var s = subs().filter(function(x){ return x.id === el.dataset.id; })[0]; if (s) subForm(s); },
+  'sub-save':function(){
+    var name = val('s-name').trim(), amt = num(val('s-amt')), next = val('s-next');
+    if (!name){ toast('Give it a name', 'warn'); return; }
+    if (!(amt > 0)){ toast('Enter the amount', 'warn'); return; }
+    if (!next){ toast('Pick the next renewal date', 'warn'); return; }
+    var id = val('s-id') || 'sub_' + uid(), old = S.recs[id] || {};
+    var rec = {t:'sub', name:name, amt:amt, per:getChip('per') || 'month', next:next, anchor:pd(next).getDate(),
+      trial:$('#s-trial').checked, autoLog:$('#s-auto').checked, remind:+getChip('remind') || 3,
+      cat:getChip('cat') || 'subs', pay:getChip('pay') || 'Card', note:val('s-note').trim(), status:old.status || 'active', created:old.created || today()};
+    put(id, rec); closeSheet(); toast('Saved ' + name);
+    if (next < today() && rec.autoLog) setTimeout(rollSubs, 50);
+  },
+  'sub-paid':function(el){
+    var s = S.recs[el.dataset.id]; if (!s) return;
+    put('exp_s_' + el.dataset.id + '_' + s.next, {t:'exp', amt:s.amt, cat:s.cat || 'subs', note:s.name, date:today(), pay:s.pay || 'Card', subId:el.dataset.id});
+    var r = strip(s), n = s.next; do { n = nextDate(s, n); } while (n <= today()); r.next = n; r.trial = false; put(el.dataset.id, r);
+    closeSheet(); toast('Paid. Next: ' + dShort(n));
+  },
+  'sub-status':function(el){
+    var s = S.recs[el.dataset.id]; if (!s) return;
+    var r = strip(s); r.status = el.dataset.v;
+    if (r.status === 'active' && r.next < today()){ var n = r.next; while (n < today()) n = nextDate(s, n); r.next = n; }
+    put(el.dataset.id, r); closeSheet();
+    toast(r.status === 'cancelled' ? 'Marked cancelled. That\'s ' + money(subMonthly(s) * 12, 0) + ' a year saved.' : r.status === 'paused' ? 'Paused' : 'Resumed');
+  },
+  'sub-del':function(el){ if (confirm('Delete this subscription? Logged payments stay in expenses.')){ del(el.dataset.id); closeSheet(); } },
+  'sub-ics':function(el){ var s = subs().filter(function(x){ return x.id === el.dataset.id; })[0]; if (s) download(s.name.replace(/[^\w]+/g, '-') + '-renewal.ics', icsFor(s), 'text/calendar'); },
+
+  // goals
+  'add-goal':function(){ goalForm(); },
+  goal:function(el){ var g = goals().filter(function(x){ return x.id === el.dataset.id; })[0]; if (g) goalSheet(g); },
+  'goal-edit':function(el){ var g = goals().filter(function(x){ return x.id === el.dataset.id; })[0]; if (g) goalForm(g); },
+  'goal-save':function(){
+    var name = val('g-name').trim(), target = num(val('g-target'));
+    if (!name || !(target > 0)){ toast('Add a name and a target', 'warn'); return; }
+    var id = val('g-id') || 'goal_' + uid(), old = S.recs[id] || {}, saved = num(val('g-saved'));
+    var log = (old.log || []).slice(); if (!old.t && saved) log.push({d:today(), a:saved});
+    put(id, {t:'goal', name:name, emoji:getChip('gem') || '🎯', target:target, saved:saved, due:val('g-due'), log:log}); closeSheet(); toast('Saved');
+  },
+  'goal-add':function(el){
+    var g = S.recs[el.dataset.id], a = num(val('g-add')) * (+el.dataset.v);
+    if (!g || !a){ toast('Enter an amount', 'warn'); return; }
+    var r = strip(g); r.saved = Math.max(0, (g.saved || 0) + a); r.log = (g.log || []).concat([{d:today(), a:a}]).slice(-200);
+    put(el.dataset.id, r);
+    var x = {}; for (var k in r) x[k] = r[k]; x.id = el.dataset.id; goalSheet(x);
+    toast(r.saved >= r.target ? 'Goal reached! 🎉' : (a > 0 ? 'Added ' : 'Took out ') + money(Math.abs(a), 0));
+  },
+  'goal-del':function(el){ if (confirm('Delete this goal?')){ del(el.dataset.id); closeSheet(); } },
+
+  // books
+  'add-book':function(){ bookForm(); },
+  book:function(el){ var b = books().filter(function(x){ return x.id === el.dataset.id; })[0]; if (b) bookSheet(b); },
+  'book-edit':function(el){ var b = books().filter(function(x){ return x.id === el.dataset.id; })[0]; if (b) bookForm(b); },
+  'book-save':function(){
+    var title = val('b-title').trim(); if (!title){ toast('Add the title', 'warn'); return; }
+    var id = val('b-id') || 'book_' + uid(), old = S.recs[id] || {}, st = getChip('bstatus') || 'reading';
+    var r = {t:'book', title:title, author:val('b-author').trim(), pages:+num(val('b-pages')) || 0, page:+num(val('b-page')) || 0, status:st,
+      leftOff:val('b-left').trim(), nextStart:val('b-next').trim(), notes:val('b-notes').trim(), links:lines(val('b-links')),
+      started:old.started || (st === 'reading' ? today() : ''), finished:st === 'done' ? (old.finished || today()) : '', lastRead:old.lastRead || ''};
+    put(id, r); closeSheet(); toast('Saved'); S.bseg = st; renderSoon();
+  },
+  'book-status':function(el){
+    var b = S.recs[el.dataset.id]; if (!b) return;
+    var r = strip(b); r.status = el.dataset.v;
+    if (r.status === 'reading' && !r.started) r.started = today();
+    if (r.status === 'done'){ r.finished = today(); if (r.pages) r.page = r.pages; }
+    put(el.dataset.id, r); S.bseg = r.status; closeSheet(); toast(r.status === 'done' ? 'Finished! 🎉' : 'Moved to Reading');
+  },
+  'book-del':function(el){ if (confirm('Delete this book and its reading sessions?')){ reads().forEach(function(r){ if (r.bookId === el.dataset.id) del(r.id); }); del(el.dataset.id); closeSheet(); } },
+  'add-read':function(el){ readForm({bookId:el && el.dataset.id || ''}); },
+  read:function(el){ var r = reads().filter(function(x){ return x.id === el.dataset.id; })[0]; if (r) readForm(r); },
+  'read-save':function(){
+    var m = +num(val('r-mins'));
+    if (!(m > 0)){ toast('How many minutes?', 'warn'); return; }
+    var id = val('r-id') || 'read_' + uid(), old = S.recs[id] || {}, bookId = old.bookId || getChip('rbook') || val('r-bid');
+    if (!bookId){ toast('Pick a book', 'warn'); return; }
+    var date = val('r-date') || today(), to = +num(val('r-to')) || 0;
+    put(id, {t:'read', bookId:bookId, date:date, mins:m, from:+num(val('r-from')) || 0, to:to,
+      concepts:lines(val('r-concepts')), links:lines(val('r-links')), note:val('r-note').trim()});
+    var b = S.recs[bookId], done = false;
+    if (b){
+      var br = strip(b);
+      if (to && to >= (b.page || 0)) br.page = to;
+      if ($('#r-left')) br.leftOff = val('r-left').trim();
+      if ($('#r-next')) br.nextStart = val('r-next').trim();
+      if (!br.lastRead || date > br.lastRead) br.lastRead = date;
+      if (br.status === 'want'){ br.status = 'reading'; br.started = date; }
+      if (br.pages && br.page >= br.pages && br.status !== 'done'){ br.status = 'done'; br.finished = date; done = true; }
+      put(bookId, br);
+    }
+    closeSheet();
+    var tot = readMinsOn(today());
+    toast(done ? 'Book finished! 🎉' : date === today() && tot >= S.cfg.readMin ? 'Daily reading goal done ✓ (' + tot + ' min)' : 'Logged ' + m + ' min');
+  },
+  'read-del':function(el){ if (confirm('Delete this session?')){ del(el.dataset.id); closeSheet(); } },
+  'timer-start':function(el){
+    var id = el.dataset.id || (books().filter(function(b){ return b.status === 'reading'; })[0] || {}).id;
+    if (!id){ toast('Add a book first', 'warn'); return; }
+    S.timer = {bookId:id, start:Date.now()}; lsSet('db-timer', S.timer); closeIfOpen(); render(); toast('Timer running. Enjoy the read.');
+  },
+  'timer-stop':function(){
+    var t = S.timer; if (!t) return;
+    var m = Math.max(1, Math.round((Date.now() - t.start) / 60000));
+    S.timer = null; lsDel('db-timer'); render();
+    readForm({bookId:t.bookId, mins:m});
+  },
+  'timer-cancel':function(){ if (confirm('Discard this reading timer?')){ S.timer = null; lsDel('db-timer'); render(); } },
+
+  // workouts
+  'add-work':function(){ workForm(); },
+  work:function(el){ var w = works().filter(function(x){ return x.id === el.dataset.id; })[0]; if (w) workForm(w); },
+  'work-save':function(){
+    var type = getChip('wtype') || 'other', m = +num(val('w-mins'));
+    if (!(m > 0)){ toast('How many minutes?', 'warn'); return; }
+    var id = val('w-id') || 'work_' + uid(), date = val('w-date') || today();
+    var r = {t:'work', type:type, date:date, mins:m, note:val('w-note').trim()};
+    if ($('#w-km')) r.km = Math.round(num(val('w-km')) * 100) / 100 || 0;
+    if ($('#w-count')) r.count = +num(val('w-count')) || 0;
+    if ($('.chips[data-name="wfocus"]')) r.focus = getChip('wfocus');
+    lsSet('db-lastact', type);
+    put(id, r); closeSheet();
+    var tot = moveMinsOn(today());
+    toast(date === today() && tot >= S.cfg.moveMin ? 'Move goal done ✓ (' + tot + ' min today)' : 'Logged ' + act(type).name.toLowerCase());
+  },
+  'work-del':function(el){ if (confirm('Delete this workout?')){ del(el.dataset.id); closeSheet(); } },
+
+  // settings
+  budgets:function(){ budgetsSheet(); },
+  'budgets-save':function(){
+    var b = {}; $$('[data-bud]').forEach(function(i){ var v = num(i.value); if (v > 0) b[i.dataset.bud] = v; });
+    saveCfg({total:num(val('bu-total')), alertPct:Math.min(100, Math.max(10, +num(val('bu-pct')) || 80)), budgets:b}); closeSheet(); toast('Budgets saved');
+  },
+  cats:function(){ catsSheet(); },
+  'cat-add':function(){
+    var n = val('nc-name').trim(); if (!n) return;
+    var c = collectCats(); c.splice(c.length - 1, 0, {id:'c' + uid().slice(-6), name:n, emoji:val('nc-em').trim() || '🏷️'});
+    S.cfg.cats = c; catsSheet();
+  },
+  'cat-del':function(el){
+    var c = collectCats(), i = +el.dataset.v, used = exps().some(function(e){ return e.cat === c[i].id; });
+    if (used && !confirm('Expenses in "' + c[i].name + '" will show as Other. Remove it?')) return;
+    c.splice(i, 1); S.cfg.cats = c; catsSheet();
+  },
+  'cats-save':function(){ saveCfg({cats:collectCats()}); closeSheet(); toast('Categories saved'); },
+  'set-save':function(){
+    var cur = val('set-cur').trim() || '₹';
+    saveCfg({cur:cur, readMin:Math.max(1, +num(val('set-read')) || 20), moveMin:Math.max(1, +num(val('set-move')) || 30), moveDays:Math.min(7, Math.max(1, +num(val('set-days')) || 5))});
+    toast('Saved'); settingsSheet();
+  },
+  'habit-add':function(){
+    var n = val('hb-name').trim(); if (!n) return;
+    saveCfg({habits:(S.cfg.habits || []).concat([{id:'h' + uid().slice(-6), name:n, emoji:val('hb-emoji').trim()}])}); settingsSheet();
+  },
+  'habit-del':function(el){ saveCfg({habits:(S.cfg.habits || []).filter(function(h){ return h.id !== el.dataset.v; })}); settingsSheet(); },
+  backup:function(){ download('daybook-backup-' + today() + '.json', JSON.stringify({app:'daybook', v:1, at:new Date().toISOString(), recs:S.recs}, null, 1), 'application/json'); },
+  restore:function(){ $('#restore-file').click(); },
+  csv:function(el){
+    var arr = el.dataset.v === 'month' ? monthExps(S.imonth) : exps();
+    arr.sort(function(a, b){ return a.date < b.date ? -1 : 1; });
+    var rows = [['Date','Amount','Category','Note','Paid by','Subscription']].concat(arr.map(function(e){ return [e.date, e.amt, cat(e.cat).name, e.note || '', e.pay || '', e.subId ? 'yes' : '']; }));
+    download('expenses-' + (el.dataset.v === 'month' ? S.imonth : 'all') + '.csv', '﻿' + rows.map(function(r){ return r.map(csvCell).join(','); }).join('\r\n'), 'text/csv');
+  }
+};
+function closeIfOpen(){ if (sheetOpen) closeSheet(); }
+
+document.addEventListener('click', function(e){
+  var el = e.target.closest('[data-act]');
+  if (!el) return;
+  var fn = A[el.dataset.act];
+  if (fn){ e.preventDefault(); fn(el, e); }
+});
+document.addEventListener('input', function(e){
+  if (e.target.id === 'q'){ S.q = e.target.value; fillExpList(); }
+  if (e.target.id === 'f-note' && !S.catTouched){ var g = guessCat(e.target.value); if (g) setChip('cat', g); }
+});
+document.addEventListener('keydown', function(e){
+  if (e.key === 'Enter' && (e.target.id === 'a-pass' || e.target.id === 'a-email')) A.signin();
+});
+document.addEventListener('change', function(e){
+  if (e.target.id !== 'restore-file' || !e.target.files[0]) return;
+  var fr = new FileReader();
+  fr.onload = function(){
+    try {
+      var d = JSON.parse(fr.result), recs = d && d.recs;
+      if (!recs || d.app !== 'daybook') throw new Error('not a Daybook backup');
+      var n = Object.keys(recs).length;
+      if (!confirm('Restore ' + n + ' records from this backup? Records with the same id are overwritten; nothing else is deleted.')) return;
+      Object.keys(recs).forEach(function(k){ S.recs[k] = recs[k]; Store.put(k, recs[k]); });
+      dataArrived(); closeSheet(); toast('Restored ' + n + ' records');
+    } catch (x) { toast('That file isn\'t a Daybook backup', 'bad'); }
+  };
+  fr.readAsText(e.target.files[0]);
+});
+document.addEventListener('visibilitychange', function(){
+  // Coming back to the app on a new day: move Today forward and log renewals.
+  if (document.visibilityState === 'visible' && S.ready){ if (S.lastDay && S.lastDay !== today()){ S.day = today(); rollSubs(); } S.lastDay = today(); render(); }
+});
+
+var toastT;
+function toast(msg, cls){
+  var t = $('#toast'); t.textContent = msg; t.className = 'toast show ' + (cls || '');
+  clearTimeout(toastT); toastT = setTimeout(function(){ t.className = 'toast'; }, cls ? 3600 : 2200);
+}
+function applyTheme(){
+  var th = lsGet('db-theme', 'auto');
+  if (th === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', th);
+}
+
+// ---------- test seed (local mode only) ----------
+function seed(){
+  var t = today(), R = {};
+  function P(id, o){ o.at = Date.now(); R[id] = o; }
+  P('config', {t:'config', cur:'₹', total:40000, alertPct:80, budgets:{food:6000, shop:5000, fun:2000, groc:7000}, cats:DEFAULT_CATS, readMin:20, moveMin:30, moveDays:5,
+    habits:[{id:'wake', name:'Up by 6:30', emoji:'⏰'}, {id:'water', name:'8 glasses of water', emoji:'💧'}, {id:'nosugar', name:'No sugar', emoji:'🍬'}]});
+  var subsList = [['Netflix',649,'month',3,'fun',true],['Spotify',119,'month',9,'subs',true],['YouTube Premium',129,'month',17,'subs',true],['iCloud 200GB',219,'month',22,'subs',true],
+    ['Amazon Prime',1499,'year',140,'shop',true],['Gym',1500,'month',-1,'health',false],['ChatGPT Plus',1999,'month',5,'subs',true,true],['Jio recharge',349,'month',12,'bills',true]];
+  subsList.forEach(function(s, i){
+    var next = addDays(t, s[3]);
+    P('sub_seed' + i, {t:'sub', name:s[0], amt:s[1], per:s[2], next:next, anchor:pd(next).getDate(), cat:s[4], autoLog:s[5], trial:!!s[6], remind:3, pay:'Card', status:'active', created:addDays(t, -200)});
+  });
+  var pool = [['food','Zomato',180,650],['food','Swiggy',150,500],['groc','Blinkit',200,900],['travel','Rapido',40,160],['fuel','Petrol',500,1500],['shop','Amazon',300,2500],['fun','PVR movie',250,700],['health','Apollo pharmacy',120,800],['food','Chai & samosa',30,90],['groc','DMart',800,2500],['bills','Electricity bill',900,2200],['gift','Mom',500,2000]];
+  var seedN = 1;
+  function rnd(){ seedN = (seedN * 9301 + 49297) % 233280; return seedN / 233280; }
+  for (var d = 0; d < 165; d++){
+    var day = addDays(t, -d), n = Math.floor(rnd() * 3);
+    for (var k = 0; k < n; k++){
+      var p = pool[Math.floor(rnd() * pool.length)];
+      P('exp_seed' + d + '_' + k, {t:'exp', cat:p[0], note:p[1], amt:Math.round(p[2] + rnd() * (p[3] - p[2])), date:day, pay:PAYS[Math.floor(rnd() * 3)]});
+    }
+  }
+  P('exp_seedrent', {t:'exp', cat:'rent', note:'Rent', amt:12000, date:ymOf(t) + '-01', pay:'Bank'});
+  P('goal_seed1', {t:'goal', name:'Emergency fund', emoji:'🛟', target:100000, saved:42000, due:addDays(t, 240), log:[{d:addDays(t, -60), a:30000}, {d:addDays(t, -20), a:12000}]});
+  P('goal_seed2', {t:'goal', name:'New bike', emoji:'🏍️', target:180000, saved:25000, due:'', log:[{d:addDays(t, -30), a:25000}]});
+  P('book_seed1', {t:'book', title:'Atomic Habits', author:'James Clear', pages:320, page:142, status:'reading', leftOff:'Chapter 9, the part on the role of family and friends', nextStart:'Start at Ch 10 (page 143). Skim the ch 9 summary first.', notes:'Reading this to fix my morning routine.', links:['https://jamesclear.com/atomic-habits'], started:addDays(t, -12), lastRead:addDays(t, -1)});
+  P('book_seed2', {t:'book', title:'Deep Work', author:'Cal Newport', pages:296, page:0, status:'want', links:[]});
+  P('book_seed3', {t:'book', title:'The Psychology of Money', author:'Morgan Housel', pages:256, page:256, status:'done', finished:addDays(t, -20), links:[]});
+  var concepts = [['Habit stacking: after I pour coffee, I read 2 pages'], [], ['Make it obvious: design the environment'], ['The 2-minute rule'], [], ['Identity-based habits beat outcome goals'], [], ['Never miss twice']];
+  for (var r = 1; r <= 8; r++) P('read_seed' + r, {t:'read', bookId:'book_seed1', date:addDays(t, -r), mins:[25, 15, 30, 20, 10, 35, 22, 18][r - 1], from:100 + r * 5, to:105 + r * 5, concepts:concepts[r - 1], links:r === 3 ? ['https://youtu.be/example'] : [], note:''});
+  var wk = [['run',1,32,5.2],['gym',2,55,0,'Chest'],['skip',3,15,0,0,1200],['run',4,28,4.6],['gym',5,60,0,'Legs'],['walk',6,40,3.4],['run',8,36,6.0],['skip',9,12,0,0,1000],['gym',10,50,0,'Back']];
+  wk.forEach(function(w, i){ P('work_seed' + i, {t:'work', type:w[0], date:addDays(t, -w[1]), mins:w[2], km:w[3] || 0, focus:w[4] || '', count:w[5] || 0, note:''}); });
+  for (var q = 1; q < 10; q++) P('day_' + addDays(t, -q), {t:'day', date:addDays(t, -q), mood:1 + Math.floor(rnd() * 5), habits:{wake:rnd() > .4, water:rnd() > .3, nosugar:rnd() > .6}, note:q === 1 ? 'Good focus day. Finished the proposal. Sleep earlier.' : ''});
+  S.recs = R;
+}
+
+// ---------- start ----------
+applyTheme();
+S.lastDay = today();
+if ('serviceWorker' in navigator && !LOCAL && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function(){});
+Store.start();
+render();
+})();
+</script>
+</body>
+</html>
