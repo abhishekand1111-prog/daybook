@@ -273,6 +273,9 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 .cd.done{background:var(--acc);color:#fff}
 .cd.done.joined::before{content:'';position:absolute;right:100%;top:30%;bottom:30%;width:6px;background:var(--acc)}
 .cd.part{background:var(--accbg);color:var(--acc)}
+.cd.frozen{background:#dbeefe;color:#2563eb;font-size:15px}
+.cd.frozen.joined::before{content:'';position:absolute;right:100%;top:30%;bottom:30%;width:6px;background:#dbeefe}
+.cd.done.joined::before{background:var(--acc)}
 .cd.miss{background:var(--chip);color:var(--bad);text-decoration:line-through;text-decoration-thickness:2px}
 .cd.none{background:transparent;color:var(--mute);opacity:.5}
 .cd.future{background:transparent;color:var(--mute);opacity:.35;cursor:default}
@@ -281,6 +284,18 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 .legend2{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--mute)}
 .legend2 span{display:flex;align-items:center;gap:6px}
 .legend2 .cd{width:14px;height:14px;border-radius:5px;aspect-ratio:auto;display:inline-block}
+/* quotes, year goals, review */
+.quote{display:block;width:100%;text-align:left;border:0;cursor:pointer;background:var(--card);border-radius:22px;padding:18px 18px 14px;margin:0 0 12px;box-shadow:var(--shadow);position:relative;color:var(--ink);border-left:4px solid var(--acc)}
+.quote .qt{font-size:16.5px;line-height:1.5;font-weight:500;font-style:italic}
+.quote .qm{font-size:12.5px;color:var(--mute);margin-top:8px;font-weight:600}
+.quote.sm{padding:14px 16px 12px}.quote.sm .qt{font-size:15px}
+.ygc{display:block;width:100%;text-align:left;border:0;cursor:pointer;color:var(--ink)}
+.ygbar{position:relative;height:10px;border-radius:99px;background:var(--chip);margin-top:12px}
+.ygbar i{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:linear-gradient(90deg,var(--acc),var(--acc2))}
+.ygbar b{position:absolute;top:-4px;bottom:-4px;width:3px;margin-left:-1.5px;border-radius:2px;background:var(--ink)}
+.enter .ygbar i{animation:growx 1s var(--ease) both;animation-delay:.25s}
+.facts{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
+.facts span{background:var(--chip);border-radius:99px;padding:6px 11px;font-size:12.5px;font-weight:600}
 /* mood */
 .moodchart{display:flex;gap:6px;align-items:stretch}
 .moodchart .ylab{display:flex;flex-direction:column;justify-content:space-between;font-size:14px;line-height:1;padding:2px 0 6px}
@@ -322,7 +337,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 <script>
 (function(){
 'use strict';
-var APP_VERSION = 'v4';
+var APP_VERSION = 'v5';
 
 // ---------- utils ----------
 function $(s, r){ return (r || document).querySelector(s); }
@@ -386,6 +401,7 @@ var ICON = {
   menu:'<path d="M4 7h16M4 12h10M4 17h16"/>',
   intake:'<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/><path d="M9 14a3 3 0 0 0 3 3"/>',
   mood:'<circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0M9 9.5h.01M15 9.5h.01"/>',
+  plan:'<rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4M8 14l2.5 2.5L16 12"/>',
   gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'
 };
 function svg(name){ return '<svg class="i" viewBox="0 0 24 24">' + ICON[name] + '</svg>'; }
@@ -433,7 +449,7 @@ var GOAL_EMOJI = ['🎯','🛟','🏍️','🚗','🏠','✈️','💻','📱','
 var DEFAULT_CFG = {
   cur:'₹', total:0, alertPct:80, budgets:{}, cats:DEFAULT_CATS,
   readMin:20, moveMin:30, moveDays:5,
-  waterGoal:8, glassMl:250, colaMax:0, sweetMax:1,
+  waterGoal:8, glassMl:250, colaMax:0, sweetMax:1, freeze:true,
   habits:[{id:'wake', name:'Up by 6:30', emoji:'⏰'}]
 };
 var GOOD_DAY = 70;
@@ -461,7 +477,7 @@ function guessCat(t){
 // ---------- state ----------
 var S = {
   authed:false, authChecked:false, ready:false, user:null, recs:{}, cfg:JSON.parse(JSON.stringify(DEFAULT_CFG)),
-  tab:lsGet('db-tab', 'today'), mseg:lsGet('db-mseg', 'overview'), bseg:'reading', iseg:'streaks', sseg:'active', skind:lsGet('db-skind', 'score'), cal:ymOf(today()),
+  tab:lsGet('db-tab', 'today'), mseg:lsGet('db-mseg', 'overview'), bseg:'reading', iseg:'streaks', sseg:'active', skind:lsGet('db-skind', 'score'), cal:ymOf(today()), year:+today().slice(0, 4), pseg:'goals',
   month:ymOf(today()), imonth:ymOf(today()), day:today(), q:'', fcat:'', synced:false, syncErr:'',
   timer:lsGet('db-timer', null), rolled:false, catTouched:false, enter:true, drawer:false
 };
@@ -555,7 +571,7 @@ function del(id){
 }
 function saveCfg(patch){
   var c = {};
-  ['cur','total','alertPct','budgets','cats','readMin','moveMin','moveDays','habits','waterGoal','glassMl','colaMax','sweetMax'].forEach(function(k){ c[k] = S.cfg[k]; });
+  ['cur','total','alertPct','budgets','cats','readMin','moveMin','moveDays','habits','waterGoal','glassMl','colaMax','sweetMax','freeze'].forEach(function(k){ c[k] = S.cfg[k]; });
   for (var k in patch) c[k] = patch[k];
   c.t = 'config';
   put('config', c);
@@ -723,19 +739,33 @@ function dayStatus(k, d){
   if (k.test(d)) return 'done';
   return k.part && k.part(d) ? 'part' : 'miss';
 }
+// Walks forward from the start. Streak freeze (Duolingo-style): one missed day per Mon–Sun week is
+// covered automatically while a streak is running; it keeps the streak alive but doesn't add to it.
+// A goal not met yet today is still pending; a limit broken today counts as a miss right away.
 function streakStats(k){
-  var t = today(), cur = 0, d = t;
-  // a goal not met yet today is still pending; a limit broken today ends the streak now
-  if (dayStatus(k, d) !== 'done') d = k.limit ? '' : addDays(d, -1);
-  while (d && dayStatus(k, d) === 'done' && cur < 3650){ cur++; d = addDays(d, -1); }
-  var best = 0, run = 0, from = k.start && k.start > addDays(t, -730) ? k.start : addDays(t, -730), kept = 0, days = 0;
+  var I = idx(); I.ss = I.ss || {};
+  if (I.ss[k.id]) return I.ss[k.id];
+  var t = today(), freeze = S.cfg.freeze !== false;
+  var run = 0, best = 0, kept = 0, days = 0, used = {}, frozen = {}, freezes = 0;
+  var from = k.start && k.start > addDays(t, -730) ? k.start : addDays(t, -730);
   for (var x = from; x <= t; x = addDays(x, 1)){
-    var ok = dayStatus(k, x) === 'done';
-    run = ok ? run + 1 : 0; if (run > best) best = run;
-    if (x > addDays(t, -30)){ days++; if (ok) kept++; }
+    var st = dayStatus(k, x);
+    if (st === 'done') run++;
+    else if (x === t && !k.limit){ /* still today: not broken yet */ }
+    else if (st === 'none') run = 0;
+    else {
+      var wk = weekStart(x);
+      if (freeze && run > 0 && !used[wk]){ used[wk] = true; frozen[x] = true; freezes++; }
+      else run = 0;
+    }
+    if (run > best) best = run;
+    if (x > addDays(t, -30)){ days++; if (st === 'done') kept++; }
   }
-  return {cur:cur, best:Math.max(best, cur), rate:days ? Math.round(kept / days * 100) : 0, alive:dayStatus(k, t) === 'done'};
+  var res = {cur:run, best:best, rate:days ? Math.round(kept / days * 100) : 0, alive:dayStatus(k, t) === 'done', frozen:frozen,
+    freezeLeft:freeze && !used[weekStart(t)], freezes:freezes};
+  return I.ss[k.id] = res;
 }
+function calStatus(k, d){ var s = dayStatus(k, d); return (s === 'miss' || s === 'part') && streakStats(k).frozen[d] ? 'frozen' : s; }
 function bookPct(b){ return b.pages > 0 ? Math.min(100, Math.round((b.page || 0) / b.pages * 100)) : 0; }
 
 // ---------- render ----------
@@ -748,7 +778,7 @@ function render(){
   if (!S.authed){ app.innerHTML = authHtml(); return; }
   if (!S.ready){ app.innerHTML = '<div class="load">Loading your data…</div>'; return; }
   var ae = document.activeElement, keep = ae && ae.id === 'q' ? {v:ae.value, s:ae.selectionStart} : null;
-  var body = S.tab === 'money' ? moneyHtml() : S.tab === 'books' ? booksHtml() : S.tab === 'fit' ? fitHtml() : S.tab === 'stats' ? statsHtml() : S.tab === 'intake' ? intakeHtml() : S.tab === 'mood' ? moodPage() : todayHtml();
+  var body = S.tab === 'money' ? moneyHtml() : S.tab === 'books' ? booksHtml() : S.tab === 'fit' ? fitHtml() : S.tab === 'stats' ? statsHtml() : S.tab === 'intake' ? intakeHtml() : S.tab === 'mood' ? moodPage() : S.tab === 'plan' ? planHtml() : todayHtml();
   app.innerHTML = '<div class="wrap' + (S.enter ? ' enter' : '') + '">' + bannerHtml() + body + '</div>' + drawerHtml() + fabHtml();
   if (S.tab === 'money' && S.mseg === 'exp') fillExpList();
   if (S.enter){
@@ -800,7 +830,8 @@ function drawerHtml(){
     ['books', 'Books', readStreak() + '-day reading streak'],
     ['fit', 'Fitness', moveStreak() + '-day move streak'],
     ['intake', 'Intake', '💧 ' + intake(t, 'water') + '/' + S.cfg.waterGoal + ' · 🥤 ' + intake(t, 'cola') + ' · 🍰 ' + intake(t, 'sweet') + ' today'],
-    ['mood', 'Mood', dayRec(t).mood ? 'Today ' + MOODS[dayRec(t).mood - 1] + ' · see your trend' : 'How are you feeling today?']
+    ['mood', 'Mood', dayRec(t).mood ? 'Today ' + MOODS[dayRec(t).mood - 1] + ' · see your trend' : 'How are you feeling today?'],
+    ['plan', 'Year plan', reviewWeekDue() ? '🗓️ Weekly review is due' : list('ygoal').filter(function(g){ return +g.year === +t.slice(0, 4); }).length + ' goals for ' + t.slice(0, 4) + ' · reviews']
   ];
   return '<div class="drawer' + (S.drawer ? ' open' : '') + '"><div class="dscrim" data-act="drawer-close"></div><div class="dpanel">' +
     '<div class="brand">' + markImg() + '<div><b>Daybook<i>.</i></b><small>' + esc(dLong(t)) + '</small></div></div>' +
@@ -808,7 +839,7 @@ function drawerHtml(){
       return '<button class="nav-i' + (S.tab === x[0] ? ' on' : '') + '" style="--i:' + i + '" data-act="tab" data-v="' + x[0] + '"><span class="ic">' + svg(x[0]) + '</span>' +
         '<span class="grow"><span class="nt">' + x[1] + '</span><br><span class="nm">' + x[2] + '</span></span></button>';
     }).join('') +
-    '<div class="dfoot"><button class="nav-i" style="--i:8" data-act="settings"><span class="ic">' + svg('gear') + '</span><span class="nt">Settings</span></button>' +
+    '<div class="dfoot"><button class="nav-i" style="--i:9" data-act="settings"><span class="ic">' + svg('gear') + '</span><span class="nt">Settings</span></button>' +
     '<div class="tiny muted" style="padding:6px 12px">Daybook ' + APP_VERSION + '</div></div></div></div>';
 }
 function fabHtml(){
@@ -817,6 +848,8 @@ function fabHtml(){
   else if (S.tab === 'money') a = S.mseg === 'subs' ? 'add-sub' : S.mseg === 'goals' ? 'add-goal' : 'add-exp';
   else if (S.tab === 'books') a = 'add-book';
   else if (S.tab === 'fit') a = 'add-work';
+  else if (S.tab === 'plan') a = S.pseg === 'review' ? '' : 'add-yg';
+  if (S.tab === 'books' && S.bseg === 'quotes') a = 'add-quote';
   return a ? '<button class="fab" data-act="' + a + '" aria-label="Add">+</button>' : '';
 }
 function seg(name, opts, val){
@@ -873,6 +906,13 @@ function todayHtml(){
       '<button data-act="note"><span>📝</span>Note</button></div>';
   }
   h += intakeStrip(d);
+
+  if (d === t){
+    var due = reviewWeekDue(), foc = currentFocus(), qd = quoteOfDay();
+    if (due) h += '<button class="card pink" style="display:block;width:100%;text-align:left;border:0;cursor:pointer" data-act="review" data-v="' + due + '"><div class="row between"><div><div class="small muted">🗓️ Weekly review</div><div class="t" style="margin-top:2px">' + weekLabel(due) + ': 3 minutes to look back</div></div><span style="font-size:22px">›</span></div></button>';
+    if (foc) h += '<div class="card"><div class="small muted">🎯 This week\'s focus</div><div class="mid" style="margin-top:4px;text-transform:none">' + esc(foc.focus) + '</div></div>';
+    if (qd) h += '<div class="sec">Quote of the day</div>' + quoteCard(qd, true);
+  }
 
   // Day note
   h += '<div class="card"><div class="h2">Note for the day<button class="link" data-act="note">' + (day.note || (day.links && day.links.length) ? 'Edit' : 'Write') + '</button></div>' +
@@ -1059,8 +1099,9 @@ function booksHtml(){
       return '<div><div class="d">' + pd(d).toLocaleDateString('en-IN', {weekday:'narrow'}) + '</div><div class="dot ' + cls + (d === t ? ' today' : '') + '">' + (m || '') + '</div></div>';
     }).join('') + '</div></div>';
   var cnt = {reading:0, want:0, done:0}; all.forEach(function(b){ cnt[b.status] = (cnt[b.status] || 0) + 1; });
-  h += seg('bseg', [['reading','Reading ' + cnt.reading],['want','Up next ' + cnt.want],['done','Finished ' + cnt.done],['learn','Learned']], S.bseg);
+  h += seg('bseg', [['reading','Reading ' + cnt.reading],['want','Up next ' + cnt.want],['done','Finished ' + cnt.done],['learn','Learned'],['quotes','❝ Quotes']], S.bseg);
   if (S.bseg === 'learn') return h + learnedHtml();
+  if (S.bseg === 'quotes') return h + quotesHtml();
   var arr = all.filter(function(b){ return b.status === S.bseg; }).sort(function(a, b){ return (b.lastRead || b.finished || '') > (a.lastRead || a.finished || '') ? 1 : -1; });
   if (!arr.length) return h + '<div class="card">' + empty('📚', S.bseg === 'reading' ? 'What are you reading right now?' : S.bseg === 'want' ? 'Books you want to read next.' : 'Finished books show up here.', S.bseg !== 'done' ? '<button class="btn sm" data-act="add-book">Add a book</button>' : '') + '</div>';
   return h + arr.map(bookCard).join('');
@@ -1248,6 +1289,183 @@ function moodHtml(){
     : '<div class="small muted">Log your mood for a couple of weeks. Daybook will then show which habits go with your better days.</div>') + '</div>';
   return h;
 }
+// ---------- QUOTES ----------
+function quotes(){ return list('quote').sort(function(a, b){ return (b.at || 0) - (a.at || 0); }); }
+function quoteCard(q, small){
+  var b = S.recs[q.bookId];
+  return '<button class="quote' + (small ? ' sm' : '') + '" data-act="quote" data-id="' + q.id + '"><div class="qt">“' + esc(q.text) + '”</div>' +
+    '<div class="qm">' + (q.fav ? '❤️ ' : '') + (b ? '— ' + esc(b.title) + (b.author ? ', ' + esc(b.author) : '') : '') + (q.page ? ' · p.' + q.page : '') + '</div>' +
+    (q.note && !small ? '<div class="small muted" style="margin-top:6px">💭 ' + esc(q.note) + '</div>' : '') + '</button>';
+}
+// same quote all day, a different one tomorrow
+function quoteOfDay(){
+  var qs = quotes(); if (!qs.length) return null;
+  var favs = qs.filter(function(q){ return q.fav; }), pool = favs.length >= 3 ? favs : qs;
+  var n = 0, s = today(); for (var i = 0; i < s.length; i++) n = (n * 31 + s.charCodeAt(i)) % 100003;
+  return pool.slice().sort(function(a, b){ return a.id < b.id ? -1 : 1; })[n % pool.length];
+}
+function quotesHtml(){
+  var qs = quotes();
+  if (!qs.length) return '<div class="card">' + empty('❝', 'Save lines worth remembering from your books. One shows up on Today each day.', '<button class="btn sm" data-act="add-quote">Add a quote</button>') + '</div>';
+  var favs = qs.filter(function(q){ return q.fav; });
+  return '<div class="row between" style="margin:0 2px 10px"><span class="small muted">' + qs.length + ' quotes' + (favs.length ? ' · ' + favs.length + ' favourites' : '') + '</span><button class="btn sm" data-act="add-quote">+ Quote</button></div>' +
+    qs.map(function(q){ return quoteCard(q); }).join('');
+}
+function quoteForm(q){
+  q = q || {};
+  var bs = books(), cur = q.bookId || (bs.filter(function(b){ return b.status === 'reading'; })[0] || bs[0] || {}).id;
+  if (!bs.length){ bookForm(); toast('Add the book first'); return; }
+  var h = shead(q.id ? 'Edit quote' : 'Save a quote') +
+    '<div class="lbl">From</div>' + chips('qbook', bs.map(function(b){ return [b.id, '📘 ' + esc(b.title)]; }), cur, 'scroll') +
+    fld('Quote / highlight', '<textarea id="q-text" rows="4" placeholder="You do not rise to the level of your goals…">' + esc(q.text || '') + '</textarea>') +
+    '<div class="two">' + fld('Page', '<input id="q-page" inputmode="numeric" value="' + (q.page || '') + '">') + '<div><div class="lbl">Favourite</div><label class="check" style="margin-top:10px"><input type="checkbox" id="q-fav"' + (q.fav ? ' checked' : '') + '> ❤️ Show it more often</label></div></div>' +
+    fld('Why it matters to me', '<input id="q-note" value="' + esc(q.note || '') + '">') +
+    '<input type="hidden" id="q-id" value="' + (q.id || '') + '"><div class="btns">' + (q.id ? '<button class="btn bad" data-act="quote-del" data-id="' + q.id + '">Delete</button>' : '') + '<button class="btn" data-act="quote-save">Save</button></div>';
+  openSheet(h, q.id ? null : '#q-text');
+}
+
+// ---------- YEAR PLAN: goals for the year + weekly review ----------
+// Progress for each goal type is read from what you already log; "custom" goals are counted by hand.
+var YG_TYPES = {
+  books:{name:'Finish books', emoji:'📚', unit:'books'},
+  readh:{name:'Reading hours', emoji:'📖', unit:'hours'},
+  runkm:{name:'Run distance', emoji:'🏃', unit:'km'},
+  workouts:{name:'Workouts', emoji:'💪', unit:'workouts'},
+  activeh:{name:'Active hours', emoji:'⏱', unit:'hours'},
+  saved:{name:'Money saved', emoji:'🏦', unit:'money'},
+  concepts:{name:'Concepts learned', emoji:'💡', unit:'concepts'},
+  gooddays:{name:'Good days', emoji:'⭐', unit:'days'},
+  waterdays:{name:'Water goal days', emoji:'💧', unit:'days'},
+  custom:{name:'Your own goal', emoji:'🎯', unit:'times'}
+};
+function ygValue(g){
+  var y = String(g.year), inY = function(d){ return String(d || '').slice(0, 4) === y; }, t = today(), v = 0;
+  if (g.type === 'books') return books().filter(function(b){ return b.status === 'done' && inY(b.finished); }).length;
+  if (g.type === 'readh') return Math.round(sum(reads().filter(function(r){ return inY(r.date); }), 'mins') / 6) / 10;
+  if (g.type === 'runkm') return Math.round(sum(works().filter(function(w){ return w.type === 'run' && inY(w.date); }), 'km') * 10) / 10;
+  if (g.type === 'workouts') return works().filter(function(w){ return inY(w.date); }).length;
+  if (g.type === 'activeh') return Math.round(sum(works().filter(function(w){ return inY(w.date); }), 'mins') / 6) / 10;
+  if (g.type === 'saved'){ goals().forEach(function(x){ (x.log || []).forEach(function(l){ if (inY(l.d)) v += +l.a || 0; }); }); return Math.max(0, v); }
+  if (g.type === 'concepts'){ reads().forEach(function(r){ if (inY(r.date)) v += (r.concepts || []).length; }); return v; }
+  if (g.type === 'gooddays' || g.type === 'waterdays'){
+    for (var d = y + '-01-01'; d <= t && inY(d); d = addDays(d, 1)){
+      if (g.type === 'gooddays' ? dayScore(d) >= GOOD_DAY : intake(d, 'water') >= S.cfg.waterGoal) v++;
+    }
+    return v;
+  }
+  return +g.count || 0;
+}
+function ygFmt(g, v){
+  if (YG_TYPES[g.type].unit === 'money') return money(v, 0);
+  var n = Math.round(v * 10) / 10, u = g.unit || YG_TYPES[g.type].unit;
+  return n.toLocaleString('en-IN') + ' ' + (n === 1 && u !== 'km' ? u.replace(/s$/, '') : u);
+}
+function ygCard(g){
+  var v = ygValue(g), tgt = +g.target || 1, p = Math.min(100, v / tgt * 100), y = +g.year, t = today();
+  var ys = y + '-01-01', ye = y + '-12-31', total = diffDays(ys, ye) + 1;
+  var elapsed = t < ys ? 0 : t > ye ? total : diffDays(ys, t) + 1, expect = tgt * elapsed / total, ep = Math.min(100, expect / tgt * 100);
+  var weeksLeft = Math.max(1, (total - elapsed) / 7), status;
+  if (v >= tgt) status = '<span class="badge good">Done 🎉</span>';
+  else if (v >= expect) status = '<span class="badge good">On track</span>';
+  else status = '<span class="badge warn">Behind by ' + ygFmt(g, expect - v) + '</span>';
+  var need = v < tgt ? 'Need ' + ygFmt(g, (tgt - v) / weeksLeft) + ' a week from here' : 'Target reached';
+  return '<button class="card ygc" data-act="yg" data-id="' + g.id + '"><div class="row between"><div class="row" style="min-width:0"><div class="em">' + (g.emoji || YG_TYPES[g.type].emoji) + '</div>' +
+    '<div class="grow"><div class="t ell">' + esc(g.name) + '</div><div class="small muted">' + ygFmt(g, v) + ' of ' + ygFmt(g, tgt) + '</div></div></div>' + status + '</div>' +
+    '<div class="ygbar"><i style="width:' + p + '%"></i><b style="left:' + ep + '%" title="where you should be by today"></b></div>' +
+    '<div class="row between tiny muted" style="margin-top:6px"><span>' + Math.round(p) + '%</span><span>' + need + '</span></div></button>';
+}
+function planHtml(){
+  var h = topHtml('Year plan', 'Goals for ' + S.year + ' and your weekly reviews');
+  h += seg('pseg', [['goals','🎯 ' + S.year + ' goals'],['review','🗓️ Weekly reviews']], S.pseg);
+  if (S.pseg === 'review') return h + reviewsHtml();
+  var gs = list('ygoal').filter(function(g){ return +g.year === S.year; }).sort(function(a, b){ return (a.at || 0) - (b.at || 0); });
+  h += '<div class="month"><button data-act="year" data-v="-1">‹</button><b>' + S.year + '</b><button data-act="year" data-v="1">›</button></div>';
+  if (!gs.length) return h + '<div class="card">' + empty('🎯', 'Set a few big goals for the year: read 24 books, run 500 km, save ₹2 lakh. Daybook fills in the progress from what you log.', '<button class="btn sm" data-act="add-yg">Add a year goal</button>') + '</div>';
+  var done = gs.filter(function(g){ return ygValue(g) >= g.target; }).length;
+  var yp = Math.round(Math.min(1, Math.max(0, (diffDays(S.year + '-01-01', today()) + 1) / (diffDays(S.year + '-01-01', S.year + '-12-31') + 1))) * 100);
+  h += '<div class="card hero"><div class="row between"><div><div class="small muted">' + S.year + ' so far</div><div class="big">' + done + '<span class="mid muted"> / ' + gs.length + '</span></div><div class="small muted">goals reached</div></div>' +
+    ring(yp, yp + '%', 'of year gone') + '</div><div class="small muted" style="margin-top:10px">The small mark on each bar shows where you should be by today.</div></div>';
+  return h + gs.map(ygCard).join('');
+}
+function ygForm(g){
+  g = g || {type:'books', year:S.year};
+  var h = shead(g.id ? 'Edit year goal' : 'New goal for ' + g.year) +
+    '<div class="lbl">What kind of goal</div>' + chips('ygtype', Object.keys(YG_TYPES).map(function(k){ return [k, YG_TYPES[k].emoji + ' ' + YG_TYPES[k].name]; }), g.type) +
+    '<div class="hint" id="yg-hint"></div>' +
+    fld('Name', '<input id="yg-name" value="' + esc(g.name || '') + '" placeholder="Read 24 books this year">') +
+    '<div class="two">' + fld('Target', '<input id="yg-target" inputmode="decimal" value="' + (g.target || '') + '">') + fld('Unit (own goal only)', '<input id="yg-unit" value="' + esc(g.unit || '') + '" placeholder="times">') + '</div>' +
+    '<input type="hidden" id="yg-id" value="' + (g.id || '') + '"><input type="hidden" id="yg-year" value="' + g.year + '">' +
+    '<div class="btns">' + (g.id ? '<button class="btn bad" data-act="yg-del" data-id="' + g.id + '">Delete</button>' : '') + '<button class="btn" data-act="yg-save">Save</button></div>';
+  openSheet(h, g.id ? null : '#yg-target');
+  ygHint();
+}
+function ygHint(){
+  var t = getChip('ygtype'), el = $('#yg-hint'); if (!el) return;
+  el.textContent = t === 'custom' ? 'You count this one yourself with + on the goal.' : 'Filled in automatically from what you log in Daybook.';
+  var u = $('#yg-unit'); if (u) u.disabled = t !== 'custom';
+}
+function ygSheet(g){
+  var v = ygValue(g);
+  var h = shead((g.emoji || YG_TYPES[g.type].emoji) + ' ' + esc(g.name)) + ygCard(g).replace('<button class="card ygc"', '<div class="card ygc flat"').replace(/<\/button>$/, '</div>');
+  if (g.type === 'custom') h += '<div class="stepper" style="margin-bottom:12px"><button class="btn ghost" data-act="yg-count" data-v="-1" data-id="' + g.id + '">−</button><button class="btn" data-act="yg-count" data-v="1" data-id="' + g.id + '">+ 1 ' + esc(g.unit || 'time') + '</button></div>';
+  else h += '<div class="hint">Counts automatically: ' + ygFmt(g, v) + ' so far in ' + g.year + '.</div>';
+  h += '<div class="btns"><button class="btn ghost" data-act="yg-edit" data-id="' + g.id + '">Edit</button></div>';
+  openSheet(h);
+}
+// weekly review: one per Mon–Sun week, stored as review_<monday>
+function reviewWeekDue(){
+  var t = today(), ws = weekStart(t), dow = (pd(t).getDay() + 6) % 7;
+  if (dow === 6 && !S.recs['review_' + ws]) return ws;              // Sunday: review this week
+  var prev = addDays(ws, -7);
+  if (dow <= 1 && !S.recs['review_' + prev] && idx().first && idx().first <= addDays(prev, 6)) return prev; // Mon/Tue: catch up on last week
+  return '';
+}
+function weekFacts(ws){
+  var days = []; for (var i = 0; i < 7; i++){ var d = addDays(ws, i); if (d <= today()) days.push(d); }
+  var good = days.filter(function(d){ return dayScore(d) >= GOOD_DAY; }).length;
+  var moods = days.map(function(d){ return dayRec(d).mood; }).filter(Boolean);
+  return [
+    ['⭐', good + ' good day' + (good === 1 ? '' : 's')],
+    ['📖', mins(sum(days.map(readMinsOn))) + ' read'],
+    ['💪', mins(sum(days.map(moveMinsOn))) + ' active'],
+    ['💧', sum(days.map(function(d){ return intake(d, 'water'); })) + ' glasses'],
+    ['💸', money(sum(days.map(spendOn)), 0) + ' spent'],
+    ['🙂', moods.length ? 'mood ' + MOODS[Math.round(sum(moods) / moods.length) - 1] : 'no mood logged']
+  ];
+}
+function weekLabel(ws){ return dShort(ws) + ' – ' + dShort(addDays(ws, 6)); }
+function reviewsHtml(){
+  var due = reviewWeekDue(), rs = list('review').sort(function(a, b){ return a.week < b.week ? 1 : -1; }), h = '';
+  h += '<div class="card pink"><div class="small muted">' + (due ? 'Time for your weekly review' : 'Weekly review') + '</div><div class="mid" style="margin:4px 0 10px">' + (due ? weekLabel(due) : 'This week: ' + weekLabel(weekStart(today()))) + '</div>' +
+    '<div class="small" style="margin-bottom:12px">Wins, what didn\'t go well, and one focus for next week. Takes 3 minutes.</div>' +
+    '<button class="btn ghost block" data-act="review" data-v="' + (due || weekStart(today())) + '">' + (S.recs['review_' + (due || weekStart(today()))] ? 'Edit review' : 'Start review') + '</button></div>';
+  if (!rs.length) return h + '<div class="card">' + empty('🗓️', 'Your past reviews will collect here, so you can see how your weeks change.') + '</div>';
+  return h + rs.map(function(r){
+    return '<button class="card" style="display:block;width:100%;text-align:left;border:0;cursor:pointer" data-act="review" data-v="' + r.week + '"><div class="row between"><b>' + weekLabel(r.week) + '</b><span style="font-size:20px">' + (r.rating ? MOODS[r.rating - 1] : '') + '</span></div>' +
+      (r.wins ? '<div class="small" style="margin-top:8px">🏆 ' + esc(r.wins) + '</div>' : '') +
+      (r.wrong ? '<div class="small" style="margin-top:4px">🔧 ' + esc(r.wrong) + '</div>' : '') +
+      (r.focus ? '<div class="small" style="margin-top:4px">🎯 <b>' + esc(r.focus) + '</b></div>' : '') + '</button>';
+  }).join('');
+}
+function reviewForm(ws){
+  var r = S.recs['review_' + ws] || {};
+  var h = shead('Week of ' + weekLabel(ws)) +
+    '<div class="facts">' + weekFacts(ws).map(function(f){ return '<span>' + f[0] + ' ' + esc(f[1]) + '</span>'; }).join('') + '</div>' +
+    '<div class="lbl">How was the week overall?</div><div class="moods" id="rv-rate">' + MOODS.map(function(m, i){ return '<button type="button" class="' + (r.rating === i + 1 ? 'on' : '') + '" data-act="rv-rate" data-v="' + (i + 1) + '">' + m + '</button>'; }).join('') + '</div>' +
+    '<input type="hidden" id="rv-rating" value="' + (r.rating || '') + '">' +
+    fld('🏆 Wins: what went well?', '<textarea id="rv-wins" rows="3">' + esc(r.wins || '') + '</textarea>') +
+    fld('🔧 What didn\'t go well?', '<textarea id="rv-wrong" rows="3">' + esc(r.wrong || '') + '</textarea>') +
+    fld('📚 What did I learn?', '<textarea id="rv-learn" rows="2">' + esc(r.learn || '') + '</textarea>') +
+    fld('🎯 One focus for next week', '<input id="rv-focus" value="' + esc(r.focus || '') + '" placeholder="Read before bed every night">') +
+    '<input type="hidden" id="rv-week" value="' + ws + '"><div class="btns">' + (r.week ? '<button class="btn bad" data-act="review-del" data-v="' + ws + '">Delete</button>' : '') + '<button class="btn" data-act="review-save">Save review</button></div>';
+  openSheet(h, '#rv-wins');
+}
+// the focus you set in the latest review shows on Today until the next one
+function currentFocus(){
+  var rs = list('review').filter(function(r){ return r.focus; }).sort(function(a, b){ return a.week < b.week ? 1 : -1; });
+  return rs[0] && rs[0].week >= addDays(weekStart(today()), -7) ? rs[0] : null;
+}
+
 // ---------- INSIGHTS ----------
 function statsHtml(){
   var h = topHtml('Insights', '');
@@ -1261,22 +1479,24 @@ function streaksHtml(){
     '<div class="row" style="gap:8px;margin-top:6px"><span class="flame' + (st.alive ? ' lit' : '') + '">🔥</span><span class="big">' + cnt(st.cur) + '</span><span class="small muted">day' + (st.cur === 1 ? '' : 's') + '<br>in a row</span></div></div>' +
     '<div style="text-align:right"><div class="small muted">Best</div><div class="mid">' + st.best + '</div><div class="small muted" style="margin-top:6px">Last 30 days</div><div class="mid">' + st.rate + '%</div></div></div>' +
     (!st.alive && st.cur ? '<div class="small" style="margin-top:10px;color:#ffd166">⏳ Do it today to keep the streak alive.</div>' : '') +
+    (S.cfg.freeze !== false ? '<div class="small" style="margin-top:8px;color:#9ed4ff">❄️ Streak freeze ' + (st.freezeLeft ? 'ready this week. One missed day won\'t break it.' : 'used this week. It comes back on Monday.') + '</div>' : '') +
     '<div class="medals">' + MILESTONES.map(function(m){ return '<div class="medal' + (st.best >= m ? ' on' : '') + '"><div class="m">' + m + '</div>' + (m === 365 ? '1 yr' : m + 'd') + '</div>'; }).join('') + '</div></div>';
   // pick a streak
   h += '<div class="chips scroll">' + ks.map(function(x){ var s = streakStats(x); return '<button class="chip ' + (x.id === k.id ? 'on' : '') + '" data-act="skind" data-v="' + x.id + '">' + x.emoji + ' ' + esc(x.name) + (s.cur ? ' · ' + s.cur : '') + '</button>'; }).join('') + '</div>';
   // calendar
   var ym = S.cal, p = ym.split('-'), first = new Date(+p[0], +p[1] - 1, 1), lead = (first.getDay() + 6) % 7, nd = daysIn(ym), cells = '';
   for (var i = 0; i < lead; i++) cells += '<span class="cd blank"></span>';
-  var kept = 0, broke = 0;
+  var kept = 0, broke = 0, froze = 0;
   for (var dn = 1; dn <= nd; dn++){
-    var ds = ym + '-' + pad(dn), s2 = dayStatus(k, ds);
-    if (s2 === 'done') kept++; else if (s2 === 'miss' || s2 === 'part') broke++;
-    var prevOk = dn > 1 && dayStatus(k, ym + '-' + pad(dn - 1)) === 'done' && s2 === 'done' && (lead + dn - 1) % 7 !== 0;
-    cells += '<button class="cd ' + s2 + (ds === today() ? ' today' : '') + (prevOk ? ' joined' : '') + '" data-act="cal-day" data-v="' + ds + '">' + dn + '</button>';
+    var ds = ym + '-' + pad(dn), s2 = calStatus(k, ds);
+    if (s2 === 'done') kept++; else if (s2 === 'frozen') froze++; else if (s2 === 'miss' || s2 === 'part') broke++;
+    var ps = dn > 1 ? calStatus(k, ym + '-' + pad(dn - 1)) : '';
+    var prevOk = (ps === 'done' || ps === 'frozen') && (s2 === 'done' || s2 === 'frozen') && (lead + dn - 1) % 7 !== 0;
+    cells += '<button class="cd ' + s2 + (ds === today() ? ' today' : '') + (prevOk ? ' joined' : '') + '" data-act="cal-day" data-v="' + ds + '">' + (s2 === 'frozen' ? '❄' : dn) + '</button>';
   }
   h += '<div class="card"><div class="month" style="margin-bottom:10px"><button data-act="cal" data-v="-1">‹</button><b>' + monthName(ym) + '</b><button data-act="cal" data-v="1">›</button></div>' +
     '<div class="cal">' + ['M','T','W','T','F','S','S'].map(function(x){ return '<span class="h">' + x + '</span>'; }).join('') + cells + '</div>' +
-    '<div class="legend2"><span><i class="cd done"></i>Kept ' + kept + '</span><span><i class="cd part"></i>Partly</span><span><i class="cd miss"></i>Broke ' + broke + '</span></div>' +
+    '<div class="legend2"><span><i class="cd done"></i>Kept ' + kept + '</span><span><i class="cd part"></i>Partly</span><span><i class="cd miss"></i>Broke ' + broke + '</span>' + (froze ? '<span><i class="cd frozen"></i>Frozen ' + froze + '</span>' : '') + '</div>' +
     '<div class="tiny muted" style="margin-top:6px">Tap a day to open it.</div></div>';
   // this week vs last week (Apple-style weekly recap)
   h += weekRecap();
@@ -1581,6 +1801,8 @@ function bookSheet(b){
     (b.status === 'want' ? '<button class="btn ghost" data-act="book-status" data-v="reading" data-id="' + b.id + '">Start reading</button>' : b.status === 'reading' ? '<button class="btn ghost" data-act="book-status" data-v="done" data-id="' + b.id + '">Finished it</button>' : '') + '</div>';
   if (b.notes) h += '<div class="sec">Notes</div><div class="pre small">' + esc(b.notes) + '</div>';
   if (concepts.length) h += '<div class="sec">Concepts learned (' + concepts.length + ')</div>' + concepts.map(function(x){ return '<div class="concept small">💡 ' + esc(x.c) + ' <span class="tiny muted">· ' + dShort(x.d) + '</span></div>'; }).join('');
+  var bq = quotes().filter(function(q){ return q.bookId === b.id; });
+  h += '<div class="sec row between"><span>Quotes (' + bq.length + ')</span><button class="btn sm ghost" data-act="add-quote" data-id="' + b.id + '">+ Quote</button></div>' + bq.map(function(q){ return quoteCard(q, true); }).join('');
   if (links.length) h += '<div class="sec">Links</div><div class="links">' + links.map(linkHtml).join('') + '</div>';
   if (rs.length) h += '<div class="sec">Sessions</div>' + rs.map(function(r){
     return '<button class="item" data-act="read" data-id="' + r.id + '"><div class="em">📖</div><div class="grow"><div class="t">' + mins(r.mins) + (r.to ? ' · to p.' + r.to : '') + '</div>' +
@@ -1667,6 +1889,7 @@ function settingsSheet(){
     fld('Glass size (ml)', '<input id="set-ml" inputmode="numeric" value="' + S.cfg.glassMl + '">') +
     fld('🥤 Cola max a day', '<input id="set-cola" inputmode="numeric" value="' + S.cfg.colaMax + '">') +
     fld('🍰 Desserts max a day', '<input id="set-sweet" inputmode="numeric" value="' + S.cfg.sweetMax + '">') + '</div>' +
+    '<div class="lbl">❄️ Streak freeze: one missed day a week won\'t break a streak</div>' + chips('freeze', [['on','On'],['off','Off']], S.cfg.freeze !== false ? 'on' : 'off') +
     '<button class="btn sm" data-act="set-save">Save targets</button>' +
     '<div class="sec">Daily habits (count toward the day score)</div>' +
     (S.cfg.habits || []).map(function(hb){ return '<div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span>' + esc(hb.emoji || '') + ' ' + esc(hb.name) + '</span><button class="btn sm bad" data-act="habit-del" data-v="' + hb.id + '">Remove</button></div>'; }).join('') +
@@ -1735,6 +1958,8 @@ var A = {
     if (name === 'cat') S.catTouched = true;
     if (name === 'wtype'){ var w = {mins:val('w-mins')}; $('#wfields').innerHTML = workFields(act(el.dataset.v), w); }
     if (name === 'theme'){ lsSet('db-theme', el.dataset.v); applyTheme(); }
+    if (name === 'freeze'){ saveCfg({freeze:el.dataset.v === 'on'}); toast(el.dataset.v === 'on' ? '❄️ Streak freeze on' : 'Streak freeze off'); }
+    if (name === 'ygtype'){ ygHint(); var nm = $('#yg-name'); if (nm && !val('yg-id')) nm.placeholder = YG_TYPES[el.dataset.v].name; }
     if (name === 'rbook'){ var b = S.recs[el.dataset.v] || {}; var f = $('#r-from'); if (f) f.value = b.page || ''; var l = $('#r-left'); if (l) l.value = b.leftOff || ''; var n = $('#r-next'); if (n) n.value = b.nextStart || ''; }
   },
   signin:function(){
@@ -1773,6 +1998,46 @@ var A = {
   },
   skind:function(el){ S.skind = el.dataset.v; lsSet('db-skind', S.skind); render(); window.scrollTo({top:0, behavior:'smooth'}); },
   cal:function(el){ S.cal = addMonths(S.cal, +el.dataset.v); render(); },
+  // quotes
+  'add-quote':function(el){ quoteForm({bookId:el && el.dataset.id || ''}); },
+  quote:function(el){ var q = list('quote').filter(function(x){ return x.id === el.dataset.id; })[0]; if (q) quoteForm(q); },
+  'quote-save':function(){
+    var text = val('q-text').trim(), bookId = getChip('qbook');
+    if (!text){ toast('Type the quote', 'warn'); return; }
+    var id = val('q-id') || 'quote_' + uid(), old = S.recs[id] || {};
+    put(id, {t:'quote', bookId:bookId, text:text, page:+num(val('q-page')) || 0, fav:$('#q-fav').checked, note:val('q-note').trim(), date:old.date || today()});
+    closeSheet(); toast('Quote saved ❝');
+  },
+  'quote-del':function(el){ if (confirm('Delete this quote?')){ del(el.dataset.id); closeSheet(); } },
+  // year goals
+  year:function(el){ S.year += +el.dataset.v; render(); },
+  'add-yg':function(){ ygForm({type:'books', year:S.year}); },
+  yg:function(el){ var g = list('ygoal').filter(function(x){ return x.id === el.dataset.id; })[0]; if (g) ygSheet(g); },
+  'yg-edit':function(el){ var g = list('ygoal').filter(function(x){ return x.id === el.dataset.id; })[0]; if (g) ygForm(g); },
+  'yg-save':function(){
+    var type = getChip('ygtype') || 'custom', tgt = num(val('yg-target'));
+    if (!(tgt > 0)){ toast('Set a target', 'warn'); return; }
+    var id = val('yg-id') || 'ygoal_' + uid(), old = S.recs[id] || {}, yt = YG_TYPES[type];
+    var name = val('yg-name').trim() || (yt.name + ': ' + (yt.unit === 'money' ? money(tgt, 0) : tgt + ' ' + (type === 'custom' ? (val('yg-unit').trim() || 'times') : yt.unit)));
+    put(id, {t:'ygoal', year:+val('yg-year') || S.year, type:type, name:name, target:tgt, emoji:yt.emoji, unit:type === 'custom' ? (val('yg-unit').trim() || 'times') : '', count:old.count || 0});
+    closeSheet(); toast('Goal saved 🎯');
+  },
+  'yg-del':function(el){ if (confirm('Delete this goal?')){ del(el.dataset.id); closeSheet(); } },
+  'yg-count':function(el){
+    var g = S.recs[el.dataset.id]; if (!g) return;
+    var r = strip(g); r.count = Math.max(0, (+g.count || 0) + (+el.dataset.v)); put(el.dataset.id, r);
+    var x = strip(r); x.id = el.dataset.id; ygSheet(x);
+    if (r.count >= r.target && (+g.count || 0) < r.target){ confetti(); toast('Year goal reached! 🎉'); }
+  },
+  // weekly review
+  review:function(el){ reviewForm(el.dataset.v); },
+  'rv-rate':function(el){ $$('#rv-rate button').forEach(function(b){ b.classList.remove('on'); }); el.classList.add('on'); $('#rv-rating').value = el.dataset.v; },
+  'review-save':function(){
+    var ws = val('rv-week');
+    put('review_' + ws, {t:'review', week:ws, rating:+val('rv-rating') || 0, wins:val('rv-wins').trim(), wrong:val('rv-wrong').trim(), learn:val('rv-learn').trim(), focus:val('rv-focus').trim()});
+    closeSheet(); toast('Review saved. Have a good week ✨');
+  },
+  'review-del':function(el){ if (confirm('Delete this review?')){ del('review_' + el.dataset.v); closeSheet(); } },
   'cal-day':function(el){
     if (el.dataset.v > today()) return;
     S.day = el.dataset.v; S.tab = 'today'; lsSet('db-tab', 'today'); S.enter = true; render(); window.scrollTo(0, 0);
@@ -2036,7 +2301,7 @@ document.addEventListener('change', function(e){
 });
 document.addEventListener('visibilitychange', function(){
   // Coming back to the app on a new day: move Today forward and log renewals.
-  if (document.visibilityState === 'visible' && S.ready){ if (S.lastDay && S.lastDay !== today()){ S.day = today(); rollSubs(); } S.lastDay = today(); render(); }
+  if (document.visibilityState === 'visible' && S.ready){ if (S.lastDay && S.lastDay !== today()){ S.day = today(); IDX = null; rollSubs(); } S.lastDay = today(); render(); }
 });
 
 var toastT;
@@ -2086,6 +2351,16 @@ function seed(){
   for (var q = 0; q < 40; q++) P('day_' + addDays(t, -q), {t:'day', date:addDays(t, -q), mood:1 + Math.floor(rnd() * 5), habits:{wake:rnd() > .4, nosugar:rnd() > .6},
     water:q === 0 ? 3 : q < 6 ? 8 + Math.floor(rnd() * 2) : 4 + Math.floor(rnd() * 6), cola:q < 9 ? 0 : rnd() > .6 ? 1 : 0, sweet:rnd() > .8 ? 2 : rnd() > .5 ? 1 : 0,
     note:q === 1 ? 'Good focus day. Finished the proposal. Sleep earlier.' : ''});
+  P('quote_s1', {t:'quote', bookId:'book_seed1', text:'You do not rise to the level of your goals. You fall to the level of your systems.', page:27, fav:true, note:'Same idea as Diagnosis Room: systems over people.', date:addDays(t, -6)});
+  P('quote_s2', {t:'quote', bookId:'book_seed3', text:'Saving money is the gap between your ego and your income.', page:112, fav:false, note:'', date:addDays(t, -25)});
+  P('quote_s3', {t:'quote', bookId:'book_seed1', text:'Every action you take is a vote for the type of person you wish to become.', page:38, fav:true, note:'', date:addDays(t, -4)});
+  var yr = +t.slice(0, 4);
+  P('ygoal_s1', {t:'ygoal', year:yr, type:'books', name:'Read 12 books', target:12, emoji:'📚', unit:'', count:0});
+  P('ygoal_s2', {t:'ygoal', year:yr, type:'runkm', name:'Run 300 km', target:300, emoji:'🏃', unit:'', count:0});
+  P('ygoal_s3', {t:'ygoal', year:yr, type:'saved', name:'Save ₹1 lakh', target:100000, emoji:'🏦', unit:'', count:0});
+  P('ygoal_s4', {t:'ygoal', year:yr, type:'custom', name:'Call parents every Sunday', target:52, emoji:'🎯', unit:'calls', count:38});
+  var pw = addDays(weekStart(t), -7);
+  P('review_' + pw, {t:'review', week:pw, rating:4, wins:'Closed 2 audits, ran 3 times.', wrong:'Too much cola mid-week, skipped reading Thursday.', learn:'Morning runs make the whole day better.', focus:'Read before bed every night'});
   for (var rr = 9; rr <= 30; rr++) if (rnd() > .35) P('read_old' + rr, {t:'read', bookId:'book_seed1', date:addDays(t, -rr), mins:15 + Math.floor(rnd() * 25), from:0, to:0, concepts:[], links:[], note:''});
   S.recs = R;
 }
