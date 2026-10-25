@@ -337,7 +337,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 <script>
 (function(){
 'use strict';
-var APP_VERSION = 'v5';
+var APP_VERSION = 'v6';
 
 // ---------- utils ----------
 function $(s, r){ return (r || document).querySelector(s); }
@@ -449,7 +449,7 @@ var GOAL_EMOJI = ['🎯','🛟','🏍️','🚗','🏠','✈️','💻','📱','
 var DEFAULT_CFG = {
   cur:'₹', total:0, alertPct:80, budgets:{}, cats:DEFAULT_CATS,
   readMin:20, moveMin:30, moveDays:5,
-  waterGoal:8, glassMl:250, colaMax:0, sweetMax:1, freeze:true,
+  waterGoal:8, glassMl:250, colaMax:0, sweetMax:1, freeze:true, pagesPerDay:20,
   habits:[{id:'wake', name:'Up by 6:30', emoji:'⏰'}]
 };
 var GOOD_DAY = 70;
@@ -571,7 +571,7 @@ function del(id){
 }
 function saveCfg(patch){
   var c = {};
-  ['cur','total','alertPct','budgets','cats','readMin','moveMin','moveDays','habits','waterGoal','glassMl','colaMax','sweetMax','freeze'].forEach(function(k){ c[k] = S.cfg[k]; });
+  ['cur','total','alertPct','budgets','cats','readMin','moveMin','moveDays','habits','waterGoal','glassMl','colaMax','sweetMax','freeze','pagesPerDay'].forEach(function(k){ c[k] = S.cfg[k]; });
   for (var k in patch) c[k] = patch[k];
   c.t = 'config';
   put('config', c);
@@ -921,6 +921,8 @@ function todayHtml(){
     (day.links && day.links.length ? '<div class="links" style="margin-top:8px">' + day.links.map(linkHtml).join('') + '</div>' : '') +
     (day.weight ? '<div class="small muted" style="margin-top:6px">⚖️ ' + esc(day.weight) + ' kg</div>' : '') + '</div>';
 
+  if (d === t) h += todayPlanHtml();
+
   // Continue reading
   var rb = books().filter(function(b){ return b.status === 'reading'; }).sort(function(a, b){ return (b.lastRead || '') > (a.lastRead || '') ? 1 : -1; })[0];
   if (rb){
@@ -1099,7 +1101,8 @@ function booksHtml(){
       return '<div><div class="d">' + pd(d).toLocaleDateString('en-IN', {weekday:'narrow'}) + '</div><div class="dot ' + cls + (d === t ? ' today' : '') + '">' + (m || '') + '</div></div>';
     }).join('') + '</div></div>';
   var cnt = {reading:0, want:0, done:0}; all.forEach(function(b){ cnt[b.status] = (cnt[b.status] || 0) + 1; });
-  h += seg('bseg', [['reading','Reading ' + cnt.reading],['want','Up next ' + cnt.want],['done','Finished ' + cnt.done],['learn','Learned'],['quotes','❝ Quotes']], S.bseg);
+  h += seg('bseg', [['reading','Reading ' + cnt.reading],['want','Up next ' + cnt.want],['done','Finished ' + cnt.done],['plan','📅 Plan'],['learn','Learned'],['quotes','❝ Quotes']], S.bseg);
+  if (S.bseg === 'plan') return h + readPlanHtml();
   if (S.bseg === 'learn') return h + learnedHtml();
   if (S.bseg === 'quotes') return h + quotesHtml();
   var arr = all.filter(function(b){ return b.status === S.bseg; }).sort(function(a, b){ return (b.lastRead || b.finished || '') > (a.lastRead || a.finished || '') ? 1 : -1; });
@@ -1322,6 +1325,78 @@ function quoteForm(q){
     fld('Why it matters to me', '<input id="q-note" value="' + esc(q.note || '') + '">') +
     '<input type="hidden" id="q-id" value="' + (q.id || '') + '"><div class="btns">' + (q.id ? '<button class="btn bad" data-act="quote-del" data-id="' + q.id + '">Delete</button>' : '') + '<button class="btn" data-act="quote-save">Save</button></div>';
   openSheet(h, q.id ? null : '#q-text');
+}
+
+// ---------- READING SCHEDULE ----------
+// A book can be planned from planStart to planEnd. Pages are spread evenly from the page you were on
+// when you planned it (planFrom), so each day has a target page; reading sessions move b.page along.
+function bookPlan(b){
+  if (!b || !b.planStart || !b.planEnd || !(b.pages > 0) || b.status === 'done') return null;
+  var t = today(), n = Math.max(1, diffDays(b.planStart, b.planEnd) + 1), from = Math.min(+b.planFrom || 0, b.pages), span = b.pages - from;
+  function tgt(d){ var i = diffDays(b.planStart, d) + 1; return i <= 0 ? from : i >= n ? b.pages : Math.round(from + span * i / n); }
+  var page = Math.min(+b.page || 0, b.pages), yTo = tgt(addDays(t, -1)), tTo = tgt(t), daysLeft = Math.max(1, diffDays(t, b.planEnd) + 1);
+  var p = {start:b.planStart, end:b.planEnd, days:n, perDay:Math.max(1, Math.ceil(span / n)), page:page, todayTo:tTo,
+    todayFrom:Math.max(page, yTo), need:Math.ceil(Math.max(0, b.pages - page) / daysLeft), expectPct:Math.min(100, tTo / b.pages * 100), behindBy:Math.max(0, yTo - page)};
+  if (page >= b.pages) p.state = 'done';
+  else if (t < b.planStart) p.state = 'upcoming';
+  else if (t > b.planEnd) p.state = 'overdue';
+  else if (page >= tTo) p.state = 'today-done';
+  else if (page >= yTo) p.state = 'on-track';
+  else p.state = 'behind';
+  return p;
+}
+function planBadge(p){
+  return {upcoming:'<span class="badge info">Starts ' + dShort(p.start) + '</span>', 'today-done':'<span class="badge good">Today done ✓</span>', 'on-track':'<span class="badge good">On track</span>',
+    behind:'<span class="badge warn">' + p.behindBy + ' pages behind</span>', overdue:'<span class="badge bad">Past finish date</span>', done:'<span class="badge good">Finished 🎉</span>'}[p.state] || '';
+}
+// what to read today, e.g. "p.143–155"; catch-up pages are folded in
+function planToday(b, p){
+  if (p.state === 'upcoming' || p.state === 'done') return '';
+  var to = p.state === 'overdue' ? b.pages : Math.max(p.todayTo, p.page + (p.state === 'today-done' ? 0 : 1));
+  if (p.state === 'today-done') return 'Read up to p.' + p.todayTo + ' today ✓';
+  return 'p.' + (p.page + 1) + '–' + to + ' · ' + (to - p.page) + ' pages' + (p.state === 'behind' ? ' (with catch-up)' : '');
+}
+function planCard(b){
+  var p = bookPlan(b); if (!p) return '';
+  return '<button class="card ygc" data-act="book" data-id="' + b.id + '"><div class="row between"><div class="row" style="min-width:0"><div class="em">📘</div><div class="grow"><div class="t ell">' + esc(b.title) + '</div>' +
+    '<div class="small muted">' + dShort(p.start) + ' → ' + dShort(p.end) + ' · ' + p.perDay + ' pages/day</div></div></div>' + planBadge(p) + '</div>' +
+    '<div class="ygbar"><i style="width:' + bookPct(b) + '%"></i>' + (p.state !== 'upcoming' ? '<b style="left:' + p.expectPct + '%"></b>' : '') + '</div>' +
+    '<div class="row between tiny muted" style="margin-top:6px"><span>p.' + p.page + ' of ' + b.pages + '</span><span>' + (planToday(b, p) || (p.state === 'upcoming' ? 'Starts in ' + diffDays(today(), p.start) + ' days' : '')) + '</span></div></button>';
+}
+function readPlanHtml(){
+  var c = S.cfg, all = books().filter(function(b){ return b.status !== 'done'; });
+  var planned = all.filter(function(b){ return bookPlan(b); }).sort(function(a, b){ return a.planStart < b.planStart ? -1 : 1; });
+  var unplanned = all.filter(function(b){ return !bookPlan(b); });
+  var h = '<div class="card hero"><div class="small muted">Reading schedule</div>' +
+    '<div class="mid" style="margin:4px 0 2px">' + (planned.length ? planned.length + ' book' + (planned.length === 1 ? '' : 's') + ' planned' : 'Plan your books') + '</div>' +
+    '<div class="small muted">' + (planned.length ? 'Last one done by ' + dLong(planned.map(function(b){ return b.planEnd; }).sort().pop()) : 'Give each book a start and finish date, and you\'ll get pages to read every day.') + '</div>' +
+    (unplanned.length ? '<div class="row" style="margin-top:14px;gap:8px"><input id="ppd" inputmode="numeric" value="' + (c.pagesPerDay || 20) + '" style="width:76px;text-align:center" aria-label="Pages a day"><span class="small muted grow">pages a day</span>' +
+      '<button class="btn sm" data-act="auto-plan">Auto-plan ' + unplanned.length + ' book' + (unplanned.length === 1 ? '' : 's') + '</button></div>' : '') + '</div>';
+  h += planned.map(planCard).join('');
+  if (unplanned.length) h += '<div class="sec">Not scheduled yet</div><div class="card" style="padding:4px 16px">' + unplanned.map(function(b){
+    return '<div class="item" style="cursor:default"><div class="em">📘</div><div class="grow"><div class="t ell">' + esc(b.title) + '</div><div class="small muted">' + (b.pages ? b.pages + ' pages' : 'Add the page count to plan it') + ' · ' + (b.status === 'reading' ? 'reading now' : 'up next') + '</div></div>' +
+      '<button class="btn sm ghost" data-act="book-edit" data-id="' + b.id + '">Schedule</button></div>';
+  }).join('') + '</div>';
+  if (!all.length) h += '<div class="card">' + empty('📅', 'Add books first, then plan them here.', '<button class="btn sm" data-act="add-book">Add a book</button>') + '</div>';
+  return h;
+}
+function todayPlanHtml(){
+  var t = today(), rows = books().map(function(b){ return [b, bookPlan(b)]; }).filter(function(x){ return x[1] && x[1].state !== 'upcoming' && x[1].state !== 'done'; });
+  var starting = books().filter(function(b){ return b.status === 'want' && b.planStart && b.planStart <= t && bookPlan(b); });
+  if (!rows.length) return '';
+  return '<div class="card"><div class="h2">📅 Today\'s reading plan<button class="link" data-act="seg" data-name="bseg" data-v="plan">Plan</button></div>' + rows.map(function(x){
+    var b = x[0], p = x[1], done = p.state === 'today-done', isNew = starting.indexOf(b) > -1;
+    return '<div class="task' + (done ? ' done' : '') + '" style="cursor:default"><span class="tick-box">' + (done ? '✓' : '') + '</span><span class="grow"><span class="tl t">' + esc(b.title) + '</span><br><span class="small muted">' + planToday(b, p) + '</span></span>' +
+      (done ? '' : isNew ? '<button class="btn sm" data-act="book-status" data-v="reading" data-id="' + b.id + '">Start</button>' : '<button class="btn sm ghost" data-act="add-read" data-id="' + b.id + '">Log</button>') + '</div>';
+  }).join('') + '</div>';
+}
+function planHint(){
+  var el = $('#b-planhint'); if (!el) return;
+  var s = val('b-ps'), e = val('b-pe'), pages = +num(val('b-pages')), page = +num(val('b-page'));
+  if (!s || !e){ el.textContent = 'Optional. Pick dates, or type pages a day to work out the finish date.'; return; }
+  if (e < s){ el.textContent = 'The finish date is before the start date.'; return; }
+  var n = diffDays(s, e) + 1;
+  el.textContent = pages > page ? n + ' days · about ' + Math.ceil((pages - page) / n) + ' pages a day' : n + ' days. Add total pages to see pages a day.';
 }
 
 // ---------- YEAR PLAN: goals for the year + weekly review ----------
@@ -1778,12 +1853,18 @@ function bookForm(b){
     fld('Author', '<input id="b-author" value="' + esc(b.author || '') + '">') +
     '<div class="two">' + fld('Total pages', '<input id="b-pages" inputmode="numeric" value="' + (b.pages || '') + '">') + fld('On page', '<input id="b-page" inputmode="numeric" value="' + (b.page || '') + '">') + '</div>' +
     '<div class="lbl">Status</div>' + chips('bstatus', [['reading','Reading'],['want','Up next'],['done','Finished']], b.status) +
+    '<div class="sec" style="margin-top:6px">📅 Reading schedule</div>' +
+    '<div class="two">' + fld('Start on', '<input id="b-ps" type="date" value="' + (b.planStart || '') + '">') + fld('Finish by', '<input id="b-pe" type="date" value="' + (b.planEnd || '') + '">') + '</div>' +
+    '<div class="row" style="gap:8px;margin:-4px 0 6px"><span class="small muted">or</span><input id="b-ppd" inputmode="numeric" placeholder="20" style="width:70px;text-align:center"><span class="small muted grow">pages a day → fills the finish date</span>' +
+    (b.planStart ? '<button type="button" class="btn sm ghost" data-act="plan-clear">Clear</button>' : '') + '</div>' +
+    '<div class="hint" id="b-planhint"></div>' +
     fld('Where I left off', '<textarea id="b-left" rows="2" placeholder="Chapter 4, the part about habit stacking">' + esc(b.leftOff || '') + '</textarea>') +
     fld('Where to start next time', '<textarea id="b-next" rows="2" placeholder="Start at Ch 5, page 121. Re-read the summary first.">' + esc(b.nextStart || '') + '</textarea>') +
     fld('Why I\'m reading it / notes', '<textarea id="b-notes" rows="2">' + esc(b.notes || '') + '</textarea>') +
     fld('Links (one per line)', '<textarea id="b-links" rows="2" placeholder="https://…">' + esc((b.links || []).join('\n')) + '</textarea>') +
     '<input type="hidden" id="b-id" value="' + (b.id || '') + '"><div class="btns">' + (b.id ? '<button class="btn bad" data-act="book-del" data-id="' + b.id + '">Delete</button>' : '') + '<button class="btn" data-act="book-save">Save</button></div>';
   openSheet(h, b.id ? null : '#b-title');
+  planHint();
 }
 function bookSheet(b){
   var rs = reads().filter(function(r){ return r.bookId === b.id; }).sort(byDateDesc);
@@ -1792,6 +1873,11 @@ function bookSheet(b){
   var h = shead('📘 ' + esc(b.title)) +
     '<div class="small muted" style="margin:-8px 0 10px">' + esc(b.author || '') + (tot ? ' · ' + mins(tot) + ' over ' + rs.length + ' session' + (rs.length > 1 ? 's' : '') : '') + '</div>';
   if (b.pages) h += '<div class="row between small"><span>Page ' + (b.page || 0) + ' of ' + b.pages + '</span><b>' + bookPct(b) + '%</b></div>' + bar(bookPct(b));
+  var bp = bookPlan(b);
+  if (bp) h += '<div class="card flat" style="margin-top:12px"><div class="row between"><div><div class="small muted">📅 Schedule</div><div class="t">' + dShort(bp.start) + ' → ' + dShort(bp.end) + ' · ' + bp.perDay + ' pages/day</div></div>' + planBadge(bp) + '</div>' +
+    (planToday(b, bp) ? '<div class="small" style="margin-top:8px"><b>Today:</b> ' + planToday(b, bp) + '</div>' : '') +
+    (bp.state === 'behind' || bp.state === 'overdue' ? '<div class="small muted" style="margin-top:4px">To finish on time: ' + bp.need + ' pages a day from now.</div><button class="btn sm ghost" style="margin-top:8px" data-act="book-replan" data-id="' + b.id + '">Re-plan from today at ' + bp.perDay + ' pages/day</button>' : '') + '</div>';
+  else if (b.status !== 'done') h += '<button class="btn sm ghost" style="margin-top:12px" data-act="book-edit" data-id="' + b.id + '">📅 Schedule this book</button>';
   if (b.status !== 'done') h += '<div class="card flat" style="margin-top:12px">' +
     '<div class="pickup"><div class="k">LEFT OFF AT</div>' + (b.leftOff ? esc(b.leftOff) : '<span class="muted">Not set</span>') + '</div>' +
     '<div class="pickup"><div class="k">START HERE NEXT</div>' + (b.nextStart ? esc(b.nextStart) : '<span class="muted">Not set</span>') + '</div></div>';
@@ -1946,6 +2032,7 @@ var A = {
     var n = el.dataset.name; S[n] = el.dataset.v;
     if (n === 'mseg') lsSet('db-mseg', S.mseg);
     if (n === 'mseg' && S.tab !== 'money'){ S.tab = 'money'; lsSet('db-tab', 'money'); }
+    if (n === 'bseg' && S.tab !== 'books'){ S.tab = 'books'; lsSet('db-tab', 'books'); window.scrollTo(0, 0); }
     S.enter = true; render();
   },
   drawer:function(){ setDrawer(true); },
@@ -1998,6 +2085,30 @@ var A = {
   },
   skind:function(el){ S.skind = el.dataset.v; lsSet('db-skind', S.skind); render(); window.scrollTo({top:0, behavior:'smooth'}); },
   cal:function(el){ S.cal = addMonths(S.cal, +el.dataset.v); render(); },
+  // reading schedule
+  'auto-plan':function(){
+    var ppd = Math.max(1, +num(val('ppd')) || S.cfg.pagesPerDay || 20), t = today();
+    var all = books().filter(function(b){ return b.status !== 'done'; });
+    var cursor = t;
+    all.forEach(function(b){ var p = bookPlan(b); if (p && addDays(b.planEnd, 1) > cursor) cursor = addDays(b.planEnd, 1); });
+    var todo = all.filter(function(b){ return !bookPlan(b) && b.pages > 0; })
+      .sort(function(a, b){ return (a.status === 'reading' ? 0 : 1) - (b.status === 'reading' ? 0 : 1) || (a.at || 0) - (b.at || 0); });
+    if (!todo.length){ toast('Add page counts to your books first', 'warn'); return; }
+    todo.forEach(function(b){
+      var days = Math.max(1, Math.ceil((b.pages - (b.page || 0)) / ppd)), r = strip(b);
+      r.planStart = cursor; r.planEnd = addDays(cursor, days - 1); r.planFrom = b.page || 0;
+      put(b.id, r); cursor = addDays(r.planEnd, 1);
+    });
+    if (ppd !== S.cfg.pagesPerDay) saveCfg({pagesPerDay:ppd});
+    toast('📅 Planned ' + todo.length + ' book' + (todo.length === 1 ? '' : 's') + ', done by ' + dShort(addDays(cursor, -1)));
+  },
+  'book-replan':function(el){
+    var b = S.recs[el.dataset.id], p = bookPlan(b); if (!b || !p) return;
+    var r = strip(b), left = b.pages - (b.page || 0), days = Math.max(1, Math.ceil(left / p.perDay));
+    r.planStart = today(); r.planEnd = addDays(today(), days - 1); r.planFrom = b.page || 0; put(el.dataset.id, r);
+    closeSheet(); toast('Re-planned: done by ' + dShort(r.planEnd));
+  },
+  'plan-clear':function(){ $('#b-ps').value = ''; $('#b-pe').value = ''; $('#b-ppd').value = ''; planHint(); },
   // quotes
   'add-quote':function(el){ quoteForm({bookId:el && el.dataset.id || ''}); },
   quote:function(el){ var q = list('quote').filter(function(x){ return x.id === el.dataset.id; })[0]; if (q) quoteForm(q); },
@@ -2163,7 +2274,16 @@ var A = {
     var r = {t:'book', title:title, author:val('b-author').trim(), pages:+num(val('b-pages')) || 0, page:+num(val('b-page')) || 0, status:st,
       leftOff:val('b-left').trim(), nextStart:val('b-next').trim(), notes:val('b-notes').trim(), links:lines(val('b-links')),
       started:old.started || (st === 'reading' ? today() : ''), finished:st === 'done' ? (old.finished || today()) : '', lastRead:old.lastRead || ''};
-    put(id, r); closeSheet(); toast('Saved'); S.bseg = st; renderSoon();
+    var ps = val('b-ps'), pe = val('b-pe');
+    if (ps && pe){
+      if (pe < ps){ toast('Finish date is before the start date', 'warn'); return; }
+      if (!r.pages){ toast('Add total pages to schedule it', 'warn'); return; }
+      r.planStart = ps; r.planEnd = pe;
+      // re-planning starts counting from where you are now
+      r.planFrom = old.planStart === ps && old.planEnd === pe && old.planFrom != null ? old.planFrom : r.page;
+    }
+    put(id, r); closeSheet(); toast(r.planStart ? 'Saved. ' + (bookPlan(r) ? bookPlan(r).perDay + ' pages a day' : '') : 'Saved');
+    S.bseg = st; renderSoon();
   },
   'book-status':function(el){
     var b = S.recs[el.dataset.id]; if (!b) return;
@@ -2279,6 +2399,12 @@ document.addEventListener('click', function(e){
 });
 document.addEventListener('input', function(e){
   if (e.target.id === 'q'){ S.q = e.target.value; fillExpList(); }
+  if (e.target.id === 'b-ppd'){
+    var ppd = +num(e.target.value), pages = +num(val('b-pages')), page = +num(val('b-page'));
+    if (ppd > 0 && pages > page){ if (!val('b-ps')) $('#b-ps').value = today(); $('#b-pe').value = addDays(val('b-ps'), Math.ceil((pages - page) / ppd) - 1); }
+    planHint();
+  }
+  if (/^b-(ps|pe|pages|page)$/.test(e.target.id)) planHint();
   if (e.target.id === 'f-note' && !S.catTouched){ var g = guessCat(e.target.value); if (g) setChip('cat', g); }
 });
 document.addEventListener('keydown', function(e){
@@ -2341,8 +2467,10 @@ function seed(){
   P('exp_seedrent', {t:'exp', cat:'rent', note:'Rent', amt:12000, date:ymOf(t) + '-01', pay:'Bank'});
   P('goal_seed1', {t:'goal', name:'Emergency fund', emoji:'🛟', target:100000, saved:42000, due:addDays(t, 240), log:[{d:addDays(t, -60), a:30000}, {d:addDays(t, -20), a:12000}]});
   P('goal_seed2', {t:'goal', name:'New bike', emoji:'🏍️', target:180000, saved:25000, due:'', log:[{d:addDays(t, -30), a:25000}]});
-  P('book_seed1', {t:'book', title:'Atomic Habits', author:'James Clear', pages:320, page:142, status:'reading', leftOff:'Chapter 9, the part on the role of family and friends', nextStart:'Start at Ch 10 (page 143). Skim the ch 9 summary first.', notes:'Reading this to fix my morning routine.', links:['https://jamesclear.com/atomic-habits'], started:addDays(t, -12), lastRead:addDays(t, -1)});
-  P('book_seed2', {t:'book', title:'Deep Work', author:'Cal Newport', pages:296, page:0, status:'want', links:[]});
+  P('book_seed1', {t:'book', title:'Atomic Habits', author:'James Clear', pages:320, page:142, status:'reading', leftOff:'Chapter 9, the part on the role of family and friends', nextStart:'Start at Ch 10 (page 143). Skim the ch 9 summary first.', notes:'Reading this to fix my morning routine.', links:['https://jamesclear.com/atomic-habits'], started:addDays(t, -12), lastRead:addDays(t, -1),
+    planStart:addDays(t, -12), planEnd:addDays(t, 9), planFrom:0});
+  P('book_seed2', {t:'book', title:'Deep Work', author:'Cal Newport', pages:296, page:0, status:'want', links:[], planStart:addDays(t, 10), planEnd:addDays(t, 24), planFrom:0});
+  P('book_seed4', {t:'book', title:'Zero to One', author:'Peter Thiel', pages:224, page:0, status:'want', links:[]});
   P('book_seed3', {t:'book', title:'The Psychology of Money', author:'Morgan Housel', pages:256, page:256, status:'done', finished:addDays(t, -20), links:[]});
   var concepts = [['Habit stacking: after I pour coffee, I read 2 pages'], [], ['Make it obvious: design the environment'], ['The 2-minute rule'], [], ['Identity-based habits beat outcome goals'], [], ['Never miss twice']];
   for (var r = 1; r <= 8; r++) P('read_seed' + r, {t:'read', bookId:'book_seed1', date:addDays(t, -r), mins:[25, 15, 30, 20, 10, 35, 22, 18][r - 1], from:100 + r * 5, to:105 + r * 5, concepts:concepts[r - 1], links:r === 3 ? ['https://youtu.be/example'] : [], note:''});
