@@ -296,6 +296,24 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 .enter .ygbar i{animation:growx 1s var(--ease) both;animation-delay:.25s}
 .facts{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
 .facts span{background:var(--chip);border-radius:99px;padding:6px 11px;font-size:12.5px;font-weight:600}
+/* day planner */
+.ptask{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.ptask .tick-box{background:none;cursor:pointer;padding:0}
+.ptask.done .tick-box{background:var(--acc);border-color:var(--acc)}
+.ptask.done .tl{opacity:.5;text-decoration:line-through}
+.star{border:0;background:none;font-size:18px;color:var(--line);cursor:pointer;padding:2px 4px}
+.star.on{color:#f5b301}
+.tdel{border:0;background:none;color:var(--mute);font-size:18px;cursor:pointer;padding:0 4px}
+/* lock screen */
+#lockscreen{position:fixed;inset:0;z-index:100;background:var(--bg);display:none}
+#lockscreen.on{display:block}
+.lock{max-width:340px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 9vh) 24px 24px}
+.pin{display:flex;justify-content:center;gap:14px;margin:18px 0 8px}
+.pin i{width:14px;height:14px;border-radius:50%;border:2px solid var(--ink);transition:background .15s}
+.pin i.on{background:var(--ink)}
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
+.keys button{height:66px;border-radius:50%;border:0;background:var(--card);box-shadow:var(--shadow);font-family:var(--disp);font-size:28px;font-weight:800;color:var(--ink);cursor:pointer;width:66px;margin:0 auto}
+.keys span{display:block}
 /* work day */
 .tdist{display:flex;height:12px;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.12);margin-top:14px}
 .card:not(.hero) .tdist{background:var(--chip)}
@@ -340,6 +358,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 <div id="app"><div class="load">Loading…</div></div>
 <div class="sheet" id="sheet"><div class="scrim" data-act="close"></div><div class="panel" id="panel"></div></div>
 <div class="toast" id="toast"></div>
+<div id="lockscreen"></div>
 
 <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-auth-compat.js"></script>
@@ -347,7 +366,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 <script>
 (function(){
 'use strict';
-var APP_VERSION = 'v7';
+var APP_VERSION = 'v9';
 
 // ---------- utils ----------
 function $(s, r){ return (r || document).querySelector(s); }
@@ -411,6 +430,7 @@ var ICON = {
   menu:'<path d="M4 7h16M4 12h10M4 17h16"/>',
   intake:'<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/><path d="M9 14a3 3 0 0 0 3 3"/>',
   mood:'<circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0M9 9.5h.01M15 9.5h.01"/>',
+  skills:'<path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/>',
   work:'<rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>',
   plan:'<rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4M8 14l2.5 2.5L16 12"/>',
   gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'
@@ -449,6 +469,7 @@ var FOCUS = ['Chest','Back','Legs','Shoulders','Arms','Core','Full body','Cardio
 var MOODS = ['😞','😐','🙂','😄','🔥'];
 var PAYS = ['UPI','Card','Cash','Bank'];
 var PER = {
+  day:{label:'Daily', short:'/day', m:0},
   week:{label:'Weekly', short:'/wk', m:0},
   month:{label:'Monthly', short:'/mo', m:1},
   quarter:{label:'3 months', short:'/3 mo', m:3},
@@ -488,7 +509,7 @@ function guessCat(t){
 // ---------- state ----------
 var S = {
   authed:false, authChecked:false, ready:false, user:null, recs:{}, cfg:JSON.parse(JSON.stringify(DEFAULT_CFG)),
-  tab:lsGet('db-tab', 'today'), mseg:lsGet('db-mseg', 'overview'), bseg:'reading', iseg:'streaks', sseg:'active', skind:lsGet('db-skind', 'score'), cal:ymOf(today()), year:+today().slice(0, 4), pseg:'goals',
+  tab:'today', mseg:lsGet('db-mseg', 'overview'), bseg:'reading', iseg:'streaks', sseg:'active', skind:lsGet('db-skind', 'score'), cal:ymOf(today()), year:+today().slice(0, 4), pseg:'goals', ryear:+today().slice(0, 4), focus:lsGet('db-focus', null),
   month:ymOf(today()), imonth:ymOf(today()), day:today(), q:'', fcat:'', synced:false, syncErr:'',
   timer:lsGet('db-timer', null), rolled:false, catTouched:false, enter:true, drawer:false
 };
@@ -565,6 +586,8 @@ function dataArrived(){
   S.ready = true;
   if (!S.rolled && S.synced){ S.rolled = true; rollSubs(); }
   if (S.synced && S.user && S.user.uid) importDrWorkdays(S.user.uid);
+  if (S.synced && S.carried !== today()) setTimeout(carryTasks, 300);
+  if (S.synced) setTimeout(function(){ snapTake(false); }, 4000);
   renderSoon();
 }
 
@@ -583,7 +606,7 @@ function del(id){
 }
 function saveCfg(patch){
   var c = {};
-  ['cur','total','alertPct','budgets','cats','readMin','moveMin','moveDays','habits','waterGoal','glassMl','colaMax','sweetMax','freeze','pagesPerDay','workGoal','wdImported'].forEach(function(k){ c[k] = S.cfg[k]; });
+  ['cur','total','alertPct','budgets','cats','readMin','moveMin','moveDays','habits','waterGoal','glassMl','colaMax','sweetMax','freeze','pagesPerDay','workGoal','wdImported','reminders'].forEach(function(k){ c[k] = S.cfg[k]; });
   for (var k in patch) c[k] = patch[k];
   c.t = 'config';
   put('config', c);
@@ -611,8 +634,12 @@ function monthExps(ym){ return exps().filter(function(e){ return ymOf(e.date) ==
 function dayRec(d){ return S.recs['day_' + d] || {t:'day', date:d}; }
 
 // ---------- subscriptions ----------
-function subMonthly(s){ var p = PER[s.per] || PER.month; return p.m ? s.amt / p.m : s.amt * 52 / 12; }
+function subMonthly(s){ var p = PER[s.per] || PER.month; return p.m ? s.amt / p.m : s.per === 'day' ? s.amt * 365 / 12 : s.amt * 52 / 12; }
+// recurring expenses (milk, maid, EMI…) share the subscription engine but are listed separately
+function isRec(s){ return s.kind === 'rec'; }
+var REC_PRESETS = ['Milk','Maid','Cook','Newspaper','Water can','EMI','Rent','Society maintenance','Electricity','Internet','Pocket money'];
 function nextDate(s, date){
+  if (s.per === 'day') return addDays(date, 1);
   if (s.per === 'week') return addDays(date, 7);
   var m = (PER[s.per] || PER.month).m, d = pd(date), anchor = s.anchor || d.getDate();
   var y = d.getFullYear(), mo = d.getMonth() + m, last = new Date(y, mo + 1, 0).getDate();
@@ -622,9 +649,11 @@ function nextDate(s, date){
 function rollSubs(){
   var t = today();
   subs().forEach(function(s){
-    if (s.status !== 'active' || !s.autoLog || !s.next || s.next >= t) return;
+    // recurring expenses (milk, maid…) are logged on the day itself; subscriptions the day after renewal
+    var upTo = isRec(s) ? addDays(t, 1) : t;
+    if (s.status !== 'active' || !s.autoLog || !s.next || s.next >= upTo) return;
     var next = s.next, guard = 0;
-    while (next < t && guard++ < 60){
+    while (next < upTo && guard++ < 400){
       var eid = 'exp_s_' + s.id + '_' + next;
       if (!S.recs[eid]) put(eid, {t:'exp', amt:s.amt, cat:s.cat || 'subs', note:s.name, date:next, pay:s.pay || 'Card', subId:s.id});
       next = nextDate(s, next);
@@ -644,7 +673,7 @@ function subState(s){
 }
 function upcomingSubs(days){
   var lim = addDays(today(), days);
-  return subs().filter(function(s){ return s.status === 'active' && s.next && s.next <= lim; })
+  return subs().filter(function(s){ return s.status === 'active' && s.next && s.next <= lim && (!isRec(s) || s.per !== 'day'); })
     .sort(function(a, b){ return a.next < b.next ? -1 : 1; });
 }
 
@@ -679,12 +708,14 @@ function budgetCheck(catId, ym){
 var IDX = null;
 function idx(){
   if (IDX) return IDX;
-  var I = {read:{}, move:{}, spend:{}, work:{}, first:'', intakeFirst:'', expFirst:'', workFirst:'', openW:null};
+  var I = {read:{}, move:{}, spend:{}, work:{}, focus:{}, prac:{}, first:'', intakeFirst:'', expFirst:'', workFirst:'', focusFirst:'', pracFirst:'', openW:null};
   for (var k in S.recs){
     var r = S.recs[k]; if (!r || !r.date) continue;
     if (r.t === 'read') I.read[r.date] = (I.read[r.date] || 0) + (+r.mins || 0);
     else if (r.t === 'work') I.move[r.date] = (I.move[r.date] || 0) + (+r.mins || 0);
     else if (r.t === 'exp'){ I.spend[r.date] = (I.spend[r.date] || 0) + (+r.amt || 0); if (!I.expFirst || r.date < I.expFirst) I.expFirst = r.date; }
+    else if (r.t === 'focus'){ I.focus[r.date] = (I.focus[r.date] || 0) + 1; if (!I.focusFirst || r.date < I.focusFirst) I.focusFirst = r.date; continue; }
+    else if (r.t === 'prac'){ I.prac[r.date] = (I.prac[r.date] || 0) + (+r.mins || 0); if (!I.pracFirst || r.date < I.pracFirst) I.pracFirst = r.date; continue; }
     else if (r.t === 'wday'){
       if (!I.workFirst || r.date < I.workFirst) I.workFirst = r.date;
       if (r.checkOutAt) I.work[r.date] = (I.work[r.date] || 0) + chan(r.work); else I.openW = r;
@@ -705,7 +736,8 @@ function intake(d, k){ return +(dayRec(d)[k]) || 0; }
 function habitKind(h){ return h.kind === 'reach' || h.kind === 'limit' ? h.kind : (+h.target > 0 ? 'reach' : 'yes'); }
 function habitVal(d, h){ var v = (dayRec(d).habits || {})[h.id]; return v === true ? 1 : +v || 0; }
 function habitDone(h, v){ var k = habitKind(h); return k === 'yes' ? v > 0 : k === 'reach' ? v >= (+h.target || 1) : v <= (+h.target || 0); }
-function habitDesc(h){ var k = habitKind(h); return k === 'yes' ? 'Tick it off daily' : (k === 'reach' ? 'At least ' : 'At most ') + h.target + ' ' + (h.unit || '') + ' a day'; }function streak(test){
+function habitDesc(h){ var k = habitKind(h); return k === 'yes' ? 'Tick it off daily' : (k === 'reach' ? 'At least ' : 'At most ') + h.target + ' ' + (h.unit || '') + ' a day'; }
+function streak(test){
   var d = today(), n = 0;
   if (!test(d)) d = addDays(d, -1);
   while (test(d) && n < 3650){ n++; d = addDays(d, -1); }
@@ -727,6 +759,8 @@ function dayChecks(d){
   out.push({k:'water', label:'💧 Drink ' + c.waterGoal + ' glasses', done:wa >= c.waterGoal, prog:wa + ' / ' + c.waterGoal, act:'go-intake'});
   out.push({k:'cola', label:'🥤 ' + (+c.colaMax ? 'Cola: ' + c.colaMax + ' max' : 'No cola'), done:co <= c.colaMax, prog:co ? co + ' had' : '', act:'go-intake'});
   out.push({k:'sweet', label:'🍰 ' + (+c.sweetMax ? 'Desserts: ' + c.sweetMax + ' max' : 'No desserts'), done:sw <= c.sweetMax, prog:sw ? sw + ' had' : '', act:'go-intake'});
+  var tops = (day.tasks || []).filter(function(x){ return x.top; });
+  if (tops.length) out.push({k:'top', label:'⭐ Finish your top ' + tops.length, done:tops.every(function(x){ return x.done; }), prog:tops.filter(function(x){ return x.done; }).length + ' / ' + tops.length, act:'go-planner'});
   if (+c.workGoal > 0){ var wm = workMsOn(d) / 3600000; out.push({k:'work', label:'💼 Work ' + c.workGoal + 'h', done:wm >= c.workGoal, prog:wm ? wm.toFixed(1) + 'h' : '', act:'go-work'}); }
   out.push({k:'note', label:'Write the day note', done:!!(day.note && day.note.trim()), prog:'', act:'note'});
   (c.habits || []).forEach(function(h){
@@ -752,6 +786,8 @@ function streakKinds(){
     {id:'cola', name:+c.colaMax ? 'Cola in limit' : 'Cola-free', emoji:'🥤', desc:+c.colaMax ? 'Max ' + c.colaMax + ' a day' : 'No cola', start:I.intakeFirst || t, limit:true, test:function(d){ return intake(d, 'cola') <= c.colaMax; }},
     {id:'sweet', name:+c.sweetMax ? 'Desserts in limit' : 'Dessert-free', emoji:'🍰', desc:+c.sweetMax ? 'Max ' + c.sweetMax + ' a day' : 'No desserts', start:I.intakeFirst || t, limit:true, test:function(d){ return intake(d, 'sweet') <= c.sweetMax; }},
     {id:'work', name:'Work hours', emoji:'💼', desc:(+c.workGoal || 1) + 'h worked a day', start:I.workFirst || t, test:function(d){ return workMsOn(d) >= (+c.workGoal || 1) * 3600000; }, part:function(d){ return workMsOn(d) > 0; }},
+    {id:'focus', name:'Focus blocks', emoji:'⏱', desc:'At least one focus block a day', start:I.focusFirst || t, test:function(d){ return (I.focus[d] || 0) > 0; }},
+    {id:'skills', name:'Practice', emoji:'⭐', desc:'Practised a skill', start:I.pracFirst || t, test:function(d){ return (I.prac[d] || 0) > 0; }},
     {id:'nospend', name:'No-spend days', emoji:'🪙', desc:'Days you spend nothing', start:I.expFirst || t, limit:true, rare:true, test:function(d){ return !(spendOn(d) > 0); }}
   ];
   (c.habits || []).forEach(function(h){
@@ -808,7 +844,7 @@ function render(){
   if (!S.authed){ app.innerHTML = authHtml(); return; }
   if (!S.ready){ app.innerHTML = '<div class="load">Loading your data…</div>'; return; }
   var ae = document.activeElement, keep = ae && ae.id === 'q' ? {v:ae.value, s:ae.selectionStart} : null;
-  var body = S.tab === 'money' ? moneyHtml() : S.tab === 'books' ? booksHtml() : S.tab === 'fit' ? fitHtml() : S.tab === 'stats' ? statsHtml() : S.tab === 'intake' ? intakeHtml() : S.tab === 'mood' ? moodPage() : S.tab === 'plan' ? planHtml() : S.tab === 'work' ? workHtml() : todayHtml();
+  var body = S.tab === 'money' ? moneyHtml() : S.tab === 'books' ? booksHtml() : S.tab === 'fit' ? fitHtml() : S.tab === 'stats' ? statsHtml() : S.tab === 'intake' ? intakeHtml() : S.tab === 'mood' ? moodPage() : S.tab === 'plan' ? planHtml() : S.tab === 'work' ? workHtml() : S.tab === 'skills' ? skillsHtml() : todayHtml();
   app.innerHTML = '<div class="wrap' + (S.enter ? ' enter' : '') + '">' + bannerHtml() + body + '</div>' + drawerHtml() + fabHtml();
   if (S.tab === 'money' && S.mseg === 'exp') fillExpList();
   if (S.enter){
@@ -862,6 +898,7 @@ function drawerHtml(){
     ['fit', 'Fitness', moveStreak() + '-day move streak'],
     ['intake', 'Intake', '💧 ' + intake(t, 'water') + '/' + S.cfg.waterGoal + ' · 🥤 ' + intake(t, 'cola') + ' · 🍰 ' + intake(t, 'sweet') + ' today'],
     ['mood', 'Mood', dayRec(t).mood ? 'Today ' + MOODS[dayRec(t).mood - 1] + ' · see your trend' : 'How are you feeling today?'],
+    ['skills', 'Skills', S.focus && S.focus.phase !== 'break' ? '⏱ Focus running · ' + esc(S.focus.label) : skills().length ? (Math.round(sum(skills().map(function(s){ return skillWeek(s.id); })) * 10) / 10) + ' h practised this week' : 'Hours, levels & focus timer'],
     ['plan', 'Year plan', reviewWeekDue() ? '🗓️ Weekly review is due' : list('ygoal').filter(function(g){ return +g.year === +t.slice(0, 4); }).length + ' goals for ' + t.slice(0, 4) + ' · reviews']
   ];
   return '<div class="drawer' + (S.drawer ? ' open' : '') + '"><div class="dscrim" data-act="drawer-close"></div><div class="dpanel">' +
@@ -870,7 +907,7 @@ function drawerHtml(){
       return '<button class="nav-i' + (S.tab === x[0] ? ' on' : '') + '" style="--i:' + i + '" data-act="tab" data-v="' + x[0] + '"><span class="ic">' + svg(x[0]) + '</span>' +
         '<span class="grow"><span class="nt">' + x[1] + '</span><br><span class="nm">' + x[2] + '</span></span></button>';
     }).join('') +
-    '<div class="dfoot"><button class="nav-i" style="--i:10" data-act="settings"><span class="ic">' + svg('gear') + '</span><span class="nt">Settings</span></button>' +
+    '<div class="dfoot"><button class="nav-i" style="--i:11" data-act="settings"><span class="ic">' + svg('gear') + '</span><span class="nt">Settings</span></button>' +
     '<div class="tiny muted" style="padding:6px 12px">Daybook ' + APP_VERSION + '</div></div></div></div>';
 }
 function fabHtml(){
@@ -880,6 +917,9 @@ function fabHtml(){
   else if (S.tab === 'books') a = 'add-book';
   else if (S.tab === 'fit') a = 'add-work';
   else if (S.tab === 'plan') a = S.pseg === 'review' ? '' : 'add-yg';
+  else if (S.tab === 'skills') a = 'add-skill';
+  if (S.tab === 'money' && S.mseg === 'rec') a = 'add-rec';
+  if (S.tab === 'books' && S.bseg === 'stats') a = '';
   if (S.tab === 'books' && S.bseg === 'quotes') a = 'add-quote';
   return a ? '<button class="fab" data-act="' + a + '" aria-label="Add">+</button>' : '';
 }
@@ -940,7 +980,11 @@ function todayHtml(){
     var ow = openWd();
     if (ow && (ow.date !== t || Date.now() - ow.checkInAt > 16 * 3600000)) h += '<button class="alert bad" style="width:100%;border:0;text-align:left;cursor:pointer" data-act="tab" data-v="work">⏱️<div><b>Still checked in</b> since ' + dShort(ow.date) + ' ' + clockOf(ow.checkInAt) + '. Check out if that day is done.</div></button>';
     h += workCard(true);
+    if (S.focus) h += focusCard();
+    var lastDl = lsGet('db-lastdl', 0);
+    if (Object.keys(S.recs).length > 20 && Date.now() - lastDl > 7 * 864e5) h += '<button class="alert info" style="width:100%;border:0;text-align:left;cursor:pointer" data-act="backup">💾<div><b>Weekly backup:</b> tap to save a copy of your data to this phone' + (lastDl ? ' (last one ' + dShort(iso(new Date(lastDl))) + ')' : '') + '.</div></button>';
   }
+  h += plannerHtml(d);
   h += intakeStrip(d);
 
   if (d === t){
@@ -995,6 +1039,14 @@ function tick(){
     var w = openWd();
     if (w){ var a = wdActive(w); wt.forEach(function(el){ var k = el.dataset.k; el.textContent = k === 'away' ? hms(a ? wdAway(w, a) : 0) : k === 'awayall' ? hm(wdAwayAll(w)) : el.classList.contains('big') ? hms(wdWork(w)) : hm(wdWork(w)); }); }
   }
+  if (S.focus){
+    var fl = S.focus.start + S.focus.dur * 60000 - Date.now();
+    if (fl <= 0) focusComplete(false);
+    else {
+      $$('.ftick').forEach(function(el){ el.textContent = Math.floor(fl / 60000) + ':' + pad(Math.floor(fl / 1000) % 60); });
+      var arc = $('.focus .arc'); if (arc) arc.setAttribute('stroke-dasharray', (100 - fl / (S.focus.dur * 600)) + ' 100');
+    }
+  }
   if (!S.timer) return;
   var s = Math.max(0, Math.floor((Date.now() - S.timer.start) / 1000));
   var txt = (s >= 3600 ? Math.floor(s / 3600) + ':' + pad(Math.floor(s / 60) % 60) : Math.floor(s / 60)) + ':' + pad(s % 60);
@@ -1005,16 +1057,17 @@ setInterval(tick, 1000);
 // ---------- MONEY ----------
 function moneyHtml(){
   var h = topHtml('Money', monthName(ymOf(today())));
-  h += seg('mseg', [['overview','Overview'],['exp','Expenses'],['subs','Subscriptions'],['goals','Goals']], S.mseg);
+  h += seg('mseg', [['overview','Overview'],['exp','Expenses'],['subs','Subscriptions'],['rec','🔄 Recurring'],['goals','Goals']], S.mseg);
   if (S.mseg === 'exp') return h + expHtml();
   if (S.mseg === 'subs') return h + subsHtml();
+  if (S.mseg === 'rec') return h + recHtml();
   if (S.mseg === 'goals') return h + goalsHtml();
   return h + overviewHtml();
 }
 function overviewHtml(){
   var ym = ymOf(today()), me = monthExps(ym), spent = sum(me, 'amt'), tot = +S.cfg.total, h = '';
   var dLeft = daysIn(ym) - pd(today()).getDate() + 1;
-  var subM = sum(subs().filter(function(s){ return s.status === 'active'; }).map(subMonthly));
+  var subM = sum(subs().filter(function(s){ return s.status === 'active' && !isRec(s); }).map(subMonthly));
   h += '<div class="card pink"><div class="small muted">Spent this month</div><div class="big">' + cnt(spent, 'money') + '</div>';
   if (tot > 0){
     var p = spent / tot * 100, left = tot - spent;
@@ -1096,8 +1149,20 @@ function subItem(s){
     (s.trial ? ' <span class="badge warn">trial</span>' : '') + '</div><div class="small ' + st.cls + '">' + st.txt + '</div></div>' +
     '<div style="text-align:right"><div class="amt">' + money(s.amt) + '<span class="small muted">' + (PER[s.per] || PER.month).short + '</span></div><div class="tiny muted">' + money(subMonthly(s) * 12, 0) + '/yr</div></div></button>';
 }
+function recHtml(){
+  var all = subs().filter(isRec), act = all.filter(function(s){ return s.status === 'active'; });
+  var m = sum(act.map(subMonthly)), h = '';
+  h += '<div class="stats"><div class="stat"><div class="k">Per month</div><div class="v">' + money(m, 0) + '</div></div><div class="stat"><div class="k">Per year</div><div class="v">' + money(m * 12, 0) + '</div></div></div>';
+  if (!all.length) return h + '<div class="card">' + empty('🔄', 'Milk, maid, cook, newspaper, EMI: costs that repeat every day, week or month. Daybook logs them for you.', '<button class="btn sm" data-act="add-rec">Add recurring expense</button>') + '</div>';
+  var groups = [['day','Every day'],['week','Every week'],['month','Every month'],['quarter','Every 3 months'],['half','Every 6 months'],['year','Every year']];
+  groups.forEach(function(g){
+    var arr = all.filter(function(s){ return (s.per || 'month') === g[0]; }).sort(function(a, b){ return (a.status === 'active' ? 0 : 1) - (b.status === 'active' ? 0 : 1) || b.amt - a.amt; });
+    if (arr.length) h += '<div class="sec">' + g[1] + '</div><div class="card" style="padding:4px 16px">' + arr.map(subItem).join('') + '</div>';
+  });
+  return h + '<div class="tiny muted" style="margin:0 4px 12px">Daily ones are logged each day automatically. If one didn\'t happen (no milk today), open it in Expenses and delete that day.</div>';
+}
 function subsHtml(){
-  var all = subs(), act = all.filter(function(s){ return s.status === 'active'; }), h = '';
+  var all = subs().filter(function(s){ return !isRec(s); }), act = all.filter(function(s){ return s.status === 'active'; }), h = '';
   var m = sum(act.map(subMonthly));
   h += '<div class="stats"><div class="stat"><div class="k">Per month</div><div class="v">' + money(m, 0) + '</div></div><div class="stat"><div class="k">Per year</div><div class="v">' + money(m * 12, 0) + '</div></div></div>';
   h += seg('sseg', [['active','Active (' + act.length + ')'],['cost','By cost'],['off','Paused & cancelled']], S.sseg);
@@ -1142,8 +1207,9 @@ function booksHtml(){
       return '<div><div class="d">' + pd(d).toLocaleDateString('en-IN', {weekday:'narrow'}) + '</div><div class="dot ' + cls + (d === t ? ' today' : '') + '">' + (m || '') + '</div></div>';
     }).join('') + '</div></div>';
   var cnt = {reading:0, want:0, done:0}; all.forEach(function(b){ cnt[b.status] = (cnt[b.status] || 0) + 1; });
-  h += seg('bseg', [['reading','Reading ' + cnt.reading],['want','Up next ' + cnt.want],['done','Finished ' + cnt.done],['plan','📅 Plan'],['learn','Learned'],['quotes','❝ Quotes']], S.bseg);
+  h += seg('bseg', [['reading','Reading ' + cnt.reading],['want','Up next ' + cnt.want],['done','Finished ' + cnt.done],['plan','📅 Plan'],['stats','📊 Stats'],['learn','Learned'],['quotes','❝ Quotes']], S.bseg);
   if (S.bseg === 'plan') return h + readPlanHtml();
+  if (S.bseg === 'stats') return h + readStatsHtml();
   if (S.bseg === 'learn') return h + learnedHtml();
   if (S.bseg === 'quotes') return h + quotesHtml();
   var arr = all.filter(function(b){ return b.status === S.bseg; }).sort(function(a, b){ return (b.lastRead || b.finished || '') > (a.lastRead || a.finished || '') ? 1 : -1; });
@@ -1422,6 +1488,7 @@ function workCard(compact){
 function workHtml(){
   var t = today(), h = topHtml('Work day', dLong(t));
   h += workCard(false);
+  h += focusCard();
   // last 7 days
   var days = wdays().filter(function(w){ return w.date > addDays(t, -7); });
   if (days.length){
@@ -1465,6 +1532,294 @@ function importDrWorkdays(uid){
     saveCfg({wdImported:true});
     if (n) toast('💼 Brought over ' + n + ' check-in day' + (n === 1 ? '' : 's') + ' from Diagnosis Room');
   }).catch(function(e){ S.wdImporting = false; console.warn('workday import', e); });
+}
+
+// ---------- DAY PLANNER: tasks for the day, up to 3 starred as top priorities ----------
+// Tasks live on the day doc (day.tasks). Unfinished ones from earlier days move to today once a day.
+function dayTasks(d){ return (dayRec(d).tasks || []).slice(); }
+function saveTasks(d, tasks){ var r = strip(dayRec(d)); r.t = 'day'; r.date = d; r.tasks = tasks; put('day_' + d, r); }
+function plannerHtml(d){
+  var ts = dayTasks(d), top = ts.filter(function(x){ return x.top; }), rest = ts.filter(function(x){ return !x.top; });
+  var done = ts.filter(function(x){ return x.done; }).length;
+  function row(x){
+    return '<div class="ptask' + (x.done ? ' done' : '') + '"><button class="tick-box" data-act="task-tog" data-v="' + x.id + '" aria-label="Done">' + (x.done ? '✓' : '') + '</button>' +
+      '<span class="grow tl">' + esc(x.text) + (x.from ? ' <span class="badge">from ' + dShort(x.from) + '</span>' : '') + '</span>' +
+      '<button class="star' + (x.top ? ' on' : '') + '" data-act="task-top" data-v="' + x.id + '" aria-label="Top priority">★</button>' +
+      '<button class="tdel" data-act="task-del" data-v="' + x.id + '" aria-label="Delete">×</button></div>';
+  }
+  return '<div class="card" id="planner"><div class="h2">🗒️ Plan for the day' + (ts.length ? '<span class="tiny muted">' + done + ' / ' + ts.length + ' done</span>' : '') + '</div>' +
+    (top.length ? '<div class="lbl">⭐ Top ' + top.length + '</div>' + top.map(row).join('') : '') +
+    (rest.length ? (top.length ? '<div class="lbl" style="margin-top:10px">Also</div>' : '') + rest.map(row).join('') : '') +
+    (!ts.length ? '<div class="small muted" style="margin-bottom:10px">What do you want to get done? Star up to 3 as your top priorities.</div>' : '') +
+    '<div class="row" style="margin-top:10px;gap:8px"><input id="tk-new" data-day="' + d + '" placeholder="Add a task…" enterkeyhint="done"><button class="btn sm" data-act="task-add" data-day="' + d + '">Add</button></div></div>';
+}
+function carryTasks(){
+  var t = today(); if (S.carried === t) return; S.carried = t;
+  var moved = [];
+  for (var i = 1; i <= 14; i++){
+    var d = addDays(t, -i), ts = dayTasks(d), keep = [], any = false;
+    ts.forEach(function(x){ if (!x.done){ moved.push(Object.assign({}, x, {from:x.from || d})); any = true; } else keep.push(x); });
+    if (any) saveTasks(d, keep);
+  }
+  if (moved.length){ saveTasks(t, dayTasks(t).concat(moved)); toast('🗒️ Moved ' + moved.length + ' unfinished task' + (moved.length === 1 ? '' : 's') + ' to today'); }
+}
+
+// ---------- SKILLS: practice hours with levels (the 10,000-hour idea) ----------
+var LEVELS = [[0,'Starter'],[10,'Beginner'],[50,'Learner'],[100,'Practitioner'],[250,'Skilled'],[500,'Advanced'],[1000,'Expert'],[10000,'Master']];
+function skills(){ return list('skill').sort(function(a, b){ return (a.at || 0) - (b.at || 0); }); }
+function pracs(id){ return list('prac').filter(function(p){ return !id || p.skillId === id; }); }
+function skillHours(id){ return sum(pracs(id), 'mins') / 60; }
+function skillLevel(h){ var cur = LEVELS[0], next = null; for (var i = 0; i < LEVELS.length; i++){ if (h >= LEVELS[i][0]) cur = LEVELS[i]; else { next = LEVELS[i]; break; } } return {name:cur[1], at:cur[0], next:next}; }
+function skillWeek(id){ var ws = weekStart(today()); return sum(pracs(id).filter(function(p){ return p.date >= ws; }), 'mins') / 60; }
+function skillStreak(id){ var days = {}; pracs(id).forEach(function(p){ days[p.date] = 1; }); return streak(function(d){ return !!days[d]; }); }
+function skillCard(s){
+  var h = skillHours(s.id), lv = skillLevel(h), wk = skillWeek(s.id), tgt = +s.weekly || 0, st = skillStreak(s.id);
+  var lp = lv.next ? (h - lv.at) / (lv.next[0] - lv.at) * 100 : 100;
+  return '<button class="card ygc" data-act="skill" data-id="' + s.id + '"><div class="row between"><div class="row" style="min-width:0"><div class="em">' + (s.emoji || '🎯') + '</div><div class="grow"><div class="t ell">' + esc(s.name) + '</div>' +
+    '<div class="small muted">' + (Math.round(h * 10) / 10) + ' h total' + (st ? ' · 🔥 ' + st + ' day' + (st === 1 ? '' : 's') : '') + '</div></div></div><span class="badge info">' + lv.name + '</span></div>' +
+    (tgt ? '<div class="row between tiny muted" style="margin-top:10px"><span>This week</span><span>' + (Math.round(wk * 10) / 10) + ' / ' + tgt + ' h</span></div>' + bar(wk / tgt * 100) : '') +
+    '<div class="row between tiny muted" style="margin-top:10px"><span>Level</span><span>' + (lv.next ? (Math.round((lv.next[0] - h) * 10) / 10) + ' h to ' + lv.next[1] : 'Top level') + '</span></div><div class="ygbar" style="margin-top:6px"><i style="width:' + lp + '%"></i></div></button>';
+}
+function skillsHtml(){
+  var h = topHtml('Skills', 'Practice time for what you\'re getting good at');
+  h += focusCard();
+  var ss = skills();
+  if (!ss.length) return h + '<div class="card">' + empty('🎯', 'Track hours on the skills you\'re building: sales, design, cooking, a language, an instrument. Levels go up as the hours add up.', '<button class="btn sm" data-act="add-skill">Add a skill</button>') + '</div>';
+  var wk = sum(ss.map(function(s){ return skillWeek(s.id); }));
+  h += '<div class="stats"><div class="stat"><div class="k">This week</div><div class="v">' + (Math.round(wk * 10) / 10) + ' h</div></div><div class="stat"><div class="k">All time</div><div class="v">' + Math.round(sum(pracs(), 'mins') / 60) + ' h</div></div></div>';
+  return h + ss.map(skillCard).join('');
+}
+function skillForm(s){
+  s = s || {emoji:'🎯'};
+  var h = shead(s.id ? 'Edit skill' : 'New skill') +
+    '<div class="row" style="gap:8px">' + fld('Icon', '<input id="sk-emoji" value="' + esc(s.emoji || '') + '" maxlength="4" style="width:70px;text-align:center">') + '<div class="grow">' + fld('Skill', '<input id="sk-name" value="' + esc(s.name || '') + '" placeholder="Sales calls, Spanish, guitar…">') + '</div></div>' +
+    fld('Hours a week you want to put in (optional)', '<input id="sk-weekly" inputmode="decimal" value="' + (s.weekly || '') + '" placeholder="3">') +
+    fld('Hours already practised before (optional)', '<input id="sk-base" inputmode="decimal" value="' + (s.baseHours || '') + '" placeholder="0">') +
+    '<input type="hidden" id="sk-id" value="' + (s.id || '') + '"><div class="btns">' + (s.id ? '<button class="btn bad" data-act="skill-del" data-id="' + s.id + '">Delete</button>' : '') + '<button class="btn" data-act="skill-save">Save</button></div>';
+  openSheet(h, s.id ? null : '#sk-name');
+}
+function skillSheet(s){
+  var ps = pracs(s.id).sort(byDateDesc), hrs = skillHours(s.id), lv = skillLevel(hrs);
+  var h = shead((s.emoji || '🎯') + ' ' + esc(s.name)) +
+    '<div class="row between"><div><div class="big">' + (Math.round(hrs * 10) / 10) + '<span class="mid muted"> h</span></div><div class="small muted">' + lv.name + (lv.next ? ' · ' + (Math.round((lv.next[0] - hrs) * 10) / 10) + ' h to ' + lv.next[1] : '') + '</div></div>' +
+    '<div style="text-align:right"><div class="small muted">This week</div><div class="mid">' + (Math.round(skillWeek(s.id) * 10) / 10) + ' h</div></div></div>' +
+    '<div class="sec">Log practice</div><div class="row" style="gap:8px"><input id="pr-mins" inputmode="numeric" placeholder="Minutes" style="width:110px"><input id="pr-note" placeholder="What did you practise?" class="grow"></div>' +
+    '<div class="btns" style="margin-top:8px"><button class="btn" data-act="prac-save" data-id="' + s.id + '">Save</button><button class="btn ghost" data-act="focus-for" data-id="' + s.id + '">⏱ Focus timer</button></div>' +
+    '<div class="btns" style="margin-top:8px"><button class="btn ghost" data-act="skill-edit" data-id="' + s.id + '">Edit skill</button></div>';
+  if (ps.length) h += '<div class="sec">Sessions</div>' + ps.slice(0, 30).map(function(p){
+    return '<div class="row between small" style="padding:7px 0;border-top:1px solid var(--line)"><span>' + dayLabel(p.date) + (p.note ? ' · <span class="muted">' + esc(p.note) + '</span>' : '') + (p.via === 'focus' ? ' ⏱' : '') + '</span><span><b>' + mins(p.mins) + '</b> <button class="tdel" data-act="prac-del" data-id="' + p.id + '" data-skill="' + s.id + '">×</button></span></div>';
+  }).join('');
+  openSheet(h);
+}
+
+// ---------- FOCUS TIMER (Pomodoro): 25/50/90 min blocks for work or a skill, then a short break ----------
+function focusList(){ return list('focus'); }
+function focusOn(d){ var f = focusList().filter(function(x){ return x.date === d; }); return {n:f.length, mins:sum(f, 'mins')}; }
+function focusCard(){
+  var F = S.focus, t = today(), fo = focusOn(t);
+  if (F){
+    var left = Math.max(0, F.start + F.dur * 60000 - Date.now()), pct = 100 - left / (F.dur * 60000) * 100, isBreak = F.phase === 'break';
+    return '<div class="card hero focus"><div class="row" style="gap:16px">' + ring(pct, '<span class="ftick">' + Math.floor(left / 60000) + ':' + pad(Math.floor(left / 1000) % 60) + '</span>', isBreak ? 'break' : 'focus') +
+      '<div class="grow"><div class="small muted">' + (isBreak ? '☕ Break' : '⏱ Focus · ' + esc(F.label)) + '</div><div class="mid">' + F.dur + ' min</div>' +
+      '<div class="btns" style="margin-top:10px">' + (isBreak ? '<button class="btn sm" data-act="focus-stop">Skip break</button>' : '<button class="btn sm" data-act="focus-done">Finish now</button><button class="btn sm ghost" data-act="focus-stop">Cancel</button>') + '</div></div></div></div>';
+  }
+  var ss = skills(), last = lsGet('db-focus-last', {dur:25, target:'work'});
+  return '<div class="card"><div class="h2">⏱ Focus timer<span class="tiny muted">' + (fo.n ? fo.n + ' today · ' + mins(fo.mins) : 'Pomodoro') + '</span></div>' +
+    chips('fdur', [[25,'25 min'],[50,'50 min'],[90,'90 min']], last.dur) +
+    '<div class="lbl">For</div>' + chips('ffor', [['work','💼 Work']].concat(ss.map(function(s){ return [s.id, (s.emoji || '🎯') + ' ' + esc(s.name)]; })), last.target, 'scroll') +
+    '<button class="btn block" data-act="focus-start">▶ Start focus</button></div>';
+}
+function focusComplete(early){
+  var F = S.focus; if (!F) return;
+  if (F.phase === 'break'){ S.focus = null; lsDel('db-focus'); notify('☕ Break over', 'Ready for the next block?'); render(); return; }
+  var m = early ? Math.max(1, Math.round((Date.now() - F.start) / 60000)) : F.dur, d = iso(new Date(F.start));
+  put('focus_' + uid(), {t:'focus', date:d, mins:m, label:F.label, skillId:F.skillId || ''});
+  if (F.skillId) put('prac_' + uid(), {t:'prac', skillId:F.skillId, date:d, mins:m, note:'Focus block', via:'focus'});
+  try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch (e) {}
+  notify('⏱ Focus done: ' + m + ' min', F.label + '. Take a 5-minute break.');
+  S.focus = {start:Date.now(), dur:5, label:'Break', phase:'break'}; lsSet('db-focus', S.focus);
+  toast('Focus block done ✓ ' + m + ' min. 5-minute break started.');
+  render();
+}
+
+// ---------- READING STATS for a year ----------
+function readStatsHtml(){
+  var y = String(S.ryear), inY = function(d){ return String(d || '').slice(0, 4) === y; };
+  var rs = reads().filter(function(r){ return inY(r.date); }), fin = books().filter(function(b){ return b.status === 'done' && inY(b.finished); });
+  var minsY = sum(rs, 'mins'), pagesY = sum(rs.map(function(r){ return Math.max(0, (+r.to || 0) - (+r.from || 0)); }));
+  if (!pagesY) pagesY = sum(fin, 'pages');
+  var dayset = {}; rs.forEach(function(r){ dayset[r.date] = 1; });
+  var spans = fin.filter(function(b){ return b.started && b.finished; }).map(function(b){ return Math.max(1, diffDays(b.started, b.finished) + 1); });
+  var auth = {}; books().filter(function(b){ return b.author && (inY(b.finished) || inY(b.started) || b.status === 'reading'); }).forEach(function(b){ auth[b.author] = (auth[b.author] || 0) + 1; });
+  var topA = Object.keys(auth).sort(function(a, b){ return auth[b] - auth[a]; }).slice(0, 3);
+  var longest = fin.slice().sort(function(a, b){ return (b.pages || 0) - (a.pages || 0); })[0];
+  var fastest = fin.filter(function(b){ return b.started && b.finished && b.pages; }).sort(function(a, b){ return (b.pages / (diffDays(b.started, b.finished) + 1)) - (a.pages / (diffDays(a.started, a.finished) + 1)); })[0];
+  var concepts = 0; rs.forEach(function(r){ concepts += (r.concepts || []).length; });
+  var qs = list('quote').filter(function(q){ return inY(q.date); }).length;
+  var isNow = +y === +today().slice(0, 4), frac = isNow ? (diffDays(y + '-01-01', today()) + 1) / (diffDays(y + '-01-01', y + '-12-31') + 1) : 1;
+  var h = '<div class="month"><button data-act="ryear" data-v="-1">‹</button><b>' + y + ' in books</b><button data-act="ryear" data-v="1">›</button></div>';
+  h += '<div class="card hero"><div class="row between"><div><div class="small muted">Books finished</div><div class="big">' + cnt(fin.length) + '</div>' +
+    (isNow && fin.length ? '<div class="small muted">On pace for ' + Math.round(fin.length / frac) + ' this year</div>' : '') + '</div>' +
+    '<div style="text-align:right"><div class="small muted">Time reading</div><div class="mid">' + mins(minsY) + '</div><div class="small muted" style="margin-top:4px">' + Object.keys(dayset).length + ' reading days</div></div></div></div>';
+  h += '<div class="stats"><div class="stat"><div class="k">Pages read</div><div class="v">' + pagesY.toLocaleString('en-IN') + '</div></div>' +
+    '<div class="stat"><div class="k">Avg days per book</div><div class="v">' + (spans.length ? Math.round(sum(spans) / spans.length) : '–') + '</div></div>' +
+    '<div class="stat"><div class="k">💡 Concepts</div><div class="v">' + concepts + '</div></div><div class="stat"><div class="k">❝ Quotes saved</div><div class="v">' + qs + '</div></div></div>';
+  var mm = []; for (var i = 1; i <= 12; i++) mm.push(y + '-' + pad(i));
+  var mv = mm.map(function(m){ return sum(rs.filter(function(r){ return ymOf(r.date) === m; }), 'mins'); }), mx = Math.max.apply(null, mv.concat([1]));
+  h += '<div class="card"><div class="h2">Reading time by month</div><div class="bars">' + mm.map(function(m, j){
+    return '<div class="b ' + (m === ymOf(today()) ? '' : 'dim') + '"><em>' + (mv[j] ? Math.round(mv[j] / 60) + 'h' : '') + '</em><i style="height:' + (mv[j] / mx * 100) + '%"></i><span>' + monShort(m).charAt(0) + '</span></div>';
+  }).join('') + '</div></div>';
+  if (longest || fastest || topA.length) h += '<div class="card"><div class="h2">Highlights</div>' +
+    (longest ? '<div class="row between small" style="padding:6px 0"><span>📏 Longest book</span><b class="ell" style="max-width:60%">' + esc(longest.title) + ' · ' + longest.pages + ' p</b></div>' : '') +
+    (fastest ? '<div class="row between small" style="padding:6px 0;border-top:1px solid var(--line)"><span>⚡ Fastest read</span><b class="ell" style="max-width:60%">' + esc(fastest.title) + ' · ' + Math.round(fastest.pages / (diffDays(fastest.started, fastest.finished) + 1)) + ' p/day</b></div>' : '') +
+    (topA.length ? '<div class="row between small" style="padding:6px 0;border-top:1px solid var(--line)"><span>✍️ Top authors</span><b class="ell" style="max-width:60%">' + topA.map(esc).join(', ') + '</b></div>' : '') + '</div>';
+  if (fin.length) h += '<div class="sec">Finished in ' + y + '</div>' + fin.sort(function(a, b){ return a.finished < b.finished ? 1 : -1; }).map(bookCard).join('');
+  return h;
+}
+
+// ---------- REMINDERS ----------
+// While the app is open (or in the background) Daybook shows a notification at each reminder time.
+// For reminders that fire even when the app is closed, "Add to phone calendar" saves them as daily alarms.
+var REM_PRESETS = [
+  {label:'Drink water', emoji:'💧', time:'11:00', kind:'water'}, {label:'Drink water', emoji:'💧', time:'15:00', kind:'water'},
+  {label:'Check in for work', emoji:'💼', time:'09:30', kind:'checkin'}, {label:'Check out of work', emoji:'🚪', time:'19:30', kind:'checkout'},
+  {label:'Log today\'s expenses', emoji:'💸', time:'21:00', kind:'expense'}, {label:'Read before bed', emoji:'📖', time:'22:00', kind:'read'},
+  {label:'Write the day note', emoji:'📝', time:'22:30', kind:'note'}, {label:'Weekly review', emoji:'🗓️', time:'19:00', kind:'review'}
+];
+function reminders(){ return S.cfg.reminders || []; }
+function remDue(r){
+  // skip reminders that no longer apply today
+  var t = today(), c = S.cfg;
+  if (r.kind === 'water') return intake(t, 'water') < c.waterGoal;
+  if (r.kind === 'checkin') return !openWd() && !workMsOn(t);
+  if (r.kind === 'checkout') return !!openWd();
+  if (r.kind === 'expense') return !spendOn(t);
+  if (r.kind === 'read') return readMinsOn(t) < c.readMin;
+  if (r.kind === 'note') return !(dayRec(t).note || '').trim();
+  if (r.kind === 'review') return !!reviewWeekDue();
+  return true;
+}
+function notify(title, body){
+  try {
+    if (window.Notification && Notification.permission === 'granted' && navigator.serviceWorker && navigator.serviceWorker.controller){
+      navigator.serviceWorker.ready.then(function(reg){ reg.showNotification(title, {body:body || '', icon:'icons/icon-192.png', badge:'icons/favicon-32.png', tag:'daybook-' + title, vibrate:[100, 50, 100]}); });
+      return;
+    }
+    if (window.Notification && Notification.permission === 'granted'){ new Notification(title, {body:body || '', icon:'icons/icon-192.png'}); return; }
+  } catch (e) {}
+  toast(title + (body ? ' · ' + body : ''));
+}
+function checkReminders(){
+  if (!S.ready) return;
+  var t = today(), now = new Date(), nowM = now.getHours() * 60 + now.getMinutes(), fired = lsGet('db-rem-fired', {});
+  reminders().forEach(function(r){
+    if (r.off) return;
+    var p = String(r.time || '').split(':'), m = (+p[0]) * 60 + (+p[1]);
+    if (nowM >= m && nowM - m <= 30 && fired[r.id] !== t){
+      fired[r.id] = t; lsSet('db-rem-fired', fired);
+      if (remDue(r)) notify((r.emoji ? r.emoji + ' ' : '') + r.label, 'Daybook reminder');
+    }
+  });
+}
+setInterval(checkReminders, 30000);
+function remindersSheet(){
+  var rs = reminders(), perm = window.Notification ? Notification.permission : 'unsupported';
+  var h = shead('🔔 Reminders') +
+    (perm !== 'granted' ? '<div class="alert info">🔔<div>' + (perm === 'denied' ? 'Notifications are blocked for Daybook. Allow them in your phone\'s app settings.' : '<b>Allow notifications</b> so reminders can pop up.') + (perm === 'default' ? '<br><button class="btn sm" style="margin-top:8px" data-act="rem-perm">Allow</button>' : '') + '</div></div>' : '') +
+    (rs.length ? rs.slice().sort(function(a, b){ return a.time < b.time ? -1 : 1; }).map(function(r){
+      return '<div class="row" style="padding:8px 0;border-top:1px solid var(--line);gap:8px"><input type="time" value="' + esc(r.time) + '" data-rem="' + r.id + '" style="width:110px"><span class="grow small' + (r.off ? ' muted' : '') + '">' + esc((r.emoji || '') + ' ' + r.label) + '</span>' +
+        '<button class="chip' + (r.off ? '' : ' on') + '" data-act="rem-tog" data-v="' + r.id + '">' + (r.off ? 'Off' : 'On') + '</button><button class="tdel" data-act="rem-del" data-v="' + r.id + '">×</button></div>';
+    }).join('') : '<div class="small muted">No reminders yet. Add some below.</div>') +
+    '<div class="sec">Add</div><div class="chips">' + REM_PRESETS.map(function(p, i){ return '<button class="chip" data-act="rem-add" data-v="' + i + '">' + p.emoji + ' ' + esc(p.label) + ' ' + p.time + '</button>'; }).join('') + '</div>' +
+    '<div class="row" style="gap:8px"><input id="rem-time" type="time" value="08:00" style="width:110px"><input id="rem-label" placeholder="Your own reminder" class="grow"><button class="btn sm" data-act="rem-add" data-v="custom">Add</button></div>' +
+    '<div class="sec">Even when the app is closed</div><div class="hint" style="margin:0 0 10px">Pop-ups work while Daybook is open or in the background. To be reminded even when it\'s closed, add them to your phone calendar as daily alarms.</div>' +
+    '<button class="btn ghost block" data-act="rem-ics">📅 Add reminders to phone calendar</button>';
+  openSheet(h);
+}
+function remIcs(){
+  var stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, ''), d0 = today().replace(/-/g, '');
+  var ev = reminders().filter(function(r){ return !r.off; }).map(function(r){
+    var tt = r.time.replace(':', '') + '00', label = String(r.label).replace(/[,;\\]/g, ' ');
+    return ['BEGIN:VEVENT','UID:rem-' + r.id + '@daybook','DTSTAMP:' + stamp,'DTSTART:' + d0 + 'T' + tt,'DURATION:PT5M','RRULE:FREQ=DAILY','SUMMARY:' + (r.emoji || '') + ' ' + label,
+      'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:' + label,'TRIGGER:PT0M','END:VALARM','END:VEVENT'].join('\r\n');
+  });
+  return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Daybook//EN'].concat(ev).concat(['END:VCALENDAR']).join('\r\n');
+}
+
+// ---------- APP LOCK (PIN, optional fingerprint) + weekly snapshots ----------
+// The lock is per phone (stored on this device only). Forgetting the PIN: sign out, sign back in.
+function lockCfg(){ return lsGet('db-lock', null); }
+function b64(buf){ return btoa(String.fromCharCode.apply(null, new Uint8Array(buf))); }
+function unb64(s){ return Uint8Array.from(atob(s), function(c){ return c.charCodeAt(0); }); }
+function sha(s){ return crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)).then(b64); }
+function lockHtml(){
+  var L = lockCfg(), wait = Math.max(0, (S.lockWait || 0) - Date.now());
+  return '<div class="lock"><img class="mark lg" src="icons/mark.png?v=2" alt="pr"><div class="mid" style="text-align:center">Daybook is locked</div>' +
+    '<div class="pin">' + [0, 1, 2, 3, 4, 5].slice(0, L && L.len || 4).map(function(i){ return '<i class="' + (i < (S.pinIn || '').length ? 'on' : '') + '"></i>'; }).join('') + '</div>' +
+    '<div class="small" style="text-align:center;min-height:20px;color:var(--bad)">' + (wait ? 'Too many tries. Wait ' + Math.ceil(wait / 1000) + 's' : esc(S.lockMsg || '')) + '</div>' +
+    '<div class="keys">' + [1, 2, 3, 4, 5, 6, 7, 8, 9, 'bio', 0, 'del'].map(function(k){
+      if (k === 'bio') return L && L.bio ? '<button data-act="lock-bio" aria-label="Fingerprint">👆</button>' : '<span></span>';
+      if (k === 'del') return '<button data-act="lock-key" data-v="del" aria-label="Delete">⌫</button>';
+      return '<button data-act="lock-key" data-v="' + k + '">' + k + '</button>';
+    }).join('') + '</div><button class="link" style="display:block;margin:16px auto 0;background:none;border:0;color:var(--mute);font-size:13px" data-act="lock-forgot">Forgot PIN?</button></div>';
+}
+function renderLock(){ var el = $('#lockscreen'); if (!el) return; el.innerHTML = S.locked ? lockHtml() : ''; el.classList.toggle('on', !!S.locked); }
+function lockNow(){ if (lockCfg()){ S.locked = true; S.pinIn = ''; S.lockMsg = ''; renderLock(); var L = lockCfg(); if (L.bio) setTimeout(function(){ A['lock-bio'](); }, 300); } }
+function unlock(){ S.locked = false; S.pinIn = ''; S.fails = 0; renderLock(); }
+function bioCreate(){
+  if (!window.PublicKeyCredential || !navigator.credentials) return Promise.reject(new Error('Fingerprint unlock isn\'t available here'));
+  var ch = crypto.getRandomValues(new Uint8Array(32)), uidb = crypto.getRandomValues(new Uint8Array(16));
+  return navigator.credentials.create({publicKey:{challenge:ch, rp:{name:'Daybook', id:location.hostname}, user:{id:uidb, name:'daybook', displayName:'Daybook'},
+    pubKeyCredParams:[{type:'public-key', alg:-7}, {type:'public-key', alg:-257}], authenticatorSelection:{authenticatorAttachment:'platform', userVerification:'required', residentKey:'discouraged'}, timeout:60000}})
+    .then(function(c){ return b64(c.rawId); });
+}
+function bioCheck(id){
+  return navigator.credentials.get({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)), allowCredentials:[{type:'public-key', id:unb64(id)}], userVerification:'required', timeout:60000}});
+}
+function lockSheet(){
+  var L = lockCfg(), canBio = !!window.PublicKeyCredential;
+  var h = shead('🔒 App lock') + (L
+    ? '<div class="alert good">🔒<div><b>Lock is on.</b> ' + (L.bio ? 'Fingerprint or PIN.' : 'PIN.') + ' Locks ' + (L.after ? 'after ' + L.after + ' min in the background' : 'every time you leave the app') + '.</div></div>' +
+      '<div class="lbl">Lock again after</div>' + chips('lockafter', [[0,'Right away'],[1,'1 min'],[5,'5 min'],[15,'15 min']], L.after || 0) +
+      (canBio ? '<button class="btn ghost block" style="margin-bottom:8px" data-act="lock-biotog">' + (L.bio ? 'Turn off fingerprint' : '👆 Also unlock with fingerprint') + '</button>' : '') +
+      fld('Current PIN (to change or turn off)', '<input id="lk-old" type="password" inputmode="numeric" maxlength="6">') +
+      '<div class="btns"><button class="btn bad" data-act="lock-off">Turn off lock</button><button class="btn ghost" data-act="lock-change">Change PIN</button></div>'
+    : '<div class="small muted" style="margin-bottom:12px">Ask for a PIN (and optionally your fingerprint) when Daybook opens, so nobody can look at your money, notes or moods if they pick up your unlocked phone.</div>') +
+    '<div id="lk-new"' + (L ? ' hidden' : '') + '>' + fld('New PIN (4–6 digits)', '<input id="lk-p1" type="password" inputmode="numeric" maxlength="6">') + fld('Type it again', '<input id="lk-p2" type="password" inputmode="numeric" maxlength="6">') +
+    '<button class="btn block" data-act="lock-set">Save PIN</button></div>' +
+    '<div class="hint" style="margin-top:12px">The lock is saved on this phone only. If you forget the PIN, tap "Forgot PIN?" and sign in again; your data is safe online.</div>';
+  openSheet(h);
+}
+// weekly snapshot of everything, kept on the phone (last 4)
+function idb(){
+  return new Promise(function(res, rej){
+    var rq = indexedDB.open('daybook-snaps', 1);
+    rq.onupgradeneeded = function(){ rq.result.createObjectStore('snaps', {keyPath:'at'}); };
+    rq.onsuccess = function(){ res(rq.result); }; rq.onerror = function(){ rej(rq.error); };
+  });
+}
+function snapList(){ return idb().then(function(db){ return new Promise(function(res){ var out = [], tx = db.transaction('snaps').objectStore('snaps').openCursor(); tx.onsuccess = function(e){ var c = e.target.result; if (c){ out.push(c.value); c.continue(); } else res(out.sort(function(a, b){ return b.at - a.at; })); }; }); }); }
+function snapTake(force){
+  if (!S.ready || !Object.keys(S.recs).length) return Promise.resolve();
+  var last = lsGet('db-snap-at', 0);
+  if (!force && Date.now() - last < 7 * 864e5) return Promise.resolve();
+  return idb().then(function(db){
+    return new Promise(function(res){
+      var st = db.transaction('snaps', 'readwrite').objectStore('snaps');
+      st.put({at:Date.now(), n:Object.keys(S.recs).length, recs:JSON.parse(JSON.stringify(S.recs))});
+      st.transaction.oncomplete = function(){ lsSet('db-snap-at', Date.now()); res(); };
+    });
+  }).then(snapList).then(function(all){
+    if (all.length > 4) return idb().then(function(db){ var st = db.transaction('snaps', 'readwrite').objectStore('snaps'); all.slice(4).forEach(function(s){ st.delete(s.at); }); });
+  }).catch(function(e){ console.warn('snapshot', e); });
+}
+function snapsSheet(){
+  snapList().then(function(all){
+    var h = shead('💾 Snapshots on this phone') + '<div class="small muted" style="margin-bottom:12px">Daybook saves a full copy of your data on this phone once a week and keeps the last 4. Use one to undo a big mistake.</div>' +
+      (all.length ? all.map(function(s){ return '<div class="row between" style="padding:8px 0;border-top:1px solid var(--line)"><div><div class="t">' + new Date(s.at).toLocaleDateString('en-IN', {day:'numeric', month:'short', year:'numeric'}) + '</div><div class="tiny muted">' + s.n + ' records</div></div><button class="btn sm ghost" data-act="snap-restore" data-v="' + s.at + '">Restore</button></div>'; }).join('') : '<div class="small muted">No snapshots yet.</div>') +
+      '<button class="btn ghost block" style="margin-top:12px" data-act="snap-now">Take a snapshot now</button>';
+    openSheet(h);
+  });
 }
 
 // ---------- READING SCHEDULE ----------
@@ -1909,9 +2264,11 @@ function parseSms(t){
 // subscription
 function subForm(s){
   s = s || {per:'month', next:addDays(today(), 30), cat:'subs', pay:'Card', autoLog:true, remind:3, status:'active'};
-  var h = shead(s.id ? 'Edit subscription' : 'Add subscription');
-  if (!s.id) h += '<div class="chips scroll" style="margin-bottom:12px">' + SUB_PRESETS.map(function(p){ return '<button class="chip" data-act="preset" data-v="' + p + '">' + p + '</button>'; }).join('') + '</div>';
-  h += fld('Name', '<input id="s-name" placeholder="Netflix, gym, rent, insurance…" value="' + esc(s.name || '') + '">') +
+  var rec = isRec(s);
+  var h = shead(s.id ? (rec ? 'Edit recurring expense' : 'Edit subscription') : (rec ? 'Add recurring expense' : 'Add subscription'));
+  if (!s.id) h += '<div class="chips scroll" style="margin-bottom:12px">' + (rec ? REC_PRESETS : SUB_PRESETS).map(function(p){ return '<button class="chip" data-act="preset" data-v="' + p + '">' + p + '</button>'; }).join('') + '</div>';
+  h += '<input type="hidden" id="s-kind" value="' + (rec ? 'rec' : '') + '">' +
+    fld('Name', '<input id="s-name" placeholder="' + (rec ? 'Milk, maid, EMI…' : 'Netflix, gym, rent, insurance…') + '" value="' + esc(s.name || '') + '">') +
     '<div class="amtin"><span>' + esc(S.cfg.cur) + '</span><input id="s-amt" inputmode="decimal" placeholder="0" value="' + (s.amt || '') + '"></div>' +
     '<div class="lbl">Repeats</div>' + chips('per', Object.keys(PER).map(function(k){ return [k, PER[k].label]; }), s.per) +
     fld(s.trial ? 'Trial ends on' : 'Next renewal', '<input id="s-next" type="date" value="' + s.next + '">') +
@@ -2126,7 +2483,9 @@ function settingsSheet(){
     }).join('') +
     '<button class="btn sm" style="margin-top:8px" data-act="habit-edit" data-v="">+ Add a habit</button>' +
     '<div class="sec">Look</div>' + chips('theme', [['auto','Auto'],['light','Light'],['dark','Dark']], theme) +
+    '<div class="sec">Reminders & privacy</div><div class="btns" style="margin-bottom:8px"><button class="btn ghost" data-act="reminders">🔔 Reminders (' + reminders().filter(function(r){ return !r.off; }).length + ')</button><button class="btn ghost" data-act="lock">🔒 App lock' + (lockCfg() ? ' · on' : '') + '</button></div>' +
     '<div class="sec">Backup</div><div class="btns" style="margin-bottom:8px"><button class="btn ghost" data-act="backup">⬇ Download backup</button><button class="btn ghost" data-act="restore">⬆ Restore</button></div>' +
+    '<button class="btn ghost block" style="margin-bottom:8px" data-act="snaps">💾 Weekly snapshots on this phone</button>' +
     '<input type="file" id="restore-file" accept="application/json,.json" hidden>' +
     '<div class="btns" style="margin-top:14px"><button class="btn bad" data-act="signout">Sign out</button></div>' +
     '<p class="tiny muted" style="text-align:center;margin-top:14px">Daybook ' + APP_VERSION + '</p>';
@@ -2214,6 +2573,7 @@ var A = {
     if (name === 'cat') S.catTouched = true;
     if (name === 'wtype'){ var w = {mins:val('w-mins')}; $('#wfields').innerHTML = workFields(act(el.dataset.v), w); }
     if (name === 'theme'){ lsSet('db-theme', el.dataset.v); applyTheme(); }
+    if (name === 'lockafter'){ var L = lockCfg(); if (L){ L.after = +el.dataset.v; lsSet('db-lock', L); toast('Saved'); } }
     if (name === 'hbkind'){
       var mt = $('#hb-metric'); if (mt) mt.hidden = el.dataset.v === 'yes';
       var hh = $('#hb-hint'); if (hh) hh.textContent = el.dataset.v === 'limit' ? 'Done when you stay at or under this. Breaking it ends the streak that day.' : 'Done when you reach this. Log the amount from Today.';
@@ -2235,6 +2595,122 @@ var A = {
   'day-prev':function(){ S.day = addDays(S.day, -1); render(); },
   'day-next':function(){ if (S.day < today()) S.day = addDays(S.day, 1); render(); },
   'day-today':function(){ S.day = today(); render(); },
+  noop:function(){},
+  // day planner
+  'go-planner':function(){ var p = $('#planner'); if (p) p.scrollIntoView({behavior:'smooth', block:'center'}); setTimeout(function(){ var i = $('#tk-new'); if (i) i.focus(); }, 400); },
+  'task-add':function(el){
+    var i = $('#tk-new'), text = i ? i.value.trim() : ''; if (!text){ if (i) i.focus(); return; }
+    var d = el.dataset.day || S.day, ts = dayTasks(d); ts.push({id:uid(), text:text, done:false, top:ts.filter(function(x){ return x.top; }).length < 3 && !ts.length}); saveTasks(d, ts);
+    setTimeout(function(){ var n = $('#tk-new'); if (n) n.focus(); }, 30);
+  },
+  'task-tog':function(el){
+    var d = S.day, before = dayScore(d), ts = dayTasks(d).map(function(x){ return x.id === el.dataset.v ? Object.assign({}, x, {done:!x.done}) : x; }); saveTasks(d, ts);
+    var x = ts.filter(function(t2){ return t2.id === el.dataset.v; })[0];
+    if (x && x.done){ try { navigator.vibrate && navigator.vibrate(10); } catch (e) {} if (before < 100 && dayScore(d) >= 100){ confetti(); toast('Full day! 🔥'); } }
+  },
+  'task-top':function(el){
+    var d = S.day, ts = dayTasks(d), x = ts.filter(function(t2){ return t2.id === el.dataset.v; })[0]; if (!x) return;
+    if (!x.top && ts.filter(function(t2){ return t2.top; }).length >= 3){ toast('Keep it to 3 top priorities', 'warn'); return; }
+    saveTasks(d, ts.map(function(t2){ return t2.id === x.id ? Object.assign({}, t2, {top:!t2.top}) : t2; }));
+  },
+  'task-del':function(el){ var d = S.day; saveTasks(d, dayTasks(d).filter(function(x){ return x.id !== el.dataset.v; })); },
+  // recurring
+  'add-rec':function(){ subForm({kind:'rec', per:'month', next:today(), cat:'bills', pay:'Cash', autoLog:true, remind:1, status:'active'}); },
+  // skills
+  'add-skill':function(){ skillForm(); },
+  skill:function(el){ var s = skills().filter(function(x){ return x.id === el.dataset.id; })[0]; if (s) skillSheet(s); },
+  'skill-edit':function(el){ var s = skills().filter(function(x){ return x.id === el.dataset.id; })[0]; if (s) skillForm(s); },
+  'skill-save':function(){
+    var n = val('sk-name').trim(); if (!n){ toast('Name the skill', 'warn'); return; }
+    var id = val('sk-id') || 'skill_' + uid(), old = S.recs[id] || {}, base = num(val('sk-base'));
+    put(id, {t:'skill', name:n, emoji:val('sk-emoji').trim() || '🎯', weekly:num(val('sk-weekly')), baseHours:base, created:old.created || today()});
+    // hours practised before Daybook count once, as a starting session
+    var bid = 'prac_base_' + id.replace('skill_', '');
+    if (base > 0) put(bid, {t:'prac', skillId:id, date:old.created || today(), mins:Math.round(base * 60), note:'Before Daybook', via:'base'}); else if (S.recs[bid]) del(bid);
+    closeSheet(); toast('Skill saved');
+  },
+  'skill-del':function(el){ if (confirm('Delete this skill and its practice log?')){ pracs(el.dataset.id).forEach(function(p){ del(p.id); }); del(el.dataset.id); closeSheet(); } },
+  'prac-save':function(el){
+    var m = +num(val('pr-mins')); if (!(m > 0)){ toast('How many minutes?', 'warn'); return; }
+    put('prac_' + uid(), {t:'prac', skillId:el.dataset.id, date:S.day <= today() ? today() : today(), mins:m, note:val('pr-note').trim(), via:'manual'});
+    var s = skills().filter(function(x){ return x.id === el.dataset.id; })[0]; if (s) skillSheet(s); toast('Logged ' + mins(m));
+  },
+  'prac-del':function(el){ del(el.dataset.id); var s = skills().filter(function(x){ return x.id === el.dataset.skill; })[0]; if (s) skillSheet(s); },
+  // focus timer
+  'focus-for':function(el){ lsSet('db-focus-last', {dur:(lsGet('db-focus-last', {}).dur) || 25, target:el.dataset.id}); closeSheet(); S.tab = 'skills'; S.enter = true; render(); window.scrollTo(0, 0); },
+  'focus-start':function(){
+    var dur = +getChip('fdur') || 25, target = getChip('ffor') || 'work', sk = target === 'work' ? null : S.recs[target];
+    if (window.Notification && Notification.permission === 'default') Notification.requestPermission();
+    S.focus = {start:Date.now(), dur:dur, label:sk ? sk.name : 'Work', skillId:sk ? target : '', phase:'focus'};
+    lsSet('db-focus', S.focus); lsSet('db-focus-last', {dur:dur, target:target}); render();
+    toast('⏱ Focus for ' + dur + ' min. You\'ve got this.');
+  },
+  'focus-done':function(){ focusComplete(true); },
+  'focus-stop':function(){ if (S.focus && S.focus.phase !== 'break' && !confirm('Cancel this focus block? It won\'t be logged.')) return; S.focus = null; lsDel('db-focus'); render(); },
+  // reading stats
+  ryear:function(el){ S.ryear += +el.dataset.v; render(); },
+  // reminders
+  reminders:function(){ remindersSheet(); },
+  'rem-perm':function(){ if (window.Notification) Notification.requestPermission().then(function(){ remindersSheet(); }); },
+  'rem-add':function(el){
+    var r = el.dataset.v === 'custom' ? {label:val('rem-label').trim(), emoji:'🔔', time:val('rem-time') || '08:00', kind:'custom'} : Object.assign({}, REM_PRESETS[+el.dataset.v]);
+    if (!r.label){ toast('Name the reminder', 'warn'); return; }
+    r.id = 'r' + uid().slice(-6); saveCfg({reminders:reminders().concat([r])}); remindersSheet(); toast('🔔 Reminder at ' + r.time);
+  },
+  'rem-tog':function(el){ saveCfg({reminders:reminders().map(function(r){ return r.id === el.dataset.v ? Object.assign({}, r, {off:!r.off}) : r; })}); remindersSheet(); },
+  'rem-del':function(el){ saveCfg({reminders:reminders().filter(function(r){ return r.id !== el.dataset.v; })}); remindersSheet(); },
+  'rem-ics':function(){ if (!reminders().filter(function(r){ return !r.off; }).length){ toast('Add a reminder first', 'warn'); return; } download('daybook-reminders.ics', remIcs(), 'text/calendar'); },
+  // app lock
+  lock:function(){ lockSheet(); },
+  'lock-set':function(){
+    var p1 = val('lk-p1'), p2 = val('lk-p2');
+    if (!/^\d{4,6}$/.test(p1)){ toast('Use 4 to 6 digits', 'warn'); return; }
+    if (p1 !== p2){ toast('The two PINs don\'t match', 'warn'); return; }
+    var salt = b64(crypto.getRandomValues(new Uint8Array(16))), L = lockCfg() || {};
+    sha(salt + p1).then(function(hsh){ lsSet('db-lock', {hash:hsh, salt:salt, len:p1.length, after:L.after || 0, bio:L.bio || ''}); toast('🔒 App lock is on'); lockSheet(); });
+  },
+  'lock-change':function(){
+    var L = lockCfg(); sha(L.salt + val('lk-old')).then(function(hsh){ if (hsh !== L.hash){ toast('Current PIN is wrong', 'bad'); return; } $('#lk-new').hidden = false; $('#lk-p1').focus(); });
+  },
+  'lock-off':function(){
+    var L = lockCfg(); sha(L.salt + val('lk-old')).then(function(hsh){ if (hsh !== L.hash){ toast('Enter your current PIN first', 'bad'); return; } lsDel('db-lock'); toast('App lock turned off'); lockSheet(); });
+  },
+  'lock-biotog':function(){
+    var L = lockCfg(); if (!L) return;
+    if (L.bio){ L.bio = ''; lsSet('db-lock', L); lockSheet(); return; }
+    bioCreate().then(function(id){ L.bio = id; lsSet('db-lock', L); toast('👆 Fingerprint unlock on'); lockSheet(); }).catch(function(e){ toast('Couldn\'t set up fingerprint: ' + (e && e.message || e), 'bad'); });
+  },
+  'lock-key':function(el){
+    if ((S.lockWait || 0) > Date.now()) return;
+    var L = lockCfg(); if (!L) { unlock(); return; }
+    S.lockMsg = '';
+    if (el.dataset.v === 'del') S.pinIn = (S.pinIn || '').slice(0, -1); else if ((S.pinIn || '').length < L.len) S.pinIn = (S.pinIn || '') + el.dataset.v;
+    renderLock();
+    if (S.pinIn.length === L.len){
+      sha(L.salt + S.pinIn).then(function(hsh){
+        if (hsh === L.hash) unlock();
+        else { S.fails = (S.fails || 0) + 1; S.pinIn = ''; S.lockMsg = 'Wrong PIN'; try { navigator.vibrate && navigator.vibrate([60, 40, 60]); } catch (e) {}
+          if (S.fails >= 5){ S.lockWait = Date.now() + 30000; S.fails = 0; var iv = setInterval(function(){ renderLock(); if (Date.now() > S.lockWait){ clearInterval(iv); renderLock(); } }, 1000); }
+          renderLock(); }
+      });
+    }
+  },
+  'lock-bio':function(){ var L = lockCfg(); if (!L || !L.bio) return; bioCheck(L.bio).then(function(){ unlock(); }).catch(function(){ S.lockMsg = 'Use your PIN'; renderLock(); }); },
+  'lock-forgot':function(){
+    if (!confirm('Sign out and remove the lock on this phone? Your data stays safe online. Sign in again to get back in.')) return;
+    lsDel('db-lock'); unlock(); Store.signOut();
+  },
+  // snapshots
+  snaps:function(){ snapsSheet(); },
+  'snap-now':function(){ snapTake(true).then(function(){ toast('💾 Snapshot saved on this phone'); snapsSheet(); }); },
+  'snap-restore':function(el){
+    snapList().then(function(all){
+      var s = all.filter(function(x){ return String(x.at) === el.dataset.v; })[0]; if (!s) return;
+      if (!confirm('Restore ' + s.n + ' records from ' + new Date(s.at).toLocaleDateString('en-IN') + '? Records in that snapshot are put back; newer records stay.')) return;
+      Object.keys(s.recs).forEach(function(k){ S.recs[k] = s.recs[k]; Store.put(k, s.recs[k]); });
+      IDX = null; dataArrived(); closeSheet(); toast('Restored ' + s.n + ' records');
+    });
+  },
   // work day
   'go-work':function(){ S.tab = 'work'; lsSet('db-tab', 'work'); S.enter = true; render(); window.scrollTo(0, 0); },
   'wd-in':function(){
@@ -2429,6 +2905,7 @@ var A = {
     var rec = {t:'sub', name:name, amt:amt, per:getChip('per') || 'month', next:next, anchor:pd(next).getDate(),
       trial:$('#s-trial').checked, autoLog:$('#s-auto').checked, remind:+getChip('remind') || 3,
       cat:getChip('cat') || 'subs', pay:getChip('pay') || 'Card', note:val('s-note').trim(), status:old.status || 'active', created:old.created || today()};
+    if (val('s-kind') === 'rec') rec.kind = 'rec';
     put(id, rec); closeSheet(); toast('Saved ' + name);
     if (next < today() && rec.autoLog) setTimeout(rollSubs, 50);
   },
@@ -2498,7 +2975,17 @@ var A = {
     put(el.dataset.id, r); S.bseg = r.status; closeSheet(); toast(r.status === 'done' ? 'Finished! 🎉' : 'Moved to Reading');
   },
   'book-del':function(el){ if (confirm('Delete this book and its reading sessions?')){ reads().forEach(function(r){ if (r.bookId === el.dataset.id) del(r.id); }); del(el.dataset.id); closeSheet(); } },
-  'add-read':function(el){ readForm({bookId:el && el.dataset.id || ''}); },
+  // Logging reading from anywhere opens the same book screen as Books → book (progress, schedule,
+  // where you left off, timer, "+ Log session"); only the button inside that screen opens the form.
+  'add-read':function(el){
+    var id = el && el.dataset.id || '';
+    if (el && el.closest && el.closest('#panel') && id){ readForm({bookId:id}); return; }
+    var open = books().filter(function(b){ return b.status === 'reading'; }).sort(function(a, b){ return (b.lastRead || '') > (a.lastRead || '') ? 1 : -1; });
+    var b = id ? S.recs[id] && Object.assign({id:id}, S.recs[id]) : open.length === 1 ? open[0] : null;
+    if (b){ bookSheet(b); return; }
+    if (!open.length){ readForm({bookId:''}); return; }
+    openSheet(shead('Which book?') + open.map(bookCard).join(''));
+  },
   read:function(el){ var r = reads().filter(function(x){ return x.id === el.dataset.id; })[0]; if (r) readForm(r); },
   'read-save':function(){
     var m = +num(val('r-mins'));
@@ -2603,7 +3090,7 @@ var A = {
     toast(ok ? (h.emoji || '✅') + ' ' + h.name + ' done ✓' : habitKind(h) === 'limit' ? 'Over your limit of ' + h.target + ' ' + (h.unit || '') : v + ' / ' + h.target + ' ' + (h.unit || ''), ok ? '' : 'warn');
     if (ok && before < 100 && dayScore(S.day) >= 100){ confetti(); toast('Full day! 🔥'); }
   },
-  backup:function(){ download('daybook-backup-' + today() + '.json', JSON.stringify({app:'daybook', v:1, at:new Date().toISOString(), recs:S.recs}, null, 1), 'application/json'); },
+  backup:function(){ download('daybook-backup-' + today() + '.json', JSON.stringify({app:'daybook', v:1, at:new Date().toISOString(), recs:S.recs}, null, 1), 'application/json'); lsSet('db-lastdl', Date.now()); renderSoon(); },
   restore:function(){ $('#restore-file').click(); },
   csv:function(el){
     var arr = el.dataset.v === 'month' ? monthExps(S.imonth) : exps();
@@ -2632,8 +3119,18 @@ document.addEventListener('input', function(e){
 });
 document.addEventListener('keydown', function(e){
   if (e.key === 'Enter' && (e.target.id === 'a-pass' || e.target.id === 'a-email')) A.signin();
+  if (e.key === 'Enter' && e.target.id === 'tk-new'){ e.preventDefault(); A['task-add'](e.target); }
+  if (S.locked && /^[0-9]$/.test(e.key)) A['lock-key']({dataset:{v:e.key}});
+  if (S.locked && e.key === 'Backspace') A['lock-key']({dataset:{v:'del'}});
 });
 document.addEventListener('change', function(e){
+  if (e.target.dataset && e.target.dataset.rem){
+    var rid = e.target.dataset.rem, tv = e.target.value;
+    if (tv) saveCfg({reminders:reminders().map(function(r){ return r.id === rid ? Object.assign({}, r, {time:tv}) : r; })});
+    var fired = lsGet('db-rem-fired', {}); delete fired[rid]; lsSet('db-rem-fired', fired);
+    toast('Reminder moved to ' + tv);
+    return;
+  }
   if (e.target.id === 'wd-note'){
     var w = openWd(); if (!w || !w.entries || !w.entries.length) return;
     var r = strip(w); r.entries = w.entries.slice(); var last = Object.assign({}, r.entries[r.entries.length - 1]);
@@ -2656,7 +3153,11 @@ document.addEventListener('change', function(e){
 });
 document.addEventListener('visibilitychange', function(){
   // Coming back to the app on a new day: move Today forward and log renewals.
-  if (document.visibilityState === 'visible' && S.ready){ if (S.lastDay && S.lastDay !== today()){ S.day = today(); IDX = null; rollSubs(); } S.lastDay = today(); render(); }
+  if (document.visibilityState === 'hidden'){ S.hiddenAt = Date.now(); if (lockCfg() && !(lockCfg().after > 0)) lockNow(); return; }
+  if (lockCfg() && S.hiddenAt && Date.now() - S.hiddenAt >= (lockCfg().after || 0) * 60000) lockNow();
+  if (S.focus && Date.now() >= S.focus.start + S.focus.dur * 60000) focusComplete(false);
+  checkReminders();
+  if (document.visibilityState === 'visible' && S.ready){ if (S.lastDay && S.lastDay !== today()){ S.day = today(); IDX = null; rollSubs(); carryTasks(); } S.lastDay = today(); render(); }
 });
 
 var toastT;
@@ -2720,6 +3221,16 @@ function seed(){
       away:{break:{accumMs:br, runningSince:null}, drive:{accumMs:dr, runningSince:null}, outing:{accumMs:0, runningSince:null}, dogs:{accumMs:0, runningSince:null}},
       entries:[{id:'e1', type:'break', startAt:win + 4 * 3600000, endAt:win + 4 * 3600000 + br, note:'Lunch'}, {id:'e2', type:'drive', startAt:win + 6 * 3600000, endAt:win + 6 * 3600000 + dr, note:'Drive to a client audit'}], createdAt:win});
   }
+  P('skill_s1', {t:'skill', name:'Sales calls', emoji:'📞', weekly:4, baseHours:0, created:addDays(t, -30)});
+  P('skill_s2', {t:'skill', name:'Spanish', emoji:'🇪🇸', weekly:2, baseHours:0, created:addDays(t, -20)});
+  for (var sp2 = 0; sp2 < 14; sp2++) if (rnd() > .35) P('prac_s' + sp2, {t:'prac', skillId:sp2 % 2 ? 'skill_s2' : 'skill_s1', date:addDays(t, -sp2), mins:25 + Math.floor(rnd() * 50), note:sp2 % 2 ? 'Duolingo + podcast' : 'Cold calls to QSRs', via:'manual'});
+  P('prac_base_s1', {t:'prac', skillId:'skill_s1', date:addDays(t, -30), mins:60 * 42, note:'Before Daybook', via:'base'});
+  P('focus_s1', {t:'focus', date:addDays(t, -1), mins:25, label:'Work', skillId:''});
+  P('focus_s2', {t:'focus', date:addDays(t, -1), mins:50, label:'Work', skillId:''});
+  P('sub_rec1', {t:'sub', kind:'rec', name:'Milk', amt:66, per:'day', next:t, anchor:pd(t).getDate(), cat:'groc', autoLog:true, trial:false, remind:1, pay:'Cash', status:'active', created:addDays(t, -40)});
+  P('sub_rec2', {t:'sub', kind:'rec', name:'Maid', amt:3000, per:'month', next:addDays(t, 6), anchor:pd(addDays(t, 6)).getDate(), cat:'rent', autoLog:false, trial:false, remind:1, pay:'Cash', status:'active', created:addDays(t, -40)});
+  P('sub_rec3', {t:'sub', kind:'rec', name:'Car EMI', amt:14500, per:'month', next:addDays(t, 12), anchor:pd(addDays(t, 12)).getDate(), cat:'travel', autoLog:true, trial:false, remind:3, pay:'Bank', status:'active', created:addDays(t, -40)});
+  R['day_' + addDays(t, -1)].tasks = [{id:'tk1', text:'Send proposal to Hotel Sunview', done:true, top:true}, {id:'tk2', text:'Call back 3 QSR leads', done:false, top:true}, {id:'tk3', text:'Renew car insurance', done:false, top:false}];
   P('ygoal_s1', {t:'ygoal', year:yr, type:'books', name:'Read 12 books', target:12, emoji:'📚', unit:'', count:0});
   P('ygoal_s2', {t:'ygoal', year:yr, type:'runkm', name:'Run 300 km', target:300, emoji:'🏃', unit:'', count:0});
   P('ygoal_s3', {t:'ygoal', year:yr, type:'saved', name:'Save ₹1 lakh', target:100000, emoji:'🏦', unit:'', count:0});
@@ -2734,6 +3245,7 @@ function seed(){
 applyTheme();
 S.lastDay = today();
 if ('serviceWorker' in navigator && !LOCAL && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function(){});
+if (lockCfg()) lockNow();
 Store.start();
 render();
 })();
