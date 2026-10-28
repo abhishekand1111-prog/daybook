@@ -207,6 +207,12 @@ svg.i{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke
 .bars .b{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:4px}
 .bars .b i{display:block;width:100%;max-width:34px;background:linear-gradient(180deg,var(--acc2),var(--acc));border-radius:9px 9px 4px 4px;min-height:3px}
 .bars .b.dim i{background:var(--chip)}
+.bars .b.neg i{background:var(--ink);opacity:.75}
+button.b{border:0;background:none;padding:0;font:inherit;cursor:pointer}
+.ptsline{display:block;margin-top:8px;border:0;background:rgba(255,255,255,.1);color:inherit;font:inherit;font-size:13px;padding:6px 10px;border-radius:99px;cursor:pointer}
+.ptsline b{color:#ff9fd0}.ptsline b.neg{color:#ffd166}
+.ptsum{font-size:13px;font-weight:600}
+.ptrow{padding:7px 0;border-top:1px solid var(--line);gap:10px}
 .bars .b span{font-size:10.5px;color:var(--mute);font-weight:600}
 .bars .b em{font-size:10px;color:var(--mute);font-style:normal}
 .donut{display:flex;gap:16px;align-items:center}
@@ -369,7 +375,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 <script>
 (function(){
 'use strict';
-var APP_VERSION = 'v10';
+var APP_VERSION = 'v11';
 
 // ---------- utils ----------
 function $(s, r){ return (r || document).querySelector(s); }
@@ -512,7 +518,7 @@ function guessCat(t){
 // ---------- state ----------
 var S = {
   authed:false, authChecked:false, ready:false, user:null, recs:{}, cfg:JSON.parse(JSON.stringify(DEFAULT_CFG)),
-  tab:'today', mseg:lsGet('db-mseg', 'overview'), bseg:'reading', iseg:'streaks', sseg:'active', skind:lsGet('db-skind', 'score'), cal:ymOf(today()), year:+today().slice(0, 4), pseg:'goals', ryear:+today().slice(0, 4), focus:lsGet('db-focus', null),
+  tab:'today', mseg:lsGet('db-mseg', 'overview'), bseg:'reading', iseg:'points', pday:'', sseg:'active', skind:lsGet('db-skind', 'score'), cal:ymOf(today()), year:+today().slice(0, 4), pseg:'goals', ryear:+today().slice(0, 4), focus:lsGet('db-focus', null),
   month:ymOf(today()), imonth:ymOf(today()), day:today(), q:'', fcat:'', synced:false, syncErr:'',
   timer:lsGet('db-timer', null), rolled:false, catTouched:false, enter:true, drawer:false
 };
@@ -779,6 +785,8 @@ function dayChecks(d){
   });
   return out;
 }
+// the habit checks only (no note, top tasks or spend): what the all-in streak asks for
+function habitChecks(d){ return dayChecks(d).filter(function(x){ return /^(read|move|water|cola|sweet|work|h_)/.test(x.k); }); }
 function dayScore(d){ var ch = dayChecks(d); return ch.length ? Math.round(ch.filter(function(x){ return x.done; }).length / ch.length * 100) : 0; }
 
 // ---------- streaks ----------
@@ -787,6 +795,7 @@ function dayScore(d){ var ch = dayChecks(d); return ch.length ? Math.round(ch.fi
 function streakKinds(){
   var c = S.cfg, I = idx(), t = today();
   var ks = [
+    {id:'allin', name:'All-in', emoji:'🏆', desc:'Every habit kept that day', start:I.first, test:function(d){ var h = habitChecks(d); return h.length > 0 && h.every(function(x){ return x.done; }); }, part:function(d){ return habitChecks(d).some(function(x){ return x.done; }); }},
     {id:'score', name:'Good days', emoji:'⭐', desc:'Day score ' + GOOD_DAY + '% or more', start:I.first, test:function(d){ return dayScore(d) >= GOOD_DAY; }, part:function(d){ return dayScore(d) > 0; }},
     {id:'read', name:'Reading', emoji:'📖', desc:c.readMin + ' min a day', start:I.first, test:function(d){ return readMinsOn(d) >= c.readMin; }, part:function(d){ return readMinsOn(d) > 0; }},
     {id:'move', name:'Move', emoji:'💪', desc:c.moveMin + ' active min a day', start:I.first, test:function(d){ return moveMinsOn(d) >= c.moveMin; }, part:function(d){ return moveMinsOn(d) > 0; }},
@@ -820,7 +829,7 @@ function streakStats(k){
   var I = idx(); I.ss = I.ss || {};
   if (I.ss[k.id]) return I.ss[k.id];
   var t = today(), freeze = S.cfg.freeze !== false;
-  var run = 0, best = 0, kept = 0, days = 0, used = {}, frozen = {}, freezes = 0;
+  var run = 0, best = 0, kept = 0, days = 0, used = {}, frozen = {}, freezes = 0, runOn = {};
   var from = k.start && k.start > addDays(t, -730) ? k.start : addDays(t, -730);
   for (var x = from; x <= t; x = addDays(x, 1)){
     var st = dayStatus(k, x);
@@ -833,12 +842,91 @@ function streakStats(k){
       else run = 0;
     }
     if (run > best) best = run;
+    if (st === 'done') runOn[x] = run;
     if (x > addDays(t, -30)){ days++; if (st === 'done') kept++; }
   }
   var res = {cur:run, best:best, rate:days ? Math.round(kept / days * 100) : 0, alive:dayStatus(k, t) === 'done', frozen:frozen,
-    freezeLeft:freeze && !used[weekStart(t)], freezes:freezes};
+    freezeLeft:freeze && !used[weekStart(t)], freezes:freezes, runOn:runOn};
   return I.ss[k.id] = res;
 }
+
+// ---------- points ----------
+// Every day earns points for what you did and loses points for limits you broke. Going past a goal
+// (an extra-long run, more reading) earns more; each dessert or cola over the limit costs more than
+// the one before. Streaks you keep alive add a bonus on top, and all-in days count double.
+var PT = {goal:10, part:3, glass:1, water:5, kept:5, over:5, spendOk:3, spendBad:5, work:5, top:5, note:2, focus:2, prac:5, habit:5, habitBad:10};
+function overCost(n){ return n > 0 ? PT.over * n * (n + 1) / 2 : 0; }   // 1 over: -5, 2 over: -15, 3 over: -30
+function dayActive(d){
+  var I = idx(), day = dayRec(d);
+  if (readMinsOn(d) || moveMinsOn(d) || intake(d, 'water') || intake(d, 'cola') || intake(d, 'sweet') || I.focus[d] || I.prac[d] || workMsOn(d) || spendOn(d)) return true;
+  if (day.note || day.mood || (day.tasks || []).some(function(x){ return x.done; })) return true;
+  var hb = day.habits || {}; for (var k in hb) if (hb[k]) return true;
+  return false;
+}
+function pointsOn(d){
+  var I = idx(); I.pts = I.pts || {};
+  if (I.pts[d]) return I.pts[d];
+  var c = S.cfg, out = [], day = dayRec(d);
+  function add(label, n){ if (n) out.push([label, Math.round(n)]); }
+  if (dayActive(d)){
+    var rm = readMinsOn(d), rg = +c.readMin || 1;
+    if (rm >= rg){ add('📖 Read ' + rm + ' min', PT.goal); add('📖 Extra reading', Math.min(10, Math.floor((rm - rg) / 10))); }
+    else if (rm) add('📖 Some reading', PT.part);
+    var mm = moveMinsOn(d), mg = +c.moveMin || 1;
+    if (mm >= mg){ add('💪 Moved ' + mm + ' min', PT.goal); add('💪 Went ' + (mm - mg) + ' min past goal', Math.min(20, Math.floor((mm - mg) / 10) * 2)); }
+    else if (mm) add('💪 Some movement', PT.part);
+    var wa = intake(d, 'water'), wg = +c.waterGoal || 1;
+    add('💧 ' + wa + ' glass' + (wa === 1 ? '' : 'es') + ' of water', Math.min(wa, wg) * PT.glass);
+    if (wa >= wg) add('💧 Water goal met', PT.water);
+    if (I.intakeFirst && I.intakeFirst <= d){
+      [['cola', '🥤', 'Cola', 'colaMax'], ['sweet', '🍰', 'Desserts', 'sweetMax']].forEach(function(x){
+        var n = intake(d, x[0]), max = +c[x[3]] || 0;
+        if (n <= max) add(x[1] + ' ' + x[2] + ' in limit', PT.kept);
+        else add(x[1] + ' ' + (n - max) + ' ' + x[2].toLowerCase() + ' over the limit (' + n + ' had)', -overCost(n - max));
+      });
+    }
+    if (+c.total > 0 && I.expFirst && I.expFirst <= d){
+      var lim = c.total / daysIn(ymOf(d)), sp = spendOn(d);
+      if (sp <= lim) add('🪙 Spent within the day\'s budget', PT.spendOk); else add('💸 Spent ' + money(sp - lim, 0) + ' over the day\'s budget', -PT.spendBad);
+    }
+    if (+c.workGoal > 0 && workMsOn(d) >= c.workGoal * 3600000) add('💼 Work goal met', PT.work);
+    var tops = (day.tasks || []).filter(function(x){ return x.top; });
+    if (tops.length && tops.every(function(x){ return x.done; })) add('⭐ Top tasks done', PT.top);
+    if (day.note && day.note.trim()) add('📝 Day note written', PT.note);
+    if (I.focus[d]) add('⏱ ' + I.focus[d] + ' focus block' + (I.focus[d] === 1 ? '' : 's'), Math.min(4, I.focus[d]) * PT.focus);
+    if (I.prac[d]) add('🎯 Practised a skill', PT.prac);
+    (c.habits || []).forEach(function(h){
+      if (h.since && d < h.since) return;
+      var v = habitVal(d, h), k = habitKind(h), nm = (h.emoji ? h.emoji + ' ' : '') + h.name;
+      if (k === 'limit'){ if (habitDone(h, v)) add(nm + ' in limit', PT.habit); else add(nm + ' over the limit', -PT.habitBad); }
+      else if (habitDone(h, v)){
+        add(nm, PT.habit);
+        if (k === 'reach' && +h.target > 0) add(nm + ' beyond target', Math.min(5, Math.floor((v / h.target - 1) * 5)));
+      }
+    });
+  }
+  var base = out.reduce(function(s, x){ return s + x[1]; }, 0);
+  // streak bonus: +1 for a streak of 3+ days, +2 for 7+, +3 for 30+; the all-in streak counts double
+  var bonus = 0, live = 0;
+  streakKinds().forEach(function(k){
+    if (k.id === 'score') return;
+    var r = streakStats(k).runOn[d] || 0, b = r >= 30 ? 3 : r >= 7 ? 2 : r >= 3 ? 1 : 0;
+    if (b){ bonus += k.id === 'allin' ? b * 2 : b; live++; }
+  });
+  if (bonus) out.push(['🔥 Bonus for ' + live + ' streak' + (live === 1 ? '' : 's') + ' going', bonus]);
+  return I.pts[d] = {items:out, total:base + bonus, plus:out.reduce(function(s, x){ return s + Math.max(0, x[1]); }, 0), minus:out.reduce(function(s, x){ return s + Math.min(0, x[1]); }, 0)};
+}
+function pointsTotal(){
+  var I = idx();
+  if (I.ptsTotal != null) return I.ptsTotal;
+  var t = today(), s = 0, from = I.first && I.first > addDays(t, -730) ? I.first : addDays(t, -730);
+  if (I.first) for (var x = from; x <= t; x = addDays(x, 1)) s += pointsOn(x).total;
+  return I.ptsTotal = Math.max(0, s);
+}
+function pointsRange(from, days){ var s = 0; for (var i = 0; i < days; i++) s += pointsOn(addDays(from, i)).total; return s; }
+// levels get further apart: 2 at 100 pts, 3 at 300, 4 at 600, 5 at 1000…
+function levelOf(p){ var L = 1; while (50 * (L + 1) * L <= p) L++; return {lv:L, from:50 * L * (L - 1), to:50 * (L + 1) * L}; }
+function ptsTxt(n){ return (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n); }
 function calStatus(k, d){ var s = dayStatus(k, d); return (s === 'miss' || s === 'part') && streakStats(k).frozen[d] ? 'frozen' : s; }
 function bookPct(b){ return b.pages > 0 ? Math.min(100, Math.round((b.page || 0) / b.pages * 100)) : 0; }
 
@@ -898,7 +986,7 @@ function drawerHtml(){
   var t = today(), ym = ymOf(t);
   var top = streakKinds().map(function(k){ return [k, streakStats(k).cur]; }).sort(function(a, b){ return b[1] - a[1]; })[0];
   var tabs = [
-    ['stats', 'Insights', top && top[1] ? '🔥 ' + top[1] + '-day ' + top[0].name.toLowerCase() + ' streak' : 'Streaks, calendar & reports'],
+    ['stats', 'Insights', '⚡ ' + ptsTxt(pointsOn(t).total) + ' pts today' + (top && top[1] ? ' · 🔥 ' + top[1] + '-day ' + top[0].name.toLowerCase() : '')],
     ['today', 'Today', dayScore(t) + '% day score'],
     ['work', 'Work day', (function(){ var w = openWd(), a = w ? wdActive(w) : null; return w ? (a ? awayOf(a).icon + ' ' + awayOf(a).verb : '🟢 Working') + ' · ' + hm(wdWork(w)) : workMsOn(t) ? hm(workMsOn(t)) + ' worked today' : 'Not checked in'; })()],
     ['money', 'Money', money(sum(monthExps(ym), 'amt'), 0) + ' this month'],
@@ -970,7 +1058,11 @@ function todayHtml(){
   h += '<div class="card hero"><div class="row" style="gap:16px">' + ring(pct, cnt(pct) + '%', 'day score') +
     '<div class="grow"><div class="mid">' + done + ' of ' + checks.length + ' done</div><div class="small muted">' +
     (pct >= 100 ? 'Full day. Well played. 🔥' : pct >= 60 ? 'Good going, keep it up.' : d === t ? 'Tick things off as you go.' : 'How that day went.') + '</div>' +
-    '<div class="small" style="margin-top:6px">📖 ' + streakTxt(readStreak(), 'reading').replace('🔥 ', '') + ' · 💪 ' + streakTxt(moveStreak(), 'move').replace('🔥 ', '') + '</div></div></div>' +
+    (function(){
+      var pt = pointsOn(d), lv = levelOf(pointsTotal()), al = streakStats(kindById('allin'));
+      return '<button class="ptsline" data-act="go-points"><b class="' + (pt.total < 0 ? 'neg' : '') + '">⚡ ' + ptsTxt(pt.total) + ' pts</b> · Level ' + lv.lv +
+        (al.cur ? ' · 🏆 ' + al.cur + '-day all-in' : '') + ' ›</button>';
+    })() + '</div></div>' +
     '<hr><div class="tasks">' + checks.map(function(c){
       return '<button class="task ' + (c.done ? 'done' : '') + '" data-act="' + (c.habit ? 'habit' : c.act) + '" data-v="' + (c.habit || c.hid || '') + '">' +
         '<span class="tick-box">' + (c.done ? '✓' : '') + '</span><span class="grow tl">' + esc(c.label) + '</span>' +
@@ -992,6 +1084,7 @@ function todayHtml(){
     var lastDl = lsGet('db-lastdl', 0);
     if (Object.keys(S.recs).length > 20 && Date.now() - lastDl > 7 * 864e5) h += '<button class="alert info" style="width:100%;border:0;text-align:left;cursor:pointer" data-act="backup">💾<div><b>Weekly backup:</b> tap to save a copy of your data to this phone' + (lastDl ? ' (last one ' + dShort(iso(new Date(lastDl))) + ')' : '') + '.</div></button>';
   }
+  h += pointsCard(d, true);
   h += plannerHtml(d);
   h += intakeStrip(d);
 
@@ -2047,8 +2140,46 @@ function currentFocus(){
 // ---------- INSIGHTS ----------
 function statsHtml(){
   var h = topHtml('Insights', '');
-  h += seg('iseg', [['streaks','Streaks'],['money','Money'],['life','Reading & fitness']], S.iseg);
-  return h + (S.iseg === 'life' ? lifeStats() : S.iseg === 'money' ? moneyStats() : streaksHtml());
+  h += seg('iseg', [['points','Points'],['streaks','Streaks'],['money','Money'],['life','Reading & fitness']], S.iseg);
+  return h + (S.iseg === 'life' ? lifeStats() : S.iseg === 'money' ? moneyStats() : S.iseg === 'points' ? pointsHtml() : streaksHtml());
+}
+// what a day earned and lost, line by line
+function pointsCard(d, compact){
+  var pt = pointsOn(d);
+  if (!pt.items.length) return compact ? '' : '<div class="card"><div class="h2">' + (d === today() ? 'Today' : dShort(d)) + '</div><div class="small muted">Nothing logged that day.</div></div>';
+  var rows = pt.items.slice().sort(function(a, b){ return a[1] - b[1]; });
+  return '<div class="card"><div class="h2">' + (compact ? 'Points ' + (d === today() ? 'today' : 'that day') : dLong(d)) +
+    '<span class="ptsum"><span class="good">+' + pt.plus + '</span>' + (pt.minus ? ' <span class="bad">−' + Math.abs(pt.minus) + '</span>' : '') + ' = <b>' + ptsTxt(pt.total) + '</b></span></div>' +
+    rows.map(function(r){ return '<div class="row between small ptrow"><span class="ell">' + esc(r[0]) + '</span><b class="' + (r[1] < 0 ? 'bad' : 'good') + '">' + ptsTxt(r[1]) + '</b></div>'; }).join('') + '</div>';
+}
+function pointsHtml(){
+  var t = today(), tot = pointsTotal(), lv = levelOf(tot), ws = weekStart(t), n = diffDays(ws, t) + 1;
+  var wk = pointsRange(ws, n), lwk = pointsRange(addDays(ws, -7), n), h = '';
+  h += '<div class="card hero"><div class="row between"><div><div class="small muted">⚡ Total points</div><div class="big">' + cnt(tot) + '</div></div>' +
+    '<div style="text-align:right"><div class="small muted">Level</div><div class="mid">' + lv.lv + '</div><div class="small muted" style="margin-top:6px">This week</div><div class="mid">' + ptsTxt(wk) + '</div></div></div>' +
+    '<div style="margin-top:12px">' + bar((tot - lv.from) / (lv.to - lv.from) * 100) + '</div>' +
+    '<div class="small muted" style="margin-top:6px">' + (lv.to - tot) + ' pts to level ' + (lv.lv + 1) + ' · last week by now ' + ptsTxt(lwk) + (wk > lwk ? ' <span class="good">▲</span>' : wk < lwk ? ' <span class="bad">▼</span>' : '') + '</div></div>';
+  // last 14 days
+  var ds = []; for (var i = 13; i >= 0; i--) ds.push(addDays(t, -i));
+  var vals = ds.map(function(x){ return pointsOn(x).total; }), mx = Math.max.apply(null, vals.map(Math.abs).concat([1]));
+  h += '<div class="card"><div class="h2">Last 14 days<span class="tiny muted">tap a day</span></div><div class="bars">' + ds.map(function(x, i){
+    return '<button class="b ' + (vals[i] < 0 ? 'neg' : x === S.pday ? '' : 'dim') + '" data-act="pday" data-v="' + x + '"><em>' + (vals[i] ? ptsTxt(vals[i]) : '') + '</em><i style="height:' + (Math.abs(vals[i]) / mx * 100) + '%"></i><span>' + pd(x).getDate() + '</span></button>';
+  }).join('') + '</div></div>';
+  h += pointsCard(S.pday && S.pday <= t ? S.pday : t, false);
+  // streaks feed the bonus
+  var live = streakKinds().filter(function(k){ return k.id !== 'score' && streakStats(k).cur >= 3; });
+  if (live.length) h += '<div class="card"><div class="h2">Streak bonuses<span class="tiny muted">paid on each day you keep it</span></div>' + live.map(function(k){
+    var s = streakStats(k), c = s.cur, b = (c >= 30 ? 3 : c >= 7 ? 2 : 1) * (k.id === 'allin' ? 2 : 1);
+    return '<div class="row between small ptrow"><span>' + k.emoji + ' ' + esc(k.name) + ' · ' + c + ' days' + (s.alive ? ' · ✓ today' : ' · <span class="warn">do it today</span>') + '</span><b class="good">+' + b + ' a day</b></div>';
+  }).join('') + '</div>';
+  var c = S.cfg;
+  h += '<div class="card"><div class="h2">How points work</div><div class="small muted" style="line-height:1.7">' +
+    '📖 Reading goal +10, then +1 per extra 10 min (up to +10)<br>💪 Move goal +10, then +2 per extra 10 min (up to +20)<br>' +
+    '💧 +1 a glass, +5 when you hit ' + c.waterGoal + '<br>🍰🥤 In limit +5. Over it costs more each time: 1 over −5, 2 over −15, 3 over −30<br>' +
+    '🪙 Day\'s spend in budget +3, over −5<br>✅ Each habit +5 (beat a target, up to +5 more); a broken limit habit −10<br>' +
+    '⭐ Top tasks +5 · 📝 Note +2 · ⏱ Focus block +2 · 🎯 Practice +5 · 💼 Work goal +5<br>' +
+    '🔥 Every streak going adds +1 a day (3+ days), +2 (7+), +3 (30+). 🏆 All-in counts double.</div></div>';
+  return h;
 }
 function streaksHtml(){
   var ks = streakKinds(), k = kindById(S.skind), st = streakStats(k), h = '';
@@ -2751,6 +2882,8 @@ var A = {
     toast('🚪 Checked out · ' + hm(chan(r.work)) + ' worked');
   },
   'wd-toggle':function(el){ S.wdOpen = S.wdOpen === el.dataset.v ? null : el.dataset.v; render(); },
+  'go-points':function(){ S.tab = 'stats'; S.iseg = 'points'; S.pday = today(); lsSet('db-tab', 'stats'); S.enter = true; render(); window.scrollTo(0, 0); },
+  pday:function(el){ S.pday = el.dataset.v; render(); },
   'go-intake':function(){ S.tab = 'intake'; lsSet('db-tab', 'intake'); S.enter = true; render(); window.scrollTo(0, 0); },
   intake:function(el){
     var k = el.dataset.k, d = el.dataset.day || S.day, step = +el.dataset.v, c = S.cfg;
@@ -2765,8 +2898,7 @@ var A = {
       else {
         var max = +c[k === 'cola' ? 'colaMax' : 'sweetMax'];
         var msg = now <= max ? INTAKE[k].emoji + ' Logged. ' + (max - now) + ' left in your limit'
-          : max === 0 ? INTAKE[k].emoji + ' Logged. Today won\'t count for your ' + (k === 'cola' ? 'cola-free' : 'dessert-free') + ' streak.'
-          : INTAKE[k].emoji + ' Over your limit (' + now + ' of ' + max + ')';
+          : INTAKE[k].emoji + ' Over your limit (' + now + ' of ' + max + '). −' + (overCost(now - max) - overCost(now - max - 1)) + ' pts' + (now - max === 1 ? ' and the streak breaks' : '');
         toast(msg, now > max ? 'warn' : '');
       }
     }
