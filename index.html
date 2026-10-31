@@ -51,7 +51,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 button{transition:transform .15s var(--ease),background-color .2s,color .2s,box-shadow .2s}
 button:active{transform:scale(.97)}
 a{color:var(--acc)}
-.wrap{max-width:560px;margin:0 auto;padding:0 16px calc(env(safe-area-inset-bottom) + 110px)}
+.wrap{max-width:560px;margin:0 auto;padding:0 16px calc(env(safe-area-inset-bottom) + 170px)}
 
 /* top bar */
 .top{position:sticky;top:0;z-index:15;display:flex;align-items:center;gap:10px;margin:0 -16px 14px;padding:calc(env(safe-area-inset-top) + 10px) 16px 10px;background:var(--bg);transition:box-shadow .25s,background-color .25s}
@@ -166,7 +166,7 @@ svg.i{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke
 .nav-i.on .nt{color:var(--acc)}
 .dfoot{margin-top:auto;padding-top:14px;border-top:1px solid var(--line)}
 
-.fab{position:fixed;right:max(18px,calc(50% - 262px));bottom:calc(env(safe-area-inset-bottom) + 22px);width:60px;height:60px;border-radius:20px;border:0;background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;font-size:32px;line-height:1;box-shadow:0 12px 28px rgba(232,49,140,.42);z-index:21;cursor:pointer;display:grid;place-items:center;animation:fabin .5s var(--ease) both}
+.fab{position:fixed;right:max(18px,calc(50% - 262px));bottom:calc(env(safe-area-inset-bottom) + 84px);width:60px;height:60px;border-radius:20px;border:0;background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;font-size:32px;line-height:1;box-shadow:0 12px 28px rgba(232,49,140,.42);z-index:21;cursor:pointer;display:grid;place-items:center;animation:fabin .5s var(--ease) both}
 @keyframes fabin{from{transform:scale(.4) rotate(-90deg);opacity:0}}
 .sheet{position:fixed;inset:0;z-index:40;visibility:hidden}
 .sheet.open{visibility:visible}
@@ -194,7 +194,7 @@ svg.i{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke
 .tick-box{width:26px;height:26px;border-radius:9px;border:2px solid var(--line);display:grid;place-items:center;flex:none;font-size:14px;color:#fff;transition:background-color .2s,border-color .2s}
 .card.hero .tick-box{border-color:rgba(255,255,255,.25)}
 .task.done .tick-box{background:var(--acc);border-color:var(--acc)}
-.task.done .tl{opacity:.55;text-decoration:line-through}
+.task.done .tl{opacity:.6}
 .task.pop .tick-box{animation:pop .45s var(--ease)}
 @keyframes pop{0%{transform:scale(.6)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
 .week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center}
@@ -213,6 +213,43 @@ button.b{border:0;background:none;padding:0;font:inherit;cursor:pointer}
 .ptsline b{color:#ff9fd0}.ptsline b.neg{color:#ffd166}
 .ptsum{font-size:13px;font-weight:600}
 .ptrow{padding:7px 0;border-top:1px solid var(--line);gap:10px}
+.ring .c .neg{color:#ffd166}
+.htiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+.htile{position:relative;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:inherit;border-radius:16px;padding:10px 8px 9px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:2px;min-width:0;font:inherit;transition:background-color .2s,border-color .2s}
+.htile .hi{font-size:20px;line-height:1.2}
+.htile .hn{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.htile .hp{font-size:11px;opacity:.65;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.htile.done{background:rgba(34,197,94,.18);border-color:rgba(34,197,94,.45)}
+.htile.done .hp{color:#86efac;opacity:1;font-weight:700}
+.htile .hplus{position:absolute;top:7px;right:8px;font-size:11px;font-weight:800;background:var(--acc);color:#fff;border-radius:99px;padding:1px 6px}
+.htile.pop{animation:pop .45s var(--ease)}
+.under{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.12)}
+.under .ul{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;opacity:.6;margin-right:2px}
+.uchip{border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:inherit;border-radius:99px;padding:5px 10px;font:inherit;font-size:12.5px;cursor:pointer}
+.uchip b{color:#ff9fd0;margin-left:2px}
+.uchip.over{background:rgba(255,209,102,.16);border-color:#ffd166;color:#ffd166;font-weight:700}
+.rmore{width:100%;border-left:0;border-right:0;border-bottom:0;background:none;cursor:pointer;color:var(--acc);font:inherit;font-size:13px;font-weight:600;text-align:left}
+.rless{display:block;margin:8px 0 0 auto}
+.bnav{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;justify-content:center;gap:4px;background:var(--card);border-top:1px solid var(--line);padding:6px max(8px,calc(50% - 280px)) calc(env(safe-area-inset-bottom) + 6px);box-shadow:0 -6px 20px rgba(0,0,0,.05)}
+.bnav button{flex:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;border-radius:12px;color:var(--mute);font:inherit;font-size:11px;font-weight:600;cursor:pointer;min-width:0}
+.bnav button svg{width:22px;height:22px}
+.bnav button span{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bnav button.on{color:var(--acc)}
+.fab.wide{width:auto;padding:0 20px;font-size:15px;font-weight:700}
+.seg.sm{margin:0 0 12px}.seg.sm button{padding:7px 0;font-size:13px}
+.rtable{border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.rsec{display:flex;border-top:1px solid var(--line)}.rsec:first-child{border-top:0}
+.rsign{flex:0 0 38px;display:flex;align-items:flex-start;justify-content:center;padding-top:9px;font-size:20px;font-weight:800}
+.rsec.pl .rsign{background:rgba(21,128,61,.1);color:#15803d}.rsec.mi .rsign{background:rgba(220,38,38,.08);color:#dc2626}.rsec.nx .rsign{background:rgba(37,99,235,.1);color:#2563eb}
+.rcells{flex:1;min-width:0}
+.rhead{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--mute);padding:8px 10px 4px}
+.rcell{font-size:13.5px;padding:7px 10px;border-top:1px dashed var(--line);display:flex;justify-content:space-between;gap:8px;color:var(--mute)}
+.rcell.mine{color:var(--ink);font-weight:600}
+.rtag{flex:none;font-size:11px;color:var(--mute);font-weight:500}
+.rsum{margin-top:12px;border:1px solid var(--line);border-radius:14px;padding:2px 10px 10px}.rsum .rhead{padding-left:0}
+.rsum.lead{margin:0 0 12px}
+.rsum .facts{margin:0}.rsum .facts span{font-size:12px;padding:4px 9px}
+.sg{display:inline-block;width:20px;text-align:center;font-weight:800}.sg.pl{color:#15803d}.sg.mi{color:#dc2626}.sg.nx{color:#2563eb}
 .bars .b span{font-size:10.5px;color:var(--mute);font-weight:600}
 .bars .b em{font-size:10px;color:var(--mute);font-style:normal}
 .donut{display:flex;gap:16px;align-items:center}
@@ -375,7 +412,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 <script>
 (function(){
 'use strict';
-var APP_VERSION = 'v11';
+var APP_VERSION = 'v13';
 
 // ---------- utils ----------
 function $(s, r){ return (r || document).querySelector(s); }
@@ -493,7 +530,7 @@ var DEFAULT_CFG = {
   waterGoal:8, glassMl:250, colaMax:0, sweetMax:1, freeze:true, pagesPerDay:20, workGoal:0, wdImported:false,
   habits:[{id:'wake', name:'Up by 6:30', emoji:'⏰'}]
 };
-var GOOD_DAY = 70;
+var GOOD_PTS = 40;   // a day with this many points counts as a good day
 var MILESTONES = [3, 7, 14, 30, 60, 100, 180, 365];
 var GUESS = [
   ['food', /zomato|swiggy|domino|pizza|kfc|mcdonald|burger|cafe|restaurant|dhaba|starbucks|chai|biryani|eatsure|lunch|dinner|breakfast/i],
@@ -518,7 +555,7 @@ function guessCat(t){
 // ---------- state ----------
 var S = {
   authed:false, authChecked:false, ready:false, user:null, recs:{}, cfg:JSON.parse(JSON.stringify(DEFAULT_CFG)),
-  tab:'today', mseg:lsGet('db-mseg', 'overview'), bseg:'reading', iseg:'points', pday:'', sseg:'active', skind:lsGet('db-skind', 'score'), cal:ymOf(today()), year:+today().slice(0, 4), pseg:'goals', ryear:+today().slice(0, 4), focus:lsGet('db-focus', null),
+  tab:'today', mseg:lsGet('db-mseg', 'overview'), bseg:'reading', iseg:'points', pday:'', rview:lsGet('db-rview', 'day'), sseg:'active', skind:lsGet('db-skind', 'score'), cal:ymOf(today()), year:+today().slice(0, 4), pseg:'goals', ryear:+today().slice(0, 4), focus:lsGet('db-focus', null),
   month:ymOf(today()), imonth:ymOf(today()), day:today(), q:'', fcat:'', synced:false, syncErr:'',
   timer:lsGet('db-timer', null), rolled:false, catTouched:false, enter:true, drawer:false
 };
@@ -759,34 +796,38 @@ function weekStart(d){ var x = pd(d), w = (x.getDay() + 6) % 7; x.setDate(x.getD
 function dayChecks(d){
   var c = S.cfg, out = [];
   var rm = readMinsOn(d), mm = moveMinsOn(d), day = dayRec(d);
-  out.push({k:'read', label:'Read ' + c.readMin + ' min', done:rm >= c.readMin, prog:rm + ' / ' + c.readMin + ' min', act:'add-read'});
-  out.push({k:'move', label:'Move ' + c.moveMin + ' min', done:mm >= c.moveMin, prog:mm + ' / ' + c.moveMin + ' min', act:'add-work'});
+  out.push({k:'read', label:'Read ' + c.readMin + ' min', done:rm >= c.readMin, prog:rm + ' / ' + c.readMin + ' min', act:'add-read', ic:'📖', sh:'Read'});
+  out.push({k:'move', label:'Move ' + c.moveMin + ' min', done:mm >= c.moveMin, prog:mm + ' / ' + c.moveMin + ' min', act:'add-work', ic:'💪', sh:'Move'});
   if (+c.total > 0){
     var lim = c.total / daysIn(ymOf(d)), sp = spendOn(d);
-    out.push({k:'spend', label:'Spend under ' + money(lim, 0), done:sp <= lim, prog:money(sp, 0) + ' spent', act:'add-exp', auto:true});
+    out.push({k:'spend', label:'Spend under ' + money(lim, 0), done:sp <= lim, prog:money(sp, 0) + ' spent', act:'add-exp', auto:true, lim:true, ic:'💸', cnt:money(sp, 0) + ' / ' + money(lim, 0)});
   }
   var wa = intake(d, 'water'), co = intake(d, 'cola'), sw = intake(d, 'sweet');
-  out.push({k:'water', label:'💧 Drink ' + c.waterGoal + ' glasses', done:wa >= c.waterGoal, prog:wa + ' / ' + c.waterGoal, act:'go-intake'});
+  out.push({k:'water', label:'💧 Drink ' + c.waterGoal + ' glasses', done:wa >= c.waterGoal, prog:wa + ' / ' + c.waterGoal, act:'go-intake', ic:'💧', sh:'Water', plus:'water'});
   // the "stay under" checks only count once you've started logging intake, so a fresh day doesn't start half-done
   var tracking = idx().intakeFirst && idx().intakeFirst <= d;
   if (tracking){
-    out.push({k:'cola', label:'🥤 ' + (+c.colaMax ? 'Cola: ' + c.colaMax + ' max' : 'No cola'), done:co <= c.colaMax, prog:co ? co + ' had' : '', act:'go-intake'});
-    out.push({k:'sweet', label:'🍰 ' + (+c.sweetMax ? 'Desserts: ' + c.sweetMax + ' max' : 'No desserts'), done:sw <= c.sweetMax, prog:sw ? sw + ' had' : '', act:'go-intake'});
+    out.push({k:'cola', label:'🥤 ' + (+c.colaMax ? 'Cola: ' + c.colaMax + ' max' : 'No cola'), done:co <= c.colaMax, prog:co ? co + ' had' : '', act:'go-intake', lim:true, ic:'🥤', cnt:co + ' / ' + c.colaMax, plus:'cola'});
+    out.push({k:'sweet', label:'🍰 ' + (+c.sweetMax ? 'Desserts: ' + c.sweetMax + ' max' : 'No desserts'), done:sw <= c.sweetMax, prog:sw ? sw + ' had' : '', act:'go-intake', lim:true, ic:'🍰', cnt:sw + ' / ' + c.sweetMax, plus:'sweet'});
   }
   var tops = (day.tasks || []).filter(function(x){ return x.top; });
-  if (tops.length) out.push({k:'top', label:'⭐ Finish your top ' + tops.length, done:tops.every(function(x){ return x.done; }), prog:tops.filter(function(x){ return x.done; }).length + ' / ' + tops.length, act:'go-planner'});
-  if (+c.workGoal > 0){ var wm = workMsOn(d) / 3600000; out.push({k:'work', label:'💼 Work ' + c.workGoal + 'h', done:wm >= c.workGoal, prog:wm ? wm.toFixed(1) + 'h' : '', act:'go-work'}); }
-  out.push({k:'note', label:'Write the day note', done:!!(day.note && day.note.trim()), prog:'', act:'note'});
+  if (tops.length) out.push({k:'top', label:'⭐ Finish your top ' + tops.length, done:tops.every(function(x){ return x.done; }), prog:tops.filter(function(x){ return x.done; }).length + ' / ' + tops.length, act:'go-planner', ic:'⭐', sh:'Top tasks'});
+  if (+c.workGoal > 0){ var wm = workMsOn(d) / 3600000; out.push({k:'work', label:'💼 Work ' + c.workGoal + 'h', done:wm >= c.workGoal, prog:(wm ? wm.toFixed(1) : 0) + ' / ' + c.workGoal + 'h', act:'go-work', ic:'💼', sh:'Work'}); }
+  out.push({k:'note', label:'Write the day note', done:noteWritten(day), prog:'', act:'note', ic:'📝', sh:'Day review'});
   (c.habits || []).forEach(function(h){
     var v = habitVal(d, h), lbl = (h.emoji ? h.emoji + ' ' : '') + h.name, k = habitKind(h);
-    if (k === 'yes') out.push({k:'h_' + h.id, label:lbl, done:!!v, habit:h.id});
+    var ic = h.emoji || '✅';
+    if (k === 'yes') out.push({k:'h_' + h.id, label:lbl, done:!!v, habit:h.id, ic:ic, sh:h.name});
     else out.push({k:'h_' + h.id, label:lbl + (k === 'reach' ? ' · ' + h.target + ' ' + (h.unit || '') : ' · max ' + h.target + ' ' + (h.unit || '')),
-      done:habitDone(h, v), prog:k === 'reach' ? v + ' / ' + h.target : (v ? v + ' ' + (h.unit || '') : ''), act:'habit-log', hid:h.id});
+      done:habitDone(h, v), prog:k === 'reach' ? v + ' / ' + h.target + ' ' + (h.unit || '') : (v ? v + ' ' + (h.unit || '') : ''), act:'habit-log', hid:h.id,
+      ic:ic, sh:h.name, lim:k === 'limit', cnt:k === 'limit' ? v + ' / ' + h.target + ' ' + (h.unit || '') : ''});
   });
   return out;
 }
+function noteWritten(day){ return !!((day.note && day.note.trim()) || (day.pl || []).length || (day.mi || []).length || (day.nx || []).length); }
 // the habit checks only (no note, top tasks or spend): what the all-in streak asks for
 function habitChecks(d){ return dayChecks(d).filter(function(x){ return /^(read|move|water|cola|sweet|work|h_)/.test(x.k); }); }
+function goodDay(d){ return pointsOn(d).total >= GOOD_PTS; }
 function dayScore(d){ var ch = dayChecks(d); return ch.length ? Math.round(ch.filter(function(x){ return x.done; }).length / ch.length * 100) : 0; }
 
 // ---------- streaks ----------
@@ -796,7 +837,7 @@ function streakKinds(){
   var c = S.cfg, I = idx(), t = today();
   var ks = [
     {id:'allin', name:'All-in', emoji:'🏆', desc:'Every habit kept that day', start:I.first, test:function(d){ var h = habitChecks(d); return h.length > 0 && h.every(function(x){ return x.done; }); }, part:function(d){ return habitChecks(d).some(function(x){ return x.done; }); }},
-    {id:'score', name:'Good days', emoji:'⭐', desc:'Day score ' + GOOD_DAY + '% or more', start:I.first, test:function(d){ return dayScore(d) >= GOOD_DAY; }, part:function(d){ return dayScore(d) > 0; }},
+    {id:'score', name:'Good days', emoji:'⭐', desc:GOOD_PTS + '+ points in a day', start:I.first, test:goodDay, part:function(d){ return pointsOn(d).total > 0; }},
     {id:'read', name:'Reading', emoji:'📖', desc:c.readMin + ' min a day', start:I.first, test:function(d){ return readMinsOn(d) >= c.readMin; }, part:function(d){ return readMinsOn(d) > 0; }},
     {id:'move', name:'Move', emoji:'💪', desc:c.moveMin + ' active min a day', start:I.first, test:function(d){ return moveMinsOn(d) >= c.moveMin; }, part:function(d){ return moveMinsOn(d) > 0; }},
     {id:'water', name:'Water', emoji:'💧', desc:c.waterGoal + ' glasses a day', start:I.intakeFirst || t, test:function(d){ return intake(d, 'water') >= c.waterGoal; }, part:function(d){ return intake(d, 'water') > 0; }},
@@ -859,7 +900,7 @@ function overCost(n){ return n > 0 ? PT.over * n * (n + 1) / 2 : 0; }   // 1 ove
 function dayActive(d){
   var I = idx(), day = dayRec(d);
   if (readMinsOn(d) || moveMinsOn(d) || intake(d, 'water') || intake(d, 'cola') || intake(d, 'sweet') || I.focus[d] || I.prac[d] || workMsOn(d) || spendOn(d)) return true;
-  if (day.note || day.mood || (day.tasks || []).some(function(x){ return x.done; })) return true;
+  if (noteWritten(day) || day.mood || (day.tasks || []).some(function(x){ return x.done; })) return true;
   var hb = day.habits || {}; for (var k in hb) if (hb[k]) return true;
   return false;
 }
@@ -867,33 +908,33 @@ function pointsOn(d){
   var I = idx(); I.pts = I.pts || {};
   if (I.pts[d]) return I.pts[d];
   var c = S.cfg, out = [], day = dayRec(d);
-  function add(label, n){ if (n) out.push([label, Math.round(n)]); }
+  function add(label, n, g){ if (n) out.push([label, Math.round(n), g || label]); }
   if (dayActive(d)){
     var rm = readMinsOn(d), rg = +c.readMin || 1;
-    if (rm >= rg){ add('📖 Read ' + rm + ' min', PT.goal); add('📖 Extra reading', Math.min(10, Math.floor((rm - rg) / 10))); }
+    if (rm >= rg){ add('📖 Read ' + rm + ' min', PT.goal, '📖 Reading goal met'); add('📖 Extra reading', Math.min(10, Math.floor((rm - rg) / 10)), '📖 Read past the goal'); }
     else if (rm) add('📖 Some reading', PT.part);
     var mm = moveMinsOn(d), mg = +c.moveMin || 1;
-    if (mm >= mg){ add('💪 Moved ' + mm + ' min', PT.goal); add('💪 Went ' + (mm - mg) + ' min past goal', Math.min(20, Math.floor((mm - mg) / 10) * 2)); }
+    if (mm >= mg){ add('💪 Moved ' + mm + ' min', PT.goal, '💪 Move goal met'); add('💪 Went ' + (mm - mg) + ' min past goal', Math.min(20, Math.floor((mm - mg) / 10) * 2), '💪 Went past the move goal'); }
     else if (mm) add('💪 Some movement', PT.part);
     var wa = intake(d, 'water'), wg = +c.waterGoal || 1;
-    add('💧 ' + wa + ' glass' + (wa === 1 ? '' : 'es') + ' of water', Math.min(wa, wg) * PT.glass);
+    add('💧 ' + wa + ' glass' + (wa === 1 ? '' : 'es') + ' of water', Math.min(wa, wg) * PT.glass, '💧 Drank water');
     if (wa >= wg) add('💧 Water goal met', PT.water);
     if (I.intakeFirst && I.intakeFirst <= d){
       [['cola', '🥤', 'Cola', 'colaMax'], ['sweet', '🍰', 'Desserts', 'sweetMax']].forEach(function(x){
         var n = intake(d, x[0]), max = +c[x[3]] || 0;
         if (n <= max) add(x[1] + ' ' + x[2] + ' in limit', PT.kept);
-        else add(x[1] + ' ' + (n - max) + ' ' + x[2].toLowerCase() + ' over the limit (' + n + ' had)', -overCost(n - max));
+        else add(x[1] + ' ' + (n - max) + ' ' + x[2].toLowerCase() + ' over the limit (' + n + ' had)', -overCost(n - max), x[1] + ' ' + x[2] + ' over the limit');
       });
     }
     if (+c.total > 0 && I.expFirst && I.expFirst <= d){
       var lim = c.total / daysIn(ymOf(d)), sp = spendOn(d);
-      if (sp <= lim) add('🪙 Spent within the day\'s budget', PT.spendOk); else add('💸 Spent ' + money(sp - lim, 0) + ' over the day\'s budget', -PT.spendBad);
+      if (sp <= lim) add('🪙 Spent within the day\'s budget', PT.spendOk); else add('💸 Spent ' + money(sp - lim, 0) + ' over the day\'s budget', -PT.spendBad, '💸 Spent over the day\'s budget');
     }
     if (+c.workGoal > 0 && workMsOn(d) >= c.workGoal * 3600000) add('💼 Work goal met', PT.work);
     var tops = (day.tasks || []).filter(function(x){ return x.top; });
     if (tops.length && tops.every(function(x){ return x.done; })) add('⭐ Top tasks done', PT.top);
-    if (day.note && day.note.trim()) add('📝 Day note written', PT.note);
-    if (I.focus[d]) add('⏱ ' + I.focus[d] + ' focus block' + (I.focus[d] === 1 ? '' : 's'), Math.min(4, I.focus[d]) * PT.focus);
+    if (noteWritten(day)) add('📝 Day note written', PT.note);
+    if (I.focus[d]) add('⏱ ' + I.focus[d] + ' focus block' + (I.focus[d] === 1 ? '' : 's'), Math.min(4, I.focus[d]) * PT.focus, '⏱ Focus blocks done');
     if (I.prac[d]) add('🎯 Practised a skill', PT.prac);
     (c.habits || []).forEach(function(h){
       if (h.since && d < h.since) return;
@@ -913,8 +954,117 @@ function pointsOn(d){
     var r = streakStats(k).runOn[d] || 0, b = r >= 30 ? 3 : r >= 7 ? 2 : r >= 3 ? 1 : 0;
     if (b){ bonus += k.id === 'allin' ? b * 2 : b; live++; }
   });
-  if (bonus) out.push(['🔥 Bonus for ' + live + ' streak' + (live === 1 ? '' : 's') + ' going', bonus]);
+  if (bonus) out.push(['🔥 Bonus for ' + live + ' streak' + (live === 1 ? '' : 's') + ' going', bonus, '🔥 Streak bonus']);
   return I.pts[d] = {items:out, total:base + bonus, plus:out.reduce(function(s, x){ return s + Math.max(0, x[1]); }, 0), minus:out.reduce(function(s, x){ return s + Math.min(0, x[1]); }, 0)};
+}
+// ---------- day review ----------
+// The note is a table: + what went well, − what didn't, → what to do next. Your own rows sit on top;
+// the rest is filled in from the other sections (points, missed goals, open tasks, yesterday's → rows).
+// Rows are [text, group, mine]; the group lets week and month count how often a thing happened.
+function reviewOf(d){
+  var day = dayRec(d), t = today(), pl = [], mi = [], nx = [];
+  (day.pl || []).forEach(function(x){ pl.push([x, '', true]); });
+  (day.mi || []).forEach(function(x){ mi.push([x, '', true]); });
+  (day.nx || []).forEach(function(x){ nx.push([x, '', true]); });
+  pointsOn(d).items.forEach(function(it){ (it[1] > 0 ? pl : mi).push([it[0] + ' (' + ptsTxt(it[1]) + ')', it[2], false]); });
+  if (dayActive(d) || d === t){
+    habitChecks(d).forEach(function(c){
+      if (c.done || /^(cola|sweet)$/.test(c.k)) return;
+      var h = c.k.indexOf('h_') === 0 && (S.cfg.habits || []).filter(function(x){ return 'h_' + x.id === c.k; })[0];
+      if (h && habitKind(h) === 'limit') return;   // a broken limit habit is already a − from points
+      if (d < t) mi.push(['Missed: ' + c.label + (c.prog ? ' (' + c.prog + ')' : ''), 'Missed: ' + c.label, false]);
+      else nx.push([c.label + (c.prog ? ' (' + c.prog + ')' : ''), '', false]);
+    });
+  }
+  (day.tasks || []).filter(function(x){ return !x.done; }).forEach(function(x){ nx.push([(d < t ? 'Carry over: ' : (x.top ? '⭐ ' : '')) + x.text, '', false]); });
+  var yd = dayRec(addDays(d, -1));
+  (yd.nx || []).forEach(function(x){ nx.push([x + ' · from ' + (d === t ? 'yesterday' : dShort(addDays(d, -1))), '', false]); });
+  // next steps for broken limits only make sense once the day is over
+  if (d < t) pointsOn(d).items.forEach(function(it){ if (it[1] < 0) nx.push(['Tomorrow: ' + fixText(it[2]).toLowerCase(), '', false]); });
+  return {pl:pl, mi:mi, nx:nx, summary:(day.note || '').trim(), facts:dayFacts(d)};
+}
+// turns a − group into the thing to do about it
+function fixText(g){
+  if (/^Missed: /.test(g)) return 'Hit ' + g.slice(8);
+  if (/over the day's budget$/.test(g)) return 'Keep spending within the day\'s budget';
+  if (/ over the limit$/.test(g)) return 'Keep ' + g.replace(/ over the limit$/, '') + ' in limit';
+  return 'Fix ' + g;
+}
+// what the other sections say about a day, one line
+function dayFacts(d){
+  var day = dayRec(d), pt = pointsOn(d).total, f = [];
+  f.push('⚡ ' + ptsTxt(pt) + ' pts');
+  f.push(dayScore(d) + '% day score');
+  if (day.mood) f.push(MOODS[day.mood - 1]);
+  if (spendOn(d)) f.push('💸 ' + money(spendOn(d), 0));
+  if (readMinsOn(d)) f.push('📖 ' + readMinsOn(d) + ' min');
+  if (moveMinsOn(d)) f.push('💪 ' + moveMinsOn(d) + ' min');
+  if (intake(d, 'water')) f.push('💧 ' + intake(d, 'water'));
+  if (workMsOn(d)) f.push('💼 ' + hm(workMsOn(d)));
+  if (idx().prac[d]) f.push('🎯 ' + idx().prac[d] + ' min');
+  if (day.weight) f.push('⚖️ ' + day.weight + ' kg');
+  return f;
+}
+function revTable(rows, cap){
+  var signs = {pl:['+', 'What went well'], mi:['−', 'What didn\'t go right'], nx:['→', 'What to do now']}, h = '<div class="rtable">';
+  ['pl', 'mi', 'nx'].forEach(function(k){
+    var rs = rows[k], more = cap && rs.length > cap ? rs.length - cap : 0;
+    if (S.revAll){ cap = 0; more = 0; }
+    h += '<div class="rsec ' + k + '"><div class="rsign">' + signs[k][0] + '</div><div class="rcells"><div class="rhead">' + signs[k][1] + ' <span class="muted">' + rs.length + '</span></div>' +
+      (rs.length ? rs.slice(0, cap || rs.length).map(function(r){ return '<div class="rcell' + (r[2] ? ' mine' : '') + '">' + esc(r[0]) + (r[3] ? '<span class="rtag">' + esc(r[3]) + '</span>' : '') + '</div>'; }).join('') : '<div class="rcell muted">Nothing yet</div>') +
+      (more ? '<button class="rcell rmore" data-act="rev-more">+ ' + more + ' more</button>' : '') + '</div></div>';
+  });
+  return h + '</div>' + (S.revAll ? '<button class="link rless" data-act="rev-more">Show less</button>' : '');
+}
+// week / month: group what kept happening, list what you wrote, and a short summary
+function rangeReview(from, to){
+  var t = today(), end = to < t ? to : t, g = {pl:{}, mi:{}}, mine = {pl:[], mi:[], nx:[]}, days = 0, pts = 0, good = 0, best = null, worst = null;
+  var tot = {spend:0, read:0, move:0, water:0, work:0}, moods = [];
+  for (var d = from; d <= end; d = addDays(d, 1)){
+    days++;
+    var r = reviewOf(d), p = pointsOn(d).total, day = dayRec(d);
+    pts += p; if (goodDay(d)) good++;
+    if (dayActive(d) && d < t){ if (!best || p > best[1]) best = [d, p]; if (!worst || p < worst[1]) worst = [d, p]; }
+    ['pl', 'mi'].forEach(function(k){ r[k].forEach(function(x){ if (x[2]) mine[k].push([x[0], '', true, dShort(d)]); else if (x[1]) g[k][x[1]] = (g[k][x[1]] || 0) + 1; }); });
+    (day.nx || []).forEach(function(x){ mine.nx.push([x, '', true, dShort(d)]); });
+    tot.spend += spendOn(d); tot.read += readMinsOn(d); tot.move += moveMinsOn(d); tot.water += intake(d, 'water'); tot.work += workMsOn(d);
+    if (day.mood) moods.push(day.mood);
+  }
+  function grouped(k){ return Object.keys(g[k]).sort(function(a, b){ return g[k][b] - g[k][a]; }).map(function(n){ return [n, '', false, g[k][n] + ' of ' + days + ' days']; }); }
+  var pl = mine.pl.concat(grouped('pl')), mi = mine.mi.concat(grouped('mi')), topMi = grouped('mi')[0];
+  var nx = mine.nx.slice(-6).reverse();
+  grouped('mi').slice(0, 3).forEach(function(x){ nx.push([fixText(x[0]), '', false, 'slipped ' + x[3]]); });
+  var avgMood = moods.length ? MOODS[Math.round(moods.reduce(function(a, b){ return a + b; }, 0) / moods.length) - 1] : '';
+  var brief = good + ' good day' + (good === 1 ? '' : 's') + ' out of ' + days + ', ' + ptsTxt(pts) + ' points.' +
+    (best ? ' Best day ' + dShort(best[0]) + ' (' + ptsTxt(best[1]) + ')' + (worst && worst[0] !== best[0] ? ', weakest ' + dShort(worst[0]) + ' (' + ptsTxt(worst[1]) + ').' : '.') : '') +
+    (topMi ? ' What kept going wrong: ' + topMi[0].replace(/^Missed: /, 'missed ') + ' (' + topMi[3] + ').' : ' Nothing kept going wrong.');
+  var facts = ['⚡ ' + ptsTxt(pts) + ' pts', '⭐ ' + good + '/' + days + ' good days'];
+  if (tot.spend) facts.push('💸 ' + money(tot.spend, 0));
+  if (tot.read) facts.push('📖 ' + mins(tot.read));
+  if (tot.move) facts.push('💪 ' + mins(tot.move));
+  if (tot.water) facts.push('💧 ' + Math.round(tot.water / days * 10) / 10 + '/day');
+  if (tot.work) facts.push('💼 ' + hm(tot.work));
+  if (avgMood) facts.push('Mood ' + avgMood);
+  return {pl:pl, mi:mi, nx:nx, brief:brief, facts:facts, days:days};
+}
+function reviewCard(d){
+  var mode = S.rview || 'day', h = '<div class="card"><div class="h2">Day review' + (mode === 'day' ? '<button class="link" data-act="note">' + (noteWritten(dayRec(d)) ? 'Edit' : 'Write') + '</button>' : '') + '</div>';
+  h += '<div class="seg sm">' + [['day', 'Day'], ['week', 'Week'], ['month', 'Month']].map(function(o){ return '<button class="' + (o[0] === mode ? 'on' : '') + '" data-act="rview" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</div>';
+  if (mode === 'day'){
+    var day = dayRec(d), r = reviewOf(d);
+    h += '<div class="moods">' + MOODS.map(function(m, i){ return '<button class="' + (day.mood === i + 1 ? 'on' : '') + '" data-act="mood" data-v="' + (i + 1) + '">' + m + '</button>'; }).join('') + '</div>';
+    h += revTable(r, 4);
+    h += '<div class="rsum"><div class="rhead">Summary</div><div class="facts">' + r.facts.map(function(x){ return '<span>' + esc(x) + '</span>'; }).join('') + '</div>' +
+      (r.summary ? '<div class="pre" style="margin-top:8px">' + esc(r.summary) + '</div>' : '<div class="small muted" style="margin-top:6px">Tap Write to add your own +, − and → rows and a line about the day.</div>') + '</div>';
+    if (day.links && day.links.length) h += '<div class="links" style="margin-top:8px">' + day.links.map(linkHtml).join('') + '</div>';
+  } else {
+    var from = mode === 'week' ? weekStart(d) : ymOf(d) + '-01', to = mode === 'week' ? addDays(from, 6) : ymOf(d) + '-' + pad(daysIn(ymOf(d)));
+    var rr = rangeReview(from, to);
+    h += '<div class="small muted" style="margin-bottom:8px">' + (mode === 'week' ? weekLabel(from) : monthName(ymOf(d))) + (to > today() ? ' · so far' : '') + '</div>';
+    h += revTable(rr, 5);
+    h += '<div class="rsum"><div class="rhead">Summary</div><div class="small" style="line-height:1.55">' + esc(rr.brief) + '</div><div class="facts" style="margin-top:8px">' + rr.facts.map(function(x){ return '<span>' + esc(x) + '</span>'; }).join('') + '</div></div>';
+  }
+  return h + '</div>';
 }
 function pointsTotal(){
   var I = idx();
@@ -941,7 +1091,7 @@ function render(){
   if (!S.ready){ app.innerHTML = '<div class="load">Loading your data…</div>'; return; }
   var ae = document.activeElement, keep = ae && ae.id === 'q' ? {v:ae.value, s:ae.selectionStart} : null;
   var body = S.tab === 'money' ? moneyHtml() : S.tab === 'books' ? booksHtml() : S.tab === 'fit' ? fitHtml() : S.tab === 'stats' ? statsHtml() : S.tab === 'intake' ? intakeHtml() : S.tab === 'mood' ? moodPage() : S.tab === 'plan' ? planHtml() : S.tab === 'work' ? workHtml() : S.tab === 'skills' ? skillsHtml() : todayHtml();
-  app.innerHTML = '<div class="wrap' + (S.enter ? ' enter' : '') + '">' + bannerHtml() + body + '</div>' + drawerHtml() + fabHtml();
+  app.innerHTML = '<div class="wrap' + (S.enter ? ' enter' : '') + '">' + bannerHtml() + body + '</div>' + drawerHtml() + fabHtml() + bnavHtml();
   if (S.tab === 'money' && S.mseg === 'exp') fillExpList();
   if (S.enter){
     // stagger the cards in, then let later redraws (data syncs) stay still
@@ -986,8 +1136,8 @@ function drawerHtml(){
   var t = today(), ym = ymOf(t);
   var top = streakKinds().map(function(k){ return [k, streakStats(k).cur]; }).sort(function(a, b){ return b[1] - a[1]; })[0];
   var tabs = [
-    ['stats', 'Insights', '⚡ ' + ptsTxt(pointsOn(t).total) + ' pts today' + (top && top[1] ? ' · 🔥 ' + top[1] + '-day ' + top[0].name.toLowerCase() : '')],
     ['today', 'Today', dayScore(t) + '% day score'],
+    ['stats', 'Insights', '⚡ ' + ptsTxt(pointsOn(t).total) + ' pts today' + (top && top[1] ? ' · 🔥 ' + top[1] + '-day ' + top[0].name.toLowerCase() : '')],
     ['work', 'Work day', (function(){ var w = openWd(), a = w ? wdActive(w) : null; return w ? (a ? awayOf(a).icon + ' ' + awayOf(a).verb : '🟢 Working') + ' · ' + hm(wdWork(w)) : workMsOn(t) ? hm(workMsOn(t)) + ' worked today' : 'Not checked in'; })()],
     ['money', 'Money', money(sum(monthExps(ym), 'amt'), 0) + ' this month'],
     ['books', 'Books', streakTxt(readStreak(), 'reading')],
@@ -1006,10 +1156,22 @@ function drawerHtml(){
     '<div class="dfoot"><button class="nav-i" style="--i:11" data-act="settings"><span class="ic">' + svg('gear') + '</span><span class="nt">Settings</span></button>' +
     '<div class="tiny muted" style="padding:6px 12px">Daybook ' + APP_VERSION + '</div></div></div></div>';
 }
+// bottom bar: the three screens used most, everything else under More (the drawer)
+function bnavHtml(){
+  var main = ['today', 'money', 'stats'], more = main.indexOf(S.tab) < 0;
+  return '<nav class="bnav">' + [['today', 'Today'], ['money', 'Money'], ['stats', 'Insights']].map(function(x){
+    return '<button class="' + (S.tab === x[0] ? 'on' : '') + '" data-act="tab" data-v="' + x[0] + '">' + svg(x[0]) + '<span>' + x[1] + '</span></button>';
+  }).join('') + '<button class="' + (more ? 'on' : '') + '" data-act="drawer">' + svg('menu') + '<span>' + (more ? esc(TAB_NAMES[S.tab] || 'More') : 'More') + '</span></button></nav>';
+}
+var TAB_NAMES = {work:'Work day', books:'Books', fit:'Fitness', intake:'Intake', mood:'Mood', skills:'Skills', plan:'Year plan'};
 function fabHtml(){
-  var a = '';
-  if (S.tab === 'today') a = 'quick';
-  else if (S.tab === 'money') a = S.mseg === 'subs' ? 'add-sub' : S.mseg === 'goals' ? 'add-goal' : 'add-exp';
+  var a = '', extra = '', label = '';
+  // screens whose main action isn't "add a record" get a labelled button instead of a bare +
+  if (S.tab === 'intake'){ a = 'intake'; extra = ' data-k="water" data-v="1" data-day="' + S.day + '"'; label = '+ 💧 Water'; }
+  else if (S.tab === 'mood'){ a = 'note'; label = '+ Mood'; }
+  else if (S.tab === 'work'){ var ow = openWd(); a = ow ? 'wd-out' : 'wd-in'; label = ow ? '🚪 Check out' : '💼 Check in'; }
+  if (label) return '<button class="fab wide" data-act="' + a + '"' + extra + '>' + label + '</button>';
+  if (S.tab === 'money') a = S.mseg === 'subs' ? 'add-sub' : S.mseg === 'goals' ? 'add-goal' : 'add-exp';
   else if (S.tab === 'books') a = 'add-book';
   else if (S.tab === 'fit') a = 'add-work';
   else if (S.tab === 'plan') a = S.pseg === 'review' ? '' : 'add-yg';
@@ -1055,26 +1217,31 @@ function todayHtml(){
 
   h += timerHtml();
 
-  h += '<div class="card hero"><div class="row" style="gap:16px">' + ring(pct, cnt(pct) + '%', 'day score') +
+  // hero: points first, the day's progress as the ring; goals as tiles, limits as counters
+  var pt = pointsOn(d), lv = levelOf(pointsTotal()), al = streakStats(kindById('allin'));
+  var dos = checks.filter(function(c){ return !c.lim; }), lims = checks.filter(function(c){ return c.lim; });
+  h += '<div class="card hero"><div class="row" style="gap:16px">' + ring(pct, '<span class="' + (pt.total < 0 ? 'neg' : '') + '">' + ptsTxt(pt.total) + '</span>', 'pts ' + (d === t ? 'today' : 'that day')) +
     '<div class="grow"><div class="mid">' + done + ' of ' + checks.length + ' done</div><div class="small muted">' +
-    (pct >= 100 ? 'Full day. Well played. 🔥' : pct >= 60 ? 'Good going, keep it up.' : d === t ? 'Tick things off as you go.' : 'How that day went.') + '</div>' +
-    (function(){
-      var pt = pointsOn(d), lv = levelOf(pointsTotal()), al = streakStats(kindById('allin'));
-      return '<button class="ptsline" data-act="go-points"><b class="' + (pt.total < 0 ? 'neg' : '') + '">⚡ ' + ptsTxt(pt.total) + ' pts</b> · Level ' + lv.lv +
-        (al.cur ? ' · 🏆 ' + al.cur + '-day all-in' : '') + ' ›</button>';
-    })() + '</div></div>' +
-    '<hr><div class="tasks">' + checks.map(function(c){
-      return '<button class="task ' + (c.done ? 'done' : '') + '" data-act="' + (c.habit ? 'habit' : c.act) + '" data-v="' + (c.habit || c.hid || '') + '">' +
-        '<span class="tick-box">' + (c.done ? '✓' : '') + '</span><span class="grow tl">' + esc(c.label) + '</span>' +
-        (c.prog ? '<span class="small muted">' + esc(c.prog) + '</span>' : '') + '</button>';
-    }).join('') + '</div></div>';
+    (pct >= 100 ? 'Full day. Well played. 🔥' : pct >= 60 ? 'Good going, keep it up.' : d === t ? 'Tap a tile when it\'s done.' : 'How that day went.') + '</div>' +
+    '<button class="ptsline" data-act="go-points">Level ' + lv.lv + (al.cur ? ' · 🏆 ' + al.cur + '-day all-in' : '') + ' · points ›</button></div></div>' +
+    '<div class="htiles">' + dos.map(function(c){
+      var act = c.habit ? 'habit' : c.plus ? 'intake' : c.act;
+      return '<button class="htile' + (c.done ? ' done' : '') + '" data-act="' + act + '" data-v="' + (c.habit || c.hid || (c.plus ? 1 : '')) + '"' + (c.plus ? ' data-k="' + c.plus + '" data-day="' + d + '"' : '') + '>' +
+        '<span class="hi">' + c.ic + '</span><span class="hn">' + esc(c.sh || c.label) + '</span><span class="hp">' + (c.done ? '✓ Done' : esc(c.prog || 'Tap when done')) + '</span>' +
+        (c.plus ? '<span class="hplus">+1</span>' : '') + '</button>';
+    }).join('') + '</div>' +
+    (lims.length ? '<div class="under"><span class="ul">Stay under</span>' + lims.map(function(c){
+      var act = c.plus ? 'intake' : c.act;
+      return '<button class="uchip' + (c.done ? '' : ' over') + '" data-act="' + act + '" data-v="' + (c.hid || (c.plus ? 1 : '')) + '"' + (c.plus ? ' data-k="' + c.plus + '" data-day="' + d + '"' : '') + '>' +
+        c.ic + ' ' + esc(c.cnt) + (c.plus ? ' <b>+</b>' : '') + '</button>';
+    }).join('') + '</div>' : '') + '</div>';
 
   if (d === t){
     h += '<div class="quick">' +
       '<button data-act="add-exp"><span>💸</span>Expense</button>' +
       '<button data-act="add-read"><span>📖</span>Reading</button>' +
       '<button data-act="add-work"><span>🏃</span>Workout</button>' +
-      '<button data-act="note"><span>📝</span>Note</button></div>';
+      '<button data-act="quick"><span>＋</span>More</button></div>';
   }
   if (d === t){
     var ow = openWd();
@@ -1084,36 +1251,15 @@ function todayHtml(){
     var lastDl = lsGet('db-lastdl', 0);
     if (Object.keys(S.recs).length > 20 && Date.now() - lastDl > 7 * 864e5) h += '<button class="alert info" style="width:100%;border:0;text-align:left;cursor:pointer" data-act="backup">💾<div><b>Weekly backup:</b> tap to save a copy of your data to this phone' + (lastDl ? ' (last one ' + dShort(iso(new Date(lastDl))) + ')' : '') + '.</div></button>';
   }
-  h += pointsCard(d, true);
-  h += plannerHtml(d);
-  h += intakeStrip(d);
-
   if (d === t){
-    var due = reviewWeekDue(), foc = currentFocus(), qd = quoteOfDay();
+    var due = reviewWeekDue(), foc = currentFocus();
     if (due) h += '<button class="card pink" style="display:block;width:100%;text-align:left;border:0;cursor:pointer" data-act="review" data-v="' + due + '"><div class="row between"><div><div class="small muted">🗓️ Weekly review</div><div class="t" style="margin-top:2px">' + weekLabel(due) + ': 3 minutes to look back</div></div><span style="font-size:22px">›</span></div></button>';
     if (foc) h += '<div class="card"><div class="small muted">🎯 This week\'s focus</div><div class="mid" style="margin-top:4px;text-transform:none">' + esc(foc.focus) + '</div></div>';
-    if (qd) h += '<div class="sec">Quote of the day</div>' + quoteCard(qd, true);
   }
+  h += plannerHtml(d);
 
-  // Day note
-  h += '<div class="card"><div class="h2">Note for the day<button class="link" data-act="note">' + (day.note || (day.links && day.links.length) ? 'Edit' : 'Write') + '</button></div>' +
-    '<div class="moods">' + MOODS.map(function(m, i){ return '<button class="' + (day.mood === i + 1 ? 'on' : '') + '" data-act="mood" data-v="' + (i + 1) + '">' + m + '</button>'; }).join('') + '</div>' +
-    (day.note ? '<div class="pre">' + esc(day.note) + '</div>' : '<div class="small muted">A remark, a lesson, what went well, what to fix tomorrow.</div>') +
-    (day.links && day.links.length ? '<div class="links" style="margin-top:8px">' + day.links.map(linkHtml).join('') + '</div>' : '') +
-    (day.weight ? '<div class="small muted" style="margin-top:6px">⚖️ ' + esc(day.weight) + ' kg</div>' : '') + '</div>';
-
-  if (d === t) h += todayPlanHtml();
-
-  // Continue reading
-  var rb = books().filter(function(b){ return b.status === 'reading'; }).sort(function(a, b){ return (b.lastRead || '') > (a.lastRead || '') ? 1 : -1; })[0];
-  if (rb){
-    h += '<div class="card"><div class="h2">Continue reading<button class="link" data-act="book" data-id="' + rb.id + '">Open</button></div>' +
-      '<div class="row"><div class="em" style="font-size:24px">📘</div><div class="grow"><div class="t ell">' + esc(rb.title) + '</div>' +
-      '<div class="small muted">' + (rb.pages ? 'Page ' + (rb.page || 0) + ' of ' + rb.pages + ' · ' + bookPct(rb) + '%' : (rb.author ? esc(rb.author) : '')) + '</div></div></div>' +
-      (rb.pages ? bar(bookPct(rb)) : '') +
-      (rb.nextStart ? '<div class="pickup"><div class="k">START HERE</div>' + esc(rb.nextStart) + '</div>' : rb.leftOff ? '<div class="pickup"><div class="k">LEFT OFF AT</div>' + esc(rb.leftOff) + '</div>' : '') +
-      (!S.timer ? '<button class="btn sm block" style="margin-top:6px" data-act="timer-start" data-id="' + rb.id + '">▶ Start reading timer</button>' : '') + '</div>';
-  }
+  // Day review (the + / − / → table)
+  h += reviewCard(d);
 
   // Money today
   var spentDay = exps().filter(function(e){ return e.date === d; }), up = d === t ? upcomingSubs(3) : [];
@@ -1308,7 +1454,14 @@ function booksHtml(){
       return '<div><div class="d">' + pd(d).toLocaleDateString('en-IN', {weekday:'narrow'}) + '</div><div class="dot ' + cls + (d === t ? ' today' : '') + '">' + (m || '') + '</div></div>';
     }).join('') + '</div></div>';
   var cnt = {reading:0, want:0, done:0}; all.forEach(function(b){ cnt[b.status] = (cnt[b.status] || 0) + 1; });
-  h += seg('bseg', [['reading','Reading ' + cnt.reading],['want','Up next ' + cnt.want],['done','Finished ' + cnt.done],['plan','📅 Plan'],['stats','📊 Stats'],['learn','Learned'],['quotes','❝ Quotes']], S.bseg);
+  // three tabs, each with its own small switch underneath
+  var groups = [['reading', 'Reading', [['reading', 'Now ' + cnt.reading], ['plan', '📅 Plan'], ['stats', '📊 Stats']]],
+    ['library', 'Library', [['want', 'Up next ' + cnt.want], ['done', 'Finished ' + cnt.done]]],
+    ['notes', 'Notes', [['learn', '💡 Learned'], ['quotes', '❝ Quotes']]]];
+  var grp = groups.filter(function(g){ return g[2].some(function(x){ return x[0] === S.bseg; }); })[0] || groups[0];
+  h += '<div class="seg">' + groups.map(function(g){ return '<button class="' + (g === grp ? 'on' : '') + '" data-act="seg" data-name="bseg" data-v="' + g[2][0][0] + '">' + g[1] + '</button>'; }).join('') + '</div>';
+  h += '<div class="chips">' + grp[2].map(function(x){ return '<button class="chip ' + (x[0] === S.bseg ? 'on' : '') + '" data-act="seg" data-name="bseg" data-v="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>';
+  if (S.bseg === 'reading'){ h += todayPlanHtml(); var qd = quoteOfDay(); if (qd) h += quoteCard(qd, true); }
   if (S.bseg === 'plan') return h + readPlanHtml();
   if (S.bseg === 'stats') return h + readStatsHtml();
   if (S.bseg === 'learn') return h + learnedHtml();
@@ -1796,7 +1949,7 @@ function remDue(r){
   if (r.kind === 'checkout') return !!openWd();
   if (r.kind === 'expense') return !spendOn(t);
   if (r.kind === 'read') return readMinsOn(t) < c.readMin;
-  if (r.kind === 'note') return !(dayRec(t).note || '').trim();
+  if (r.kind === 'note') return !noteWritten(dayRec(t));
   if (r.kind === 'review') return !!reviewWeekDue();
   return true;
 }
@@ -2020,7 +2173,7 @@ function ygValue(g){
   if (g.type === 'concepts'){ reads().forEach(function(r){ if (inY(r.date)) v += (r.concepts || []).length; }); return v; }
   if (g.type === 'gooddays' || g.type === 'waterdays'){
     for (var d = y + '-01-01'; d <= t && inY(d); d = addDays(d, 1)){
-      if (g.type === 'gooddays' ? dayScore(d) >= GOOD_DAY : intake(d, 'water') >= S.cfg.waterGoal) v++;
+      if (g.type === 'gooddays' ? goodDay(d) : intake(d, 'water') >= S.cfg.waterGoal) v++;
     }
     return v;
   }
@@ -2093,7 +2246,7 @@ function reviewWeekDue(){
 }
 function weekFacts(ws){
   var days = []; for (var i = 0; i < 7; i++){ var d = addDays(ws, i); if (d <= today()) days.push(d); }
-  var good = days.filter(function(d){ return dayScore(d) >= GOOD_DAY; }).length;
+  var good = days.filter(function(d){ return goodDay(d); }).length;
   var moods = days.map(function(d){ return dayRec(d).mood; }).filter(Boolean);
   return [
     ['⭐', good + ' good day' + (good === 1 ? '' : 's')],
@@ -2220,7 +2373,7 @@ function streaksHtml(){
 function weekRecap(){
   var t = today(), ws = weekStart(t), pws = addDays(ws, -7), n = diffDays(ws, t) + 1;
   function tot(fn, from, days){ var s = 0; for (var i = 0; i < days; i++) s += fn(addDays(from, i)); return s; }
-  function good(from, days){ var g = 0; for (var i = 0; i < days; i++) if (dayScore(addDays(from, i)) >= GOOD_DAY) g++; return g; }
+  function good(from, days){ var g = 0; for (var i = 0; i < days; i++) if (goodDay(addDays(from, i))) g++; return g; }
   function water(d){ return intake(d, 'water'); }
   var rows = [
     ['⭐ Good days', good(ws, n), good(pws, n), ''],
@@ -2581,11 +2734,15 @@ function noteForm(){
   var h = shead('Note · ' + dayLabel(S.day)) +
     '<div class="moods">' + MOODS.map(function(m, i){ return '<button type="button" class="' + (d.mood === i + 1 ? 'on' : '') + '" data-act="mood-pick" data-v="' + (i + 1) + '">' + m + '</button>'; }).join('') + '</div>' +
     '<input type="hidden" id="n-mood" value="' + (d.mood || '') + '">' +
-    fld('Note / remark', '<textarea id="n-note" rows="6" placeholder="What went well, what you learned, what to fix tomorrow…">' + esc(d.note || '') + '</textarea>') +
+    '<div class="small muted" style="margin:-4px 0 10px">One row per line. Points, missed goals and open tasks are added for you.</div>' +
+    fld('<b class="sg pl">+</b> What went well', '<textarea id="n-pl" rows="3" placeholder="Closed the Hotel Sunview deal&#10;Slept on time">' + esc((d.pl || []).join('\n')) + '</textarea>') +
+    fld('<b class="sg mi">−</b> What didn\'t go right', '<textarea id="n-mi" rows="3" placeholder="Skipped the evening run">' + esc((d.mi || []).join('\n')) + '</textarea>') +
+    fld('<b class="sg nx">→</b> What to do now', '<textarea id="n-nx" rows="3" placeholder="Run first thing tomorrow">' + esc((d.nx || []).join('\n')) + '</textarea>') +
+    fld('Summary of the day', '<textarea id="n-note" rows="3" placeholder="One or two lines: how the day went, what you learned…">' + esc(d.note || '') + '</textarea>') +
     fld('Links (one per line)', '<textarea id="n-links" rows="2" placeholder="https://…">' + esc((d.links || []).join('\n')) + '</textarea>') +
     fld('Weight (kg, optional)', '<input id="n-weight" inputmode="decimal" value="' + esc(d.weight || '') + '">') +
     '<div class="btns"><button class="btn" data-act="note-save">Save</button></div>';
-  openSheet(h, '#n-note');
+  openSheet(h, '#n-pl');
 }
 function quickSheet(){
   openSheet(shead('Add') + '<div class="quick" style="grid-template-columns:1fr 1fr">' +
@@ -2882,6 +3039,8 @@ var A = {
     toast('🚪 Checked out · ' + hm(chan(r.work)) + ' worked');
   },
   'wd-toggle':function(el){ S.wdOpen = S.wdOpen === el.dataset.v ? null : el.dataset.v; render(); },
+  'rev-more':function(){ S.revAll = !S.revAll; render(); },
+  rview:function(el){ S.rview = el.dataset.v; lsSet('db-rview', S.rview); render(); },
   'go-points':function(){ S.tab = 'stats'; S.iseg = 'points'; S.pday = today(); lsSet('db-tab', 'stats'); S.enter = true; render(); window.scrollTo(0, 0); },
   pday:function(el){ S.pday = el.dataset.v; render(); },
   'go-intake':function(){ S.tab = 'intake'; lsSet('db-tab', 'intake'); S.enter = true; render(); window.scrollTo(0, 0); },
@@ -2980,7 +3139,7 @@ var A = {
     if (on){
       try { navigator.vibrate && navigator.vibrate(12); } catch (e) {}
       var hv = el.dataset.v;
-      setTimeout(function(){ var b = $('.task[data-v="' + hv + '"]'); if (b) b.classList.add('pop'); }, 10);
+      setTimeout(function(){ var b = $('.htile[data-v="' + hv + '"]'); if (b) b.classList.add('pop'); }, 10);
       if (before < 100 && dayScore(S.day) >= 100){ confetti(); toast('Full day! 🔥'); }
     }
   },
@@ -2992,7 +3151,7 @@ var A = {
   note:function(){ if (S.tab !== 'today'){ S.day = today(); } noteForm(); },
   'note-save':function(){
     var d = dayRec(S.day), r = strip(d); r.t = 'day'; r.date = S.day;
-    r.note = val('n-note').trim(); r.links = lines(val('n-links')); r.mood = +val('n-mood') || 0; r.weight = val('n-weight').trim();
+    r.note = val('n-note').trim(); r.pl = lines(val('n-pl')); r.mi = lines(val('n-mi')); r.nx = lines(val('n-nx')); r.links = lines(val('n-links')); r.mood = +val('n-mood') || 0; r.weight = val('n-weight').trim();
     put('day_' + S.day, r); closeSheet(); toast('Saved');
   },
 

@@ -1,4 +1,4 @@
-const CACHE = 'daybook-v11';
+const CACHE = 'daybook-v13';
 const SHELL = ['./', './index.html', './manifest.json', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/favicon-32.png', './icons/mark.png'];
 
 self.addEventListener('install', function(event){
