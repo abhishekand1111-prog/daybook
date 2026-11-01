@@ -412,7 +412,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 <script>
 (function(){
 'use strict';
-var APP_VERSION = 'v14';
+var APP_VERSION = 'v15';
 
 // ---------- utils ----------
 function $(s, r){ return (r || document).querySelector(s); }
@@ -478,7 +478,6 @@ var ICON = {
   mood:'<circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0M9 9.5h.01M15 9.5h.01"/>',
   skills:'<path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/>',
   work:'<rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>',
-  match:'<path d="M12 20s-7.5-4.6-7.5-10.2A4.1 4.1 0 0 1 12 7.4a4.1 4.1 0 0 1 7.5 2.4C19.5 15.4 12 20 12 20z"/>',
   plan:'<rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4M8 14l2.5 2.5L16 12"/>',
   gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'
 };
@@ -556,7 +555,7 @@ function guessCat(t){
 // ---------- state ----------
 var S = {
   authed:false, authChecked:false, ready:false, user:null, recs:{}, cfg:JSON.parse(JSON.stringify(DEFAULT_CFG)),
-  tab:'today', mseg:lsGet('db-mseg', 'overview'), bseg:'reading', iseg:'points', pday:'', rview:lsGet('db-rview', 'day'), sseg:'active', skind:lsGet('db-skind', 'score'), cal:ymOf(today()), year:+today().slice(0, 4), pseg:'goals', xseg:'top', ryear:+today().slice(0, 4), focus:lsGet('db-focus', null),
+  tab:'today', mseg:lsGet('db-mseg', 'overview'), bseg:'reading', iseg:'points', pday:'', rview:lsGet('db-rview', 'day'), sseg:'active', skind:lsGet('db-skind', 'score'), cal:ymOf(today()), year:+today().slice(0, 4), pseg:'goals', ryear:+today().slice(0, 4), focus:lsGet('db-focus', null),
   month:ymOf(today()), imonth:ymOf(today()), day:today(), q:'', fcat:'', synced:false, syncErr:'',
   timer:lsGet('db-timer', null), rolled:false, catTouched:false, enter:true, drawer:false
 };
@@ -634,6 +633,8 @@ function dataArrived(){
   if (!S.rolled && S.synced){ S.rolled = true; rollSubs(); }
   if (S.synced && S.user && S.user.uid) importDrWorkdays(S.user.uid);
   if (S.synced && S.carried !== today()) setTimeout(carryTasks, 300);
+  // the Matches feature was removed: clear any of its records left in the account
+  if (S.synced) Object.keys(S.recs).forEach(function(k){ var r = S.recs[k]; if (r && (r.t === 'match' || r.t === 'msess')) del(k); });
   if (S.synced) setTimeout(function(){ snapTake(false); }, 4000);
   renderSoon();
 }
@@ -653,7 +654,7 @@ function del(id){
 }
 function saveCfg(patch){
   var c = {};
-  ['cur','total','alertPct','budgets','cats','readMin','moveMin','moveDays','habits','waterGoal','glassMl','colaMax','sweetMax','freeze','pagesPerDay','workGoal','wdImported','reminders','matchCrit'].forEach(function(k){ c[k] = S.cfg[k]; });
+  ['cur','total','alertPct','budgets','cats','readMin','moveMin','moveDays','habits','waterGoal','glassMl','colaMax','sweetMax','freeze','pagesPerDay','workGoal','wdImported','reminders'].forEach(function(k){ c[k] = S.cfg[k]; });
   for (var k in patch) c[k] = patch[k];
   c.t = 'config';
   put('config', c);
@@ -1091,7 +1092,7 @@ function render(){
   if (!S.authed){ app.innerHTML = authHtml(); return; }
   if (!S.ready){ app.innerHTML = '<div class="load">Loading your data…</div>'; return; }
   var ae = document.activeElement, keep = ae && ae.id === 'q' ? {v:ae.value, s:ae.selectionStart} : null;
-  var body = S.tab === 'money' ? moneyHtml() : S.tab === 'books' ? booksHtml() : S.tab === 'fit' ? fitHtml() : S.tab === 'stats' ? statsHtml() : S.tab === 'intake' ? intakeHtml() : S.tab === 'mood' ? moodPage() : S.tab === 'plan' ? planHtml() : S.tab === 'work' ? workHtml() : S.tab === 'skills' ? skillsHtml() : S.tab === 'match' ? matchHtml() : todayHtml();
+  var body = S.tab === 'money' ? moneyHtml() : S.tab === 'books' ? booksHtml() : S.tab === 'fit' ? fitHtml() : S.tab === 'stats' ? statsHtml() : S.tab === 'intake' ? intakeHtml() : S.tab === 'mood' ? moodPage() : S.tab === 'plan' ? planHtml() : S.tab === 'work' ? workHtml() : S.tab === 'skills' ? skillsHtml() : todayHtml();
   app.innerHTML = '<div class="wrap' + (S.enter ? ' enter' : '') + '">' + bannerHtml() + body + '</div>' + drawerHtml() + fabHtml() + bnavHtml();
   if (S.tab === 'money' && S.mseg === 'exp') fillExpList();
   if (S.enter){
@@ -1146,7 +1147,6 @@ function drawerHtml(){
     ['intake', 'Intake', '💧 ' + intake(t, 'water') + '/' + S.cfg.waterGoal + ' · 🥤 ' + intake(t, 'cola') + ' · 🍰 ' + intake(t, 'sweet') + ' today'],
     ['mood', 'Mood', dayRec(t).mood ? 'Today ' + MOODS[dayRec(t).mood - 1] + ' · see your trend' : 'How are you feeling today?'],
     ['skills', 'Skills', S.focus && S.focus.phase !== 'break' ? '⏱ Focus running · ' + esc(S.focus.label) : skills().length ? (Math.round(sum(skills().map(function(s){ return skillWeek(s.id); })) * 10) / 10) + ' h practised this week' : 'Hours, levels & focus timer'],
-    ['match', 'Matches', mdue().length ? '⏰ ' + mdue().length + ' follow-up' + (mdue().length > 1 ? 's' : '') + ' due' : matches().length ? matches().filter(function(m){ return m.status !== 'no'; }).length + ' active · top 5 & verify' : 'Jeevansathi prospects'],
     ['plan', 'Year plan', reviewWeekDue() ? '🗓️ Weekly review is due' : list('ygoal').filter(function(g){ return +g.year === +t.slice(0, 4); }).length + ' goals for ' + t.slice(0, 4) + ' · reviews']
   ];
   return '<div class="drawer' + (S.drawer ? ' open' : '') + '"><div class="dscrim" data-act="drawer-close"></div><div class="dpanel">' +
@@ -1165,7 +1165,7 @@ function bnavHtml(){
     return '<button class="' + (S.tab === x[0] ? 'on' : '') + '" data-act="tab" data-v="' + x[0] + '">' + svg(x[0]) + '<span>' + x[1] + '</span></button>';
   }).join('') + '<button class="' + (more ? 'on' : '') + '" data-act="drawer">' + svg('menu') + '<span>' + (more ? esc(TAB_NAMES[S.tab] || 'More') : 'More') + '</span></button></nav>';
 }
-var TAB_NAMES = {work:'Work day', books:'Books', fit:'Fitness', intake:'Intake', mood:'Mood', skills:'Skills', plan:'Year plan', match:'Matches'};
+var TAB_NAMES = {work:'Work day', books:'Books', fit:'Fitness', intake:'Intake', mood:'Mood', skills:'Skills', plan:'Year plan'};
 function fabHtml(){
   var a = '', extra = '', label = '';
   // screens whose main action isn't "add a record" get a labelled button instead of a bare +
@@ -1177,9 +1177,7 @@ function fabHtml(){
   else if (S.tab === 'books') a = 'add-book';
   else if (S.tab === 'fit') a = 'add-work';
   else if (S.tab === 'plan') a = S.pseg === 'review' ? '' : 'add-yg';
-  else if (S.tab === 'skills') a = 'add-skill';
-  else if (S.tab === 'match') a = S.xseg === 'crit' ? '' : 'add-match';
-  if (S.tab === 'money' && S.mseg === 'rec') a = 'add-rec';
+  else if (S.tab === 'skills') a = 'add-skill';  if (S.tab === 'money' && S.mseg === 'rec') a = 'add-rec';
   if (S.tab === 'books' && S.bseg === 'stats') a = '';
   if (S.tab === 'books' && S.bseg === 'quotes') a = 'add-quote';
   return a ? '<button class="fab" data-act="' + a + '" aria-label="Add">+</button>' : '';
@@ -1257,12 +1255,7 @@ function todayHtml(){
   if (d === t){
     var due = reviewWeekDue(), foc = currentFocus();
     if (due) h += '<button class="card pink" style="display:block;width:100%;text-align:left;border:0;cursor:pointer" data-act="review" data-v="' + due + '"><div class="row between"><div><div class="small muted">🗓️ Weekly review</div><div class="t" style="margin-top:2px">' + weekLabel(due) + ': 3 minutes to look back</div></div><span style="font-size:22px">›</span></div></button>';
-    if (foc) h += '<div class="card"><div class="small muted">🎯 This week\'s focus</div><div class="mid" style="margin-top:4px;text-transform:none">' + esc(foc.focus) + '</div></div>';
-    var mdu = mdue();
-    if (mdu.length) h += '<div class="card"><div class="h2">💍 Matches · follow up<button class="link" data-act="tab" data-v="match">Matches</button></div>' + mdu.slice(0, 5).map(function(m){
-      return '<button class="item" data-act="match" data-id="' + m.id + '"><div class="em">💬</div><div class="grow"><div class="t ell">' + esc(m.name) + '</div><div class="small ' + (m.next < t ? 'bad' : 'warn') + ' ell">' + dayLabel(m.next) + (m.nextNote ? ' · ' + esc(m.nextNote) : '') + '</div></div><span class="badge">' + mscore(m).pct + '%</span></button>';
-    }).join('') + '</div>';
-  }
+    if (foc) h += '<div class="card"><div class="small muted">🎯 This week\'s focus</div><div class="mid" style="margin-top:4px;text-transform:none">' + esc(foc.focus) + '</div></div>';  }
   h += plannerHtml(d);
 
   // Day review (the + / − / → table)
@@ -1872,167 +1865,6 @@ function skillSheet(s){
   }).join('');
   openSheet(h);
 }
-
-// ---------- MATCHES: Jeevansathi prospects scored on your own criteria, checked across sites, with a log of every chat/call/meet ----------
-var MSTAGES = [['new','🆕 New'],['talk','💬 Talking'],['met','☕ Met'],['family','👪 Families'],['hold','⏸ On hold'],['no','✕ Not a match']];
-var MKINDS = [['chat','💬 Chat'],['call','📞 Call'],['video','🎥 Video call'],['meet','☕ Met'],['family','👪 Family meet']];
-var MVER = [
-  ['li', 'LinkedIn', 'Job and company match the profile'],
-  ['ig', 'Instagram', 'Photos and lifestyle match'],
-  ['fb', 'Facebook', 'City, family and friends add up'],
-  ['yt', 'YouTube', 'Anything public under the name'],
-  ['gg', 'Google', 'No fraud or scam reports on the name or number'],
-  ['img', 'Photo search', 'Photos aren\'t used under another name (Google Lens)'],
-  ['vid', 'Video call', 'Same person as the photos']
-];
-var DEFAULT_MCRIT = [
-  {id:'age', name:'Age range', w:3, must:true},
-  {id:'city', name:'City / ready to relocate', w:2, must:false},
-  {id:'edu', name:'Education', w:2, must:false},
-  {id:'job', name:'Profession & stability', w:3, must:false},
-  {id:'inc', name:'Income', w:1, must:false},
-  {id:'fam', name:'Family values', w:3, must:false},
-  {id:'diet', name:'Diet & lifestyle', w:2, must:false},
-  {id:'vibe', name:'Vibe when we talk', w:3, must:false}
-];
-function mcrit(){ return S.cfg.matchCrit && S.cfg.matchCrit.length ? S.cfg.matchCrit : DEFAULT_MCRIT; }
-function matches(){ return list('match'); }
-function msess(id){ return list('msess').filter(function(x){ return x.matchId === id; }).sort(byDateDesc); }
-function mstage(v){ return (MSTAGES.filter(function(s){ return s[0] === v; })[0] || MSTAGES[0])[1]; }
-// score = weighted share of what you've rated; a "No" on a must-have is a deal-breaker
-function mscore(m){
-  var r = m.r || {}, num2 = 0, den = 0, rated = 0, breaker = '';
-  mcrit().forEach(function(c){
-    if (r[c.id] == null) return;
-    rated++; num2 += c.w * r[c.id]; den += c.w * 2;
-    if (c.must && r[c.id] === 0) breaker = c.name;
-  });
-  return {pct:den ? Math.round(num2 / den * 100) : 0, rated:rated, of:mcrit().length, breaker:breaker};
-}
-function mverify(m){
-  var v = m.v || {}, ok = 0, bad = 0, done = 0;
-  MVER.forEach(function(x){ if (v[x[0]]){ done++; if (v[x[0]] === 'ok') ok++; if (v[x[0]] === 'bad') bad++; } });
-  return {ok:ok, bad:bad, done:done, of:MVER.length};
-}
-function mrank(){
-  return matches().filter(function(m){ return m.status !== 'no' && !mscore(m).breaker && mverify(m).bad === 0; })
-    .sort(function(a, b){ var sa = mscore(a), sb = mscore(b); return sb.pct - sa.pct || sb.rated - sa.rated || mverify(b).ok - mverify(a).ok; });
-}
-function mdue(){ var t = today(); return matches().filter(function(m){ return m.next && m.next <= t && m.status !== 'no'; }).sort(function(a, b){ return a.next < b.next ? -1 : 1; }); }
-function mline(m){ return [m.age ? m.age + ' yrs' : '', m.city, m.job].filter(Boolean).map(esc).join(' · '); }
-function mcard(m, rank){
-  var s = mscore(m), v = mverify(m);
-  return '<button class="card ygc" data-act="match" data-id="' + m.id + '"><div class="row between"><div class="row" style="min-width:0"><div class="em">' + (rank ? '#' + rank : '💍') + '</div><div class="grow"><div class="t ell">' + esc(m.name) + '</div>' +
-    '<div class="small muted ell">' + (mline(m) || 'No details yet') + '</div></div></div><span class="badge">' + mstage(m.status) + '</span></div>' +
-    '<div class="row between tiny muted" style="margin-top:10px"><span>Fit ' + s.pct + '% · ' + s.rated + '/' + s.of + ' rated</span><span>' +
-    (v.bad ? '<b class="bad">🚩 ' + v.bad + ' red flag' + (v.bad > 1 ? 's' : '') + '</b>' : '✔ ' + v.ok + '/' + v.of + ' verified') + '</span></div>' +
-    '<div class="ygbar" style="margin-top:6px"><i style="width:' + s.pct + '%"></i></div>' +
-    (s.breaker ? '<div class="tiny bad" style="margin-top:8px">✕ Deal-breaker: ' + esc(s.breaker) + '</div>' : '') +
-    (m.next ? '<div class="tiny ' + (m.next <= today() ? 'warn' : 'muted') + '" style="margin-top:8px">⏰ ' + dayLabel(m.next) + (m.nextNote ? ': ' + esc(m.nextNote) : '') + '</div>' : '') + '</button>';
-}
-function matchHtml(){
-  var h = topHtml('Matches', 'Jeevansathi prospects, scored on your criteria');
-  var ms = matches();
-  h += seg('xseg', [['top','Top 5'],['all','All (' + ms.length + ')'],['crit','My criteria']], S.xseg);
-  if (S.xseg === 'crit') return h + mcritHtml();
-  if (!ms.length) return h + '<div class="card">' + empty('💍', 'Add the profiles you shortlist on Jeevansathi. Rate each one on your criteria, verify them on LinkedIn, Instagram, Facebook, YouTube and Google, and log every chat, call and meet.', '<button class="btn sm" data-act="add-match">Add a profile</button>') + '</div>';
-  var due = mdue(), active = ms.filter(function(m){ return m.status !== 'no'; });
-  h += '<div class="stats"><div class="stat"><div class="k">Active</div><div class="v">' + active.length + '</div></div><div class="stat"><div class="k">Follow up now</div><div class="v' + (due.length ? ' warn' : '') + '">' + due.length + '</div></div></div>';
-  if (S.xseg === 'top'){
-    var top = mrank().slice(0, 5);
-    if (!top.length) return h + '<div class="card">' + empty('⭐', 'No one to rank yet. Open a profile and rate it on your criteria.') + '</div>';
-    h += '<div class="sec">Best 5 for you</div>' + top.map(function(m, i){ return mcard(m, i + 1); }).join('');
-    var out = ms.length - top.length;
-    if (out) h += '<div class="tiny muted" style="text-align:center;margin:6px 0 12px">' + out + ' not ranked: not a match, a deal-breaker or a red flag. See All.</div>';
-    return h;
-  }
-  MSTAGES.forEach(function(st){
-    var g = ms.filter(function(m){ return (m.status || 'new') === st[0]; }).sort(function(a, b){ return mscore(b).pct - mscore(a).pct; });
-    if (g.length) h += '<div class="sec">' + st[1] + ' · ' + g.length + '</div>' + g.map(function(m){ return mcard(m); }).join('');
-  });
-  return h;
-}
-function mcritHtml(){
-  var cs = mcrit();
-  return '<div class="card"><div class="small muted" style="margin-bottom:10px">Weight = how much it matters (1–3). A <b>must-have</b> rated "No" takes the profile out of your top 5.</div>' +
-    cs.map(function(c){
-      return '<div style="padding:9px 0;border-top:1px solid var(--line)"><div class="t" style="margin-bottom:6px">' + esc(c.name) + '</div><div class="row between">' +
-        '<div class="chips" style="margin:0;flex-wrap:nowrap">' + [1, 2, 3].map(function(w){ return '<button class="chip ' + (c.w === w ? 'on' : '') + '" data-act="mcrit-w" data-id="' + c.id + '" data-v="' + w + '">' + w + '</button>'; }).join('') +
-        '<button class="chip ' + (c.must ? 'on' : '') + '" data-act="mcrit-must" data-id="' + c.id + '">Must</button></div>' +
-        '<button class="tdel" data-act="mcrit-del" data-id="' + c.id + '" aria-label="Remove">×</button></div></div>';
-    }).join('') +
-    '<div class="row" style="gap:8px;margin-top:10px"><input id="mc-new" class="grow" placeholder="Add a criterion: height, smoking, wants kids…"><button class="btn sm" data-act="mcrit-add">Add</button></div></div>';
-}
-function saveMcrit(cs){ saveCfg({matchCrit:cs}); }
-function mlinks(m){
-  var e = encodeURIComponent, n = m.name || '', q = '"' + n + '" ' + (m.city || '') + ' ' + (m.company || '');
-  var ig = String(m.ig || '').replace(/^@/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//, '').replace(/\/.*$/, '');
-  return {
-    li: m.li || 'https://www.linkedin.com/search/results/people/?keywords=' + e(n + ' ' + (m.company || m.city || '')),
-    ig: ig ? 'https://www.instagram.com/' + e(ig) + '/' : 'https://www.google.com/search?q=' + e('site:instagram.com "' + n + '" ' + (m.city || '')),
-    fb: 'https://www.facebook.com/search/people/?q=' + e(n + ' ' + (m.city || '')),
-    yt: 'https://www.youtube.com/results?search_query=' + e('"' + n + '"'),
-    gg: 'https://www.google.com/search?q=' + e(q + (m.phone ? ' OR "' + m.phone + '"' : '') + ' fraud OR scam OR complaint'),
-    img: 'https://lens.google.com/',
-    vid: ''
-  };
-}
-function matchSheet(m, keep){
-  var y = keep ? $('#panel').scrollTop : 0, s = mscore(m), v = mverify(m), r = m.r || {}, vv = m.v || {}, L = mlinks(m);
-  var h = shead('💍 ' + esc(m.name)) +
-    '<div class="row between"><div><div class="big">' + s.pct + '<span class="mid muted">%</span></div><div class="small muted">Fit · ' + s.rated + ' of ' + s.of + ' rated</div></div>' +
-    '<div style="text-align:right"><div class="small muted">Verified</div><div class="mid">' + v.ok + '/' + v.of + '</div>' + (v.bad ? '<div class="small bad">🚩 ' + v.bad + ' red flag' + (v.bad > 1 ? 's' : '') + '</div>' : '') + '</div></div>' +
-    (s.breaker ? '<div class="alert bad" style="margin-top:10px">✕<div><b>Deal-breaker:</b> ' + esc(s.breaker) + '</div></div>' : '') +
-    '<div class="small muted" style="margin-top:8px">' + [mline(m), esc(m.edu || ''), esc(m.company || ''), m.income ? esc(m.income) : ''].filter(Boolean).join(' · ') + '</div>' +
-    (m.url ? '<div class="small" style="margin-top:6px"><a href="' + esc(m.url) + '" target="_blank" rel="noopener" style="color:var(--acc)">Open Jeevansathi profile ↗</a></div>' : '') +
-    '<div class="sec">Stage</div><div class="chips">' + MSTAGES.map(function(st){ return '<button class="chip ' + ((m.status || 'new') === st[0] ? 'on' : '') + '" data-act="mstage" data-id="' + m.id + '" data-v="' + st[0] + '">' + st[1] + '</button>'; }).join('') + '</div>' +
-    '<div class="sec">Next follow-up</div><div class="row" style="gap:8px"><input type="date" id="mn-date" value="' + (m.next || '') + '" style="width:160px"><input id="mn-note" class="grow" value="' + esc(m.nextNote || '') + '" placeholder="Call Sunday evening…"></div>' +
-    '<div class="btns" style="margin-top:8px"><button class="btn sm" data-act="mnext-save" data-id="' + m.id + '">Save follow-up</button>' + (m.next ? '<button class="btn sm ghost" data-act="mnext-clear" data-id="' + m.id + '">Clear</button>' : '') + '</div>' +
-    '<div class="sec">Your criteria</div>' + mcrit().map(function(c){
-      return '<div class="row between" style="padding:7px 0;border-top:1px solid var(--line)"><span class="small"><b>' + esc(c.name) + '</b>' + (c.must ? ' <span class="badge warn">must</span>' : '') + '</span><span class="chips" style="margin:0;flex-wrap:nowrap">' +
-        [[2,'Yes'],[1,'Partly'],[0,'No']].map(function(o){ return '<button class="chip ' + (r[c.id] === o[0] ? 'on' : '') + '" data-act="mrate" data-id="' + m.id + '" data-c="' + c.id + '" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</span></div>';
-    }).join('') +
-    '<div class="sec">Verify</div><div class="tiny muted" style="margin-bottom:6px">Tap a site to search it, then mark what you found.</div>' + MVER.map(function(x){
-      var st = vv[x[0]] || '';
-      return '<div style="padding:8px 0;border-top:1px solid var(--line)"><div class="row between"><span class="small">' + (L[x[0]] ? '<a href="' + esc(L[x[0]]) + '" target="_blank" rel="noopener" style="color:var(--acc);font-weight:700">' + x[1] + ' ↗</a>' : '<b>' + x[1] + '</b>') +
-        '<br><span class="tiny muted">' + x[2] + '</span></span><span class="chips" style="margin:0;flex-wrap:nowrap">' +
-        [['ok','✓'],['bad','🚩'],['none','–']].map(function(o){ return '<button class="chip ' + (st === o[0] ? 'on' : '') + '" data-act="mver" data-id="' + m.id + '" data-k="' + x[0] + '" data-v="' + o[0] + '" aria-label="' + (o[0] === 'ok' ? 'Matches' : o[0] === 'bad' ? 'Red flag' : 'Not found') + '">' + o[1] + '</button>'; }).join('') + '</span></div></div>';
-    }).join('') +
-    '<div class="sec">Log a session</div>' + chips('mkind', MKINDS, 'chat', 'scroll') +
-    '<div class="row" style="gap:8px"><input type="date" id="ms-date" value="' + today() + '" style="width:160px"><span class="small muted">How did it feel?</span></div>' +
-    '<div style="margin-top:8px">' + chips('mfeel', MOODS.map(function(e, i){ return [i + 1, e]; }), 3) + '</div>' +
-    '<textarea id="ms-note" rows="2" placeholder="What you talked about, what stood out…"></textarea>' +
-    '<div class="btns" style="margin-top:8px"><button class="btn" data-act="msess-save" data-id="' + m.id + '">Save session</button></div>';
-  var ss = msess(m.id);
-  if (ss.length) h += '<div class="sec">Sessions · ' + ss.length + '</div>' + ss.map(function(x){
-    var k = MKINDS.filter(function(o){ return o[0] === x.kind; })[0];
-    return '<div class="row between small" style="padding:7px 0;border-top:1px solid var(--line);align-items:flex-start"><span>' + dayLabel(x.date) + ' · ' + (k ? k[1] : '') + (x.feel ? ' ' + MOODS[x.feel - 1] : '') + (x.note ? '<br><span class="muted">' + esc(x.note) + '</span>' : '') + '</span>' +
-      '<button class="tdel" data-act="msess-del" data-id="' + x.id + '" data-m="' + m.id + '">×</button></div>';
-  }).join('');
-  if (m.about) h += '<div class="sec">Profile notes</div><div class="small" style="white-space:pre-wrap">' + esc(m.about) + '</div>';
-  h += '<div class="btns" style="margin-top:16px"><button class="btn ghost" data-act="match-edit" data-id="' + m.id + '">Edit details</button></div>';
-  openSheet(h);
-  if (y) $('#panel').scrollTop = y;
-}
-function matchForm(m){
-  m = m || {};
-  function f(id, label, ph, extra){ return fld(label, '<input id="mf-' + id + '" value="' + esc(m[id] || '') + '" placeholder="' + ph + '"' + (extra || '') + '>'); }
-  var h = shead(m.id ? 'Edit profile' : 'New profile') +
-    f('name', 'Name', 'As on the profile') +
-    '<div class="two">' + f('age', 'Age', '27', ' inputmode="numeric"') + f('height', 'Height', '5\'6"') + '</div>' +
-    '<div class="two">' + f('city', 'City', 'Delhi') + f('community', 'Community', 'Optional') + '</div>' +
-    f('edu', 'Education', 'B.Tech, MBA…') +
-    '<div class="two">' + f('job', 'Job / role', 'Product manager') + f('company', 'Company', 'Employer') + '</div>' +
-    '<div class="two">' + f('income', 'Income', '15–20 LPA') + f('diet', 'Diet', 'Veg') + '</div>' +
-    f('url', 'Jeevansathi profile link', 'https://www.jeevansathi.com/…', ' inputmode="url"') +
-    '<div class="two">' + f('ig', 'Instagram handle', '@handle') + f('phone', 'Phone (if shared)', '', ' inputmode="tel"') + '</div>' +
-    f('li', 'LinkedIn link (if you have it)', 'https://linkedin.com/in/…', ' inputmode="url"') +
-    fld('About / pasted profile text', '<textarea id="mf-about" rows="4" placeholder="Paste the profile text here. Age and height are picked up from it.">' + esc(m.about || '') + '</textarea>') +
-    '<input type="hidden" id="mf-id" value="' + (m.id || '') + '"><div class="btns">' + (m.id ? '<button class="btn bad" data-act="match-del" data-id="' + m.id + '">Delete</button>' : '') + '<button class="btn" data-act="match-save">Save</button></div>';
-  openSheet(h, m.id ? null : '#mf-name');
-}
-function matchById(id){ var r = S.recs[id]; if (!r) return null; var x = strip(r); x.id = id; return x; }
-function mput(m, patch){ var o = strip(m); for (var k in patch) o[k] = patch[k]; put(m.id, o); return matchById(m.id); }
 
 // ---------- FOCUS TIMER (Pomodoro): 25/50/90 min blocks for work or a skill, then a short break ----------
 function focusList(){ return list('focus'); }
@@ -3100,52 +2932,6 @@ var A = {
     var s = skills().filter(function(x){ return x.id === el.dataset.id; })[0]; if (s) skillSheet(s); toast('Logged ' + mins(m));
   },
   'prac-del':function(el){ del(el.dataset.id); var s = skills().filter(function(x){ return x.id === el.dataset.skill; })[0]; if (s) skillSheet(s); },
-  // matches
-  'add-match':function(){ matchForm(); },
-  match:function(el){ var m = matchById(el.dataset.id); if (m) matchSheet(m); },
-  'match-edit':function(el){ var m = matchById(el.dataset.id); if (m) matchForm(m); },
-  'match-save':function(){
-    var n = val('mf-name').trim(); if (!n){ toast('Add a name', 'warn'); return; }
-    var id = val('mf-id') || 'match_' + uid(), old = S.recs[id] || {}, o = strip(old);
-    ['name','age','height','city','community','edu','job','company','income','diet','url','ig','phone','li','about'].forEach(function(k){ o[k] = val('mf-' + k).trim(); });
-    // pick age / height out of pasted profile text when the fields are empty
-    var ab = o.about, am = ab.match(/\b(\d{2})\s*(?:yrs|years|y\/o)\b/i), hm2 = ab.match(/\b([4-6])\s*'\s*(\d{1,2})\s*"?/);
-    if (!o.age && am) o.age = am[1];
-    if (!o.height && hm2) o.height = hm2[1] + '\'' + hm2[2] + '"';
-    o.t = 'match'; o.status = old.status || 'new'; o.added = old.added || today(); o.r = old.r || {}; o.v = old.v || {};
-    put(id, o); toast('Profile saved');
-    matchSheet(matchById(id));
-  },
-  'match-del':function(el){ if (confirm('Delete this profile and its sessions?')){ msess(el.dataset.id).forEach(function(x){ del(x.id); }); del(el.dataset.id); closeSheet(); } },
-  mstage:function(el){ var m = matchById(el.dataset.id); if (m) matchSheet(mput(m, {status:el.dataset.v}), true); },
-  mrate:function(el){
-    var m = matchById(el.dataset.id); if (!m) return;
-    var r = Object.assign({}, m.r || {}), c = el.dataset.c, v = +el.dataset.v;
-    if (r[c] === v) delete r[c]; else r[c] = v;
-    matchSheet(mput(m, {r:r}), true);
-  },
-  mver:function(el){
-    var m = matchById(el.dataset.id); if (!m) return;
-    var vv = Object.assign({}, m.v || {}), k = el.dataset.k;
-    if (vv[k] === el.dataset.v) delete vv[k]; else vv[k] = el.dataset.v;
-    matchSheet(mput(m, {v:vv}), true);
-  },
-  'mnext-save':function(el){ var m = matchById(el.dataset.id); if (!m) return; var d = val('mn-date'); if (!d){ toast('Pick a date', 'warn'); return; } matchSheet(mput(m, {next:d, nextNote:val('mn-note').trim()}), true); toast('Follow-up set for ' + dayLabel(d)); },
-  'mnext-clear':function(el){ var m = matchById(el.dataset.id); if (m) matchSheet(mput(m, {next:'', nextNote:''}), true); },
-  'msess-save':function(el){
-    var m = matchById(el.dataset.id); if (!m) return;
-    var kind = getChip('mkind') || 'chat';
-    put('msess_' + uid(), {t:'msess', matchId:m.id, date:val('ms-date') || today(), kind:kind, feel:+getChip('mfeel') || 0, note:val('ms-note').trim()});
-    // a logged session moves a new profile to Talking, and a meet to Met
-    var stg = m.status || 'new', up = kind === 'family' ? 'family' : kind === 'meet' && (stg === 'new' || stg === 'talk') ? 'met' : stg === 'new' ? 'talk' : stg;
-    var patch = {status:up}; if (m.next && m.next <= today()) { patch.next = ''; patch.nextNote = ''; }
-    matchSheet(mput(m, patch), true); toast('Session logged');
-  },
-  'msess-del':function(el){ del(el.dataset.id); var m = matchById(el.dataset.m); if (m) matchSheet(m, true); },
-  'mcrit-w':function(el){ saveMcrit(mcrit().map(function(c){ return c.id === el.dataset.id ? Object.assign({}, c, {w:+el.dataset.v}) : c; })); },
-  'mcrit-must':function(el){ saveMcrit(mcrit().map(function(c){ return c.id === el.dataset.id ? Object.assign({}, c, {must:!c.must}) : c; })); },
-  'mcrit-del':function(el){ if (mcrit().length <= 1){ toast('Keep at least one criterion', 'warn'); return; } saveMcrit(mcrit().filter(function(c){ return c.id !== el.dataset.id; })); },
-  'mcrit-add':function(){ var n = val('mc-new').trim(); if (!n) return; saveMcrit(mcrit().concat([{id:'c' + uid(), name:n, w:2, must:false}])); },
   // focus timer
   'focus-for':function(el){ lsSet('db-focus-last', {dur:(lsGet('db-focus-last', {}).dur) || 25, target:el.dataset.id}); closeSheet(); S.tab = 'skills'; S.enter = true; render(); window.scrollTo(0, 0); },
   'focus-start':function(){
@@ -3744,11 +3530,6 @@ function seed(){
   P('sub_rec2', {t:'sub', kind:'rec', name:'Maid', amt:3000, per:'month', next:addDays(t, 6), anchor:pd(addDays(t, 6)).getDate(), cat:'rent', autoLog:false, trial:false, remind:1, pay:'Cash', status:'active', created:addDays(t, -40)});
   P('sub_rec3', {t:'sub', kind:'rec', name:'Car EMI', amt:14500, per:'month', next:addDays(t, 12), anchor:pd(addDays(t, 12)).getDate(), cat:'travel', autoLog:true, trial:false, remind:3, pay:'Bank', status:'active', created:addDays(t, -40)});
   R['day_' + addDays(t, -1)].tasks = [{id:'tk1', text:'Send proposal to Hotel Sunview', done:true, top:true}, {id:'tk2', text:'Call back 3 QSR leads', done:false, top:true}, {id:'tk3', text:'Renew car insurance', done:false, top:false}];
-  P('match_s1', {t:'match', name:'Riya (sample)', age:'27', height:'5\'4"', city:'Delhi', edu:'MBA', job:'Product manager', company:'Sample Corp', income:'18 LPA', diet:'Veg', status:'talk', added:addDays(t, -10), r:{age:2, city:2, edu:2, job:2, fam:1, vibe:2}, v:{li:'ok', ig:'ok', gg:'ok'}, next:t, nextNote:'Call after 8 pm'});
-  P('match_s2', {t:'match', name:'Meera (sample)', age:'29', city:'Gurgaon', edu:'B.Tech', job:'Engineer', company:'Example Ltd', status:'new', added:addDays(t, -3), r:{age:2, city:1, job:2}, v:{}});
-  P('match_s3', {t:'match', name:'Kavya (sample)', age:'31', city:'Pune', job:'Consultant', status:'new', added:addDays(t, -5), r:{age:0, job:2}, v:{li:'bad'}});
-  P('msess_s1', {t:'msess', matchId:'match_s1', date:addDays(t, -4), kind:'chat', feel:4, note:'Talked about work and travel. Easy conversation.'});
-  P('msess_s2', {t:'msess', matchId:'match_s1', date:addDays(t, -1), kind:'video', feel:5, note:'First video call, 40 min.'});
   P('ygoal_s1', {t:'ygoal', year:yr, type:'books', name:'Read 12 books', target:12, emoji:'📚', unit:'', count:0});
   P('ygoal_s2', {t:'ygoal', year:yr, type:'runkm', name:'Run 300 km', target:300, emoji:'🏃', unit:'', count:0});
   P('ygoal_s3', {t:'ygoal', year:yr, type:'saved', name:'Save ₹1 lakh', target:100000, emoji:'🏦', unit:'', count:0});
