@@ -214,6 +214,10 @@ button.b{border:0;background:none;padding:0;font:inherit;cursor:pointer}
 .ptsum{font-size:13px;font-weight:600}
 .ptrow{padding:7px 0;border-top:1px solid var(--line);gap:10px}
 .ring .c .neg{color:#ffd166}
+.tplchip{display:inline-block;max-width:100%;margin:0 0 12px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:inherit;font:inherit;font-size:12.5px;font-weight:600;border-radius:99px;padding:5px 12px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tplchip b{opacity:.6;font-size:10px;margin-left:2px}
+.tplchip.set{background:rgba(96,165,250,.2);border-color:#60a5fa;color:#bfdbfe}
+.item.tplon{background:var(--accbg);border-radius:14px}
 .htiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
 .htile{position:relative;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:inherit;border-radius:16px;padding:10px 8px 9px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:2px;min-width:0;font:inherit;transition:background-color .2s,border-color .2s}
 .htile .hi{font-size:20px;line-height:1.2}
@@ -319,6 +323,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 .cd.done.joined::before{content:'';position:absolute;right:100%;top:30%;bottom:30%;width:6px;background:var(--acc)}
 .cd.part{background:var(--accbg);color:var(--acc)}
 .cd.frozen{background:#dbeefe;color:#2563eb;font-size:15px}
+.cd.skip{background:var(--chip);font-size:14px;opacity:.85}
 .cd.frozen.joined::before{content:'';position:absolute;right:100%;top:30%;bottom:30%;width:6px;background:#dbeefe}
 .cd.done.joined::before{background:var(--acc)}
 .cd.miss{background:var(--chip);color:var(--bad);text-decoration:line-through;text-decoration-thickness:2px}
@@ -527,7 +532,7 @@ var GOAL_EMOJI = ['🎯','🛟','🏍️','🚗','🏠','✈️','💻','📱','
 var DEFAULT_CFG = {
   cur:'₹', total:0, alertPct:80, budgets:{}, cats:DEFAULT_CATS,
   readMin:20, moveMin:30, moveDays:5,
-  waterGoal:8, glassMl:250, colaMax:0, sweetMax:1, freeze:true, pagesPerDay:20, workGoal:0, wdImported:false,
+  waterGoal:8, glassMl:250, colaMax:0, sweetMax:1, freeze:true, pagesPerDay:20, workGoal:0, wdImported:false, tplWeek:{},
   habits:[{id:'wake', name:'Up by 6:30', emoji:'⏰'}]
 };
 var GOOD_PTS = 40;   // a day with this many points counts as a good day
@@ -654,7 +659,7 @@ function del(id){
 }
 function saveCfg(patch){
   var c = {};
-  ['cur','total','alertPct','budgets','cats','readMin','moveMin','moveDays','habits','waterGoal','glassMl','colaMax','sweetMax','freeze','pagesPerDay','workGoal','wdImported','reminders'].forEach(function(k){ c[k] = S.cfg[k]; });
+  ['cur','total','alertPct','budgets','cats','readMin','moveMin','moveDays','habits','waterGoal','glassMl','colaMax','sweetMax','freeze','pagesPerDay','workGoal','wdImported','reminders','tplWeek'].forEach(function(k){ c[k] = S.cfg[k]; });
   for (var k in patch) c[k] = patch[k];
   c.t = 'config';
   put('config', c);
@@ -792,14 +797,14 @@ function streak(test){
   while (test(d) && n < 3650){ n++; d = addDays(d, -1); }
   return n;
 }
-function readStreak(){ var m = S.cfg.readMin || 1; return streak(function(d){ return readMinsOn(d) >= m; }); }
-function moveStreak(){ var m = S.cfg.moveMin || 1; return streak(function(d){ return moveMinsOn(d) >= m; }); }
+function readStreak(){ return streakStats(kindById('read')).cur; }
+function moveStreak(){ return streakStats(kindById('move')).cur; }
 function weekStart(d){ var x = pd(d), w = (x.getDay() + 6) % 7; x.setDate(x.getDate() - w); return iso(x); }
 function dayChecks(d){
   var c = S.cfg, out = [];
   var rm = readMinsOn(d), mm = moveMinsOn(d), day = dayRec(d);
   out.push({k:'read', label:'Read ' + c.readMin + ' min', done:rm >= c.readMin, prog:rm + ' / ' + c.readMin + ' min', act:'add-read', ic:'📖', sh:'Read'});
-  out.push({k:'move', label:'Move ' + c.moveMin + ' min', done:mm >= c.moveMin, prog:mm + ' / ' + c.moveMin + ' min', act:'add-work', ic:'💪', sh:'Move'});
+  var mg = moveGoal(d); out.push({k:'move', label:'Move ' + mg + ' min', done:mm >= mg, prog:mm + ' / ' + mg + ' min', act:'add-work', ic:'💪', sh:'Move'});
   if (+c.total > 0){
     var lim = c.total / daysIn(ymOf(d)), sp = spendOn(d);
     out.push({k:'spend', label:'Spend under ' + money(lim, 0), done:sp <= lim, prog:money(sp, 0) + ' spent', act:'add-exp', auto:true, lim:true, ic:'💸', cnt:money(sp, 0) + ' / ' + money(lim, 0)});
@@ -824,8 +829,25 @@ function dayChecks(d){
       done:habitDone(h, v), prog:k === 'reach' ? v + ' / ' + h.target + ' ' + (h.unit || '') : (v ? v + ' ' + (h.unit || '') : ''), act:'habit-log', hid:h.id,
       ic:ic, sh:h.name, lim:k === 'limit', cnt:k === 'limit' ? v + ' / ' + h.target + ' ' + (h.unit || '') : ''});
   });
-  return out;
+  return out.filter(function(x){ return !tplSkips(d, x.k); });
 }
+
+// ---------- day templates ----------
+// A day can be a gym, rest, day-off, travel or sick day. The template switches some goals off for that
+// day; a goal that's off is "skipped": it can't break a streak and costs no points, but doing it anyway
+// still earns points. Skip keys are check keys and streak ids (habits = every custom habit).
+var TEMPLATES = {
+  normal:{name:'Normal day', emoji:'📅', desc:'All your goals as usual', skip:{}},
+  gym:{name:'Gym day', emoji:'🏋️', desc:'Move goal doubled', skip:{}, move:2},
+  rest:{name:'Rest day', emoji:'🛋️', desc:'No move goal. Your move streak waits', skip:{move:1}},
+  off:{name:'Day off', emoji:'🏖️', desc:'No work or focus goals', skip:{work:1, focus:1}},
+  travel:{name:'Travel day', emoji:'✈️', desc:'Only water, cola, desserts and the review count. Spending isn\'t judged', skip:{read:1, move:1, work:1, focus:1, skills:1, spend:1, nospend:1, top:1, habits:1, score:1}},
+  sick:{name:'Sick day', emoji:'🤒', desc:'Only water and the review count. Every streak waits', skip:{read:1, move:1, work:1, focus:1, skills:1, spend:1, nospend:1, cola:1, sweet:1, top:1, habits:1, score:1, allin:1}}
+};
+function tplId(d){ var v = dayRec(d).tpl; if (v && TEMPLATES[v]) return v; var w = (S.cfg.tplWeek || {})[pd(d).getDay()]; return w && TEMPLATES[w] ? w : 'normal'; }
+function tplOf(d){ return TEMPLATES[tplId(d)]; }
+function tplSkips(d, key){ var s = tplOf(d).skip; return !!(s[key] || (s.habits && key.indexOf('h_') === 0)); }
+function moveGoal(d){ return (+S.cfg.moveMin || 1) * (tplOf(d).move || 1); }
 function noteWritten(day){ return !!((day.note && day.note.trim()) || (day.pl || []).length || (day.mi || []).length || (day.nx || []).length); }
 // the habit checks only (no note, top tasks or spend): what the all-in streak asks for
 function habitChecks(d){ return dayChecks(d).filter(function(x){ return /^(read|move|water|cola|sweet|work|h_)/.test(x.k); }); }
@@ -841,7 +863,7 @@ function streakKinds(){
     {id:'allin', name:'All-in', emoji:'🏆', desc:'Every habit kept that day', start:I.first, test:function(d){ var h = habitChecks(d); return h.length > 0 && h.every(function(x){ return x.done; }); }, part:function(d){ return habitChecks(d).some(function(x){ return x.done; }); }},
     {id:'score', name:'Good days', emoji:'⭐', desc:GOOD_PTS + '+ points in a day', start:I.first, test:goodDay, part:function(d){ return pointsOn(d).total > 0; }},
     {id:'read', name:'Reading', emoji:'📖', desc:c.readMin + ' min a day', start:I.first, test:function(d){ return readMinsOn(d) >= c.readMin; }, part:function(d){ return readMinsOn(d) > 0; }},
-    {id:'move', name:'Move', emoji:'💪', desc:c.moveMin + ' active min a day', start:I.first, test:function(d){ return moveMinsOn(d) >= c.moveMin; }, part:function(d){ return moveMinsOn(d) > 0; }},
+    {id:'move', name:'Move', emoji:'💪', desc:c.moveMin + ' active min a day', start:I.first, test:function(d){ return moveMinsOn(d) >= moveGoal(d); }, part:function(d){ return moveMinsOn(d) > 0; }},
     {id:'water', name:'Water', emoji:'💧', desc:c.waterGoal + ' glasses a day', start:I.intakeFirst || t, test:function(d){ return intake(d, 'water') >= c.waterGoal; }, part:function(d){ return intake(d, 'water') > 0; }},
     {id:'cola', name:+c.colaMax ? 'Cola in limit' : 'Cola-free', emoji:'🥤', desc:+c.colaMax ? 'Max ' + c.colaMax + ' a day' : 'No cola', start:I.intakeFirst || '9999', limit:true, test:function(d){ return intake(d, 'cola') <= c.colaMax; }},
     {id:'sweet', name:+c.sweetMax ? 'Desserts in limit' : 'Dessert-free', emoji:'🍰', desc:+c.sweetMax ? 'Max ' + c.sweetMax + ' a day' : 'No desserts', start:I.intakeFirst || '9999', limit:true, test:function(d){ return intake(d, 'sweet') <= c.sweetMax; }},
@@ -863,6 +885,7 @@ function dayStatus(k, d){
   if (d > t) return 'future';
   if (!k.start || d < k.start) return 'none';
   if (k.test(d)) return 'done';
+  if (tplSkips(d, k.id)) return 'skip';   // a rest / travel / sick day: neither kept nor broken
   return k.part && k.part(d) ? 'part' : 'miss';
 }
 // Walks forward from the start. Streak freeze (Duolingo-style): one missed day per Mon–Sun week is
@@ -877,6 +900,7 @@ function streakStats(k){
   for (var x = from; x <= t; x = addDays(x, 1)){
     var st = dayStatus(k, x);
     if (st === 'done') run++;
+    else if (st === 'skip'){ /* template day: the streak waits */ }
     else if (x === t && !k.limit){ /* still today: not broken yet */ }
     else if (st === 'none') run = 0;
     else {
@@ -915,7 +939,7 @@ function pointsOn(d){
     var rm = readMinsOn(d), rg = +c.readMin || 1;
     if (rm >= rg){ add('📖 Read ' + rm + ' min', PT.goal, '📖 Reading goal met'); add('📖 Extra reading', Math.min(10, Math.floor((rm - rg) / 10)), '📖 Read past the goal'); }
     else if (rm) add('📖 Some reading', PT.part);
-    var mm = moveMinsOn(d), mg = +c.moveMin || 1;
+    var mm = moveMinsOn(d), mg = moveGoal(d), tp = tplOf(d);
     if (mm >= mg){ add('💪 Moved ' + mm + ' min', PT.goal, '💪 Move goal met'); add('💪 Went ' + (mm - mg) + ' min past goal', Math.min(20, Math.floor((mm - mg) / 10) * 2), '💪 Went past the move goal'); }
     else if (mm) add('💪 Some movement', PT.part);
     var wa = intake(d, 'water'), wg = +c.waterGoal || 1;
@@ -923,12 +947,13 @@ function pointsOn(d){
     if (wa >= wg) add('💧 Water goal met', PT.water);
     if (I.intakeFirst && I.intakeFirst <= d){
       [['cola', '🥤', 'Cola', 'colaMax'], ['sweet', '🍰', 'Desserts', 'sweetMax']].forEach(function(x){
+        if (tp.skip[x[0]]) return;
         var n = intake(d, x[0]), max = +c[x[3]] || 0;
         if (n <= max) add(x[1] + ' ' + x[2] + ' in limit', PT.kept);
         else add(x[1] + ' ' + (n - max) + ' ' + x[2].toLowerCase() + ' over the limit (' + n + ' had)', -overCost(n - max), x[1] + ' ' + x[2] + ' over the limit');
       });
     }
-    if (+c.total > 0 && I.expFirst && I.expFirst <= d){
+    if (+c.total > 0 && I.expFirst && I.expFirst <= d && !tp.skip.spend){
       var lim = c.total / daysIn(ymOf(d)), sp = spendOn(d);
       if (sp <= lim) add('🪙 Spent within the day\'s budget', PT.spendOk); else add('💸 Spent ' + money(sp - lim, 0) + ' over the day\'s budget', -PT.spendBad, '💸 Spent over the day\'s budget');
     }
@@ -941,7 +966,7 @@ function pointsOn(d){
     (c.habits || []).forEach(function(h){
       if (h.since && d < h.since) return;
       var v = habitVal(d, h), k = habitKind(h), nm = (h.emoji ? h.emoji + ' ' : '') + h.name;
-      if (k === 'limit'){ if (habitDone(h, v)) add(nm + ' in limit', PT.habit); else add(nm + ' over the limit', -PT.habitBad); }
+      if (k === 'limit'){ if (habitDone(h, v)) add(nm + ' in limit', PT.habit); else if (!tp.skip.habits) add(nm + ' over the limit', -PT.habitBad); }
       else if (habitDone(h, v)){
         add(nm, PT.habit);
         if (k === 'reach' && +h.target > 0) add(nm + ' beyond target', Math.min(5, Math.floor((v / h.target - 1) * 5)));
@@ -1002,6 +1027,7 @@ function dayFacts(d){
   if (readMinsOn(d)) f.push('📖 ' + readMinsOn(d) + ' min');
   if (moveMinsOn(d)) f.push('💪 ' + moveMinsOn(d) + ' min');
   if (intake(d, 'water')) f.push('💧 ' + intake(d, 'water'));
+  if (tplId(d) !== 'normal') f.push(tplOf(d).emoji + ' ' + tplOf(d).name);
   if (workMsOn(d)) f.push('💼 ' + hm(workMsOn(d)));
   if (idx().prac[d]) f.push('🎯 ' + idx().prac[d] + ' min');
   if (day.weight) f.push('⚖️ ' + day.weight + ' kg');
@@ -1221,7 +1247,8 @@ function todayHtml(){
   // hero: points first, the day's progress as the ring; goals as tiles, limits as counters
   var pt = pointsOn(d), lv = levelOf(pointsTotal()), al = streakStats(kindById('allin'));
   var dos = checks.filter(function(c){ return !c.lim; }), lims = checks.filter(function(c){ return c.lim; });
-  h += '<div class="card hero"><div class="row" style="gap:16px">' + ring(pct, '<span class="' + (pt.total < 0 ? 'neg' : '') + '">' + ptsTxt(pt.total) + '</span>', 'pts ' + (d === t ? 'today' : 'that day')) +
+  var tp = tplOf(d), tpid = tplId(d);
+  h += '<div class="card hero"><button class="tplchip' + (tpid !== 'normal' ? ' set' : '') + '" data-act="tpl-open">' + tp.emoji + ' ' + tp.name + (tpid !== 'normal' ? ' · ' + esc(tp.desc.split('.')[0]) : '') + ' <b>▾</b></button><div class="row" style="gap:16px">' + ring(pct, '<span class="' + (pt.total < 0 ? 'neg' : '') + '">' + ptsTxt(pt.total) + '</span>', 'pts ' + (d === t ? 'today' : 'that day')) +
     '<div class="grow"><div class="mid">' + done + ' of ' + checks.length + ' done</div><div class="small muted">' +
     (pct >= 100 ? 'Full day. Well played. 🔥' : pct >= 60 ? 'Good going, keep it up.' : d === t ? 'Tap a tile when it\'s done.' : 'How that day went.') + '</div>' +
     '<button class="ptsline" data-act="go-points">Level ' + lv.lv + (al.cur ? ' · 🏆 ' + al.cur + '-day all-in' : '') + ' · points ›</button></div></div>' +
@@ -2348,17 +2375,17 @@ function streaksHtml(){
   // calendar
   var ym = S.cal, p = ym.split('-'), first = new Date(+p[0], +p[1] - 1, 1), lead = (first.getDay() + 6) % 7, nd = daysIn(ym), cells = '';
   for (var i = 0; i < lead; i++) cells += '<span class="cd blank"></span>';
-  var kept = 0, broke = 0, froze = 0;
+  var kept = 0, broke = 0, froze = 0, skipped = 0;
   for (var dn = 1; dn <= nd; dn++){
     var ds = ym + '-' + pad(dn), s2 = calStatus(k, ds);
-    if (s2 === 'done') kept++; else if (s2 === 'frozen') froze++; else if (s2 === 'miss' || s2 === 'part') broke++;
+    if (s2 === 'done') kept++; else if (s2 === 'skip') skipped++; else if (s2 === 'frozen') froze++; else if (s2 === 'miss' || s2 === 'part') broke++;
     var ps = dn > 1 ? calStatus(k, ym + '-' + pad(dn - 1)) : '';
     var prevOk = (ps === 'done' || ps === 'frozen') && (s2 === 'done' || s2 === 'frozen') && (lead + dn - 1) % 7 !== 0;
-    cells += '<button class="cd ' + s2 + (ds === today() ? ' today' : '') + (prevOk ? ' joined' : '') + '" data-act="cal-day" data-v="' + ds + '">' + (s2 === 'frozen' ? '❄' : dn) + '</button>';
+    cells += '<button class="cd ' + s2 + (ds === today() ? ' today' : '') + (prevOk ? ' joined' : '') + '" data-act="cal-day" data-v="' + ds + '">' + (s2 === 'frozen' ? '❄' : s2 === 'skip' ? tplOf(ds).emoji : dn) + '</button>';
   }
   h += '<div class="card"><div class="month" style="margin-bottom:10px"><button data-act="cal" data-v="-1">‹</button><b>' + monthName(ym) + '</b><button data-act="cal" data-v="1">›</button></div>' +
     '<div class="cal">' + ['M','T','W','T','F','S','S'].map(function(x){ return '<span class="h">' + x + '</span>'; }).join('') + cells + '</div>' +
-    '<div class="legend2"><span><i class="cd done"></i>Kept ' + kept + '</span><span><i class="cd part"></i>Partly</span><span><i class="cd miss"></i>Broke ' + broke + '</span>' + (froze ? '<span><i class="cd frozen"></i>Frozen ' + froze + '</span>' : '') + '</div>' +
+    '<div class="legend2"><span><i class="cd done"></i>Kept ' + kept + '</span><span><i class="cd part"></i>Partly</span><span><i class="cd miss"></i>Broke ' + broke + '</span>' + (froze ? '<span><i class="cd frozen"></i>Frozen ' + froze + '</span>' : '') + (skipped ? '<span><i class="cd skip"></i>Day off ' + skipped + '</span>' : '') + '</div>' +
     '<div class="tiny muted" style="margin-top:6px">Tap a day to open it.</div></div>';
   // this week vs last week (Apple-style weekly recap)
   h += weekRecap();
@@ -2728,6 +2755,27 @@ function workFields(a, w){
   return h;
 }
 
+// day type: pick a template for this day, tomorrow, or every week on this weekday
+function tplSheet(){
+  var d = S.day, tm = addDays(d, 1), wd = pd(d).getDay(), wdName = pd(d).toLocaleDateString('en-IN', {weekday:'long'}), wk = (S.cfg.tplWeek || {})[wd] || '';
+  function row(day){
+    var cur = tplId(day);
+    return Object.keys(TEMPLATES).map(function(id){
+      var x = TEMPLATES[id];
+      return '<button class="item' + (id === cur ? ' tplon' : '') + '" data-act="tpl-set" data-day="' + day + '" data-v="' + id + '"><div class="em">' + x.emoji + '</div><div class="grow"><div class="t">' + x.name + '</div><div class="small muted">' + esc(x.desc) + '</div></div>' + (id === cur ? '<b class="good">✓</b>' : '') + '</button>';
+    }).join('');
+  }
+  var h = shead('Day type') + '<div class="lbl">' + esc(dayLabel(d)) + ' · ' + esc(dShort(d)) + '</div>' + row(d) +
+    '<div class="lbl" style="margin-top:14px">Tomorrow · ' + esc(dShort(tm)) + '</div><div class="chips">' + Object.keys(TEMPLATES).map(function(id){
+      return '<button class="chip ' + (tplId(tm) === id ? 'on' : '') + '" data-act="tpl-set" data-day="' + tm + '" data-v="' + id + '">' + TEMPLATES[id].emoji + ' ' + TEMPLATES[id].name + '</button>';
+    }).join('') + '</div>' +
+    '<div class="lbl" style="margin-top:6px">Every ' + wdName + '</div><div class="chips">' + [''].concat(Object.keys(TEMPLATES).filter(function(id){ return id !== 'normal'; })).map(function(id){
+      return '<button class="chip ' + (wk === id ? 'on' : '') + '" data-act="tpl-week" data-w="' + wd + '" data-v="' + id + '">' + (id ? TEMPLATES[id].emoji + ' ' + TEMPLATES[id].name : 'Normal') + '</button>';
+    }).join('') + '</div>' +
+    '<div class="hint">Goals that are off for the day can\'t break a streak and don\'t cost points. Do them anyway and you still earn the points.</div>';
+  openSheet(h);
+}
+
 // day note
 function noteForm(){
   var d = dayRec(S.day);
@@ -3039,6 +3087,18 @@ var A = {
     toast('🚪 Checked out · ' + hm(chan(r.work)) + ' worked');
   },
   'wd-toggle':function(el){ S.wdOpen = S.wdOpen === el.dataset.v ? null : el.dataset.v; render(); },
+  'tpl-open':function(){ tplSheet(); },
+  'tpl-set':function(el){
+    var dd = el.dataset.day, r = strip(dayRec(dd)); r.t = 'day'; r.date = dd; r.tpl = el.dataset.v; put('day_' + dd, r);
+    var x = TEMPLATES[el.dataset.v]; toast(x.emoji + ' ' + (dd === today() ? 'Today' : dd === addDays(today(), 1) ? 'Tomorrow' : dShort(dd)) + ' is a ' + x.name.toLowerCase());
+    var sc = $('#panel').scrollTop; setTimeout(function(){ tplSheet(); $('#panel').scrollTop = sc; }, 0);
+  },
+  'tpl-week':function(el){
+    var w = Object.assign({}, S.cfg.tplWeek || {}), k = el.dataset.w, wn = pd(addDays(weekStart(today()), (+k + 6) % 7)).toLocaleDateString('en-IN', {weekday:'long'});
+    if (el.dataset.v) w[k] = el.dataset.v; else delete w[k];
+    saveCfg({tplWeek:w}); toast(el.dataset.v ? TEMPLATES[el.dataset.v].emoji + ' Every ' + wn + ' is a ' + TEMPLATES[el.dataset.v].name.toLowerCase() : 'Every ' + wn + ' is a normal day');
+    var sc = $('#panel').scrollTop; setTimeout(function(){ tplSheet(); $('#panel').scrollTop = sc; }, 0);
+  },
   'rev-more':function(){ S.revAll = !S.revAll; render(); },
   rview:function(el){ S.rview = el.dataset.v; lsSet('db-rview', S.rview); render(); },
   'go-points':function(){ S.tab = 'stats'; S.iseg = 'points'; S.pday = today(); lsSet('db-tab', 'stats'); S.enter = true; render(); window.scrollTo(0, 0); },
