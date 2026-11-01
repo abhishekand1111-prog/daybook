@@ -417,7 +417,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 <script>
 (function(){
 'use strict';
-var APP_VERSION = 'v15';
+var APP_VERSION = 'v16';
 
 // ---------- utils ----------
 function $(s, r){ return (r || document).querySelector(s); }
@@ -636,7 +636,7 @@ function dataArrived(){
   IDX = null;
   S.ready = true;
   if (!S.rolled && S.synced){ S.rolled = true; rollSubs(); }
-  if (S.synced && S.user && S.user.uid) importDrWorkdays(S.user.uid);
+  if (S.synced && S.user && S.user.uid){ importDrWorkdays(S.user.uid); importDrTasks(S.user.uid); }
   if (S.synced && S.carried !== today()) setTimeout(carryTasks, 300);
   // the Matches feature was removed: clear any of its records left in the account
   if (S.synced) Object.keys(S.recs).forEach(function(k){ var r = S.recs[k]; if (r && (r.t === 'match' || r.t === 'msess')) del(k); });
@@ -659,7 +659,7 @@ function del(id){
 }
 function saveCfg(patch){
   var c = {};
-  ['cur','total','alertPct','budgets','cats','readMin','moveMin','moveDays','habits','waterGoal','glassMl','colaMax','sweetMax','freeze','pagesPerDay','workGoal','wdImported','reminders','tplWeek'].forEach(function(k){ c[k] = S.cfg[k]; });
+  ['cur','total','alertPct','budgets','cats','readMin','moveMin','moveDays','habits','waterGoal','glassMl','colaMax','sweetMax','freeze','pagesPerDay','workGoal','wdImported','wdImported2','tasksImported','reminders','tplWeek'].forEach(function(k){ c[k] = S.cfg[k]; });
   for (var k in patch) c[k] = patch[k];
   c.t = 'config';
   put('config', c);
@@ -1118,8 +1118,8 @@ function render(){
   if (!S.authed){ app.innerHTML = authHtml(); return; }
   if (!S.ready){ app.innerHTML = '<div class="load">Loading your data…</div>'; return; }
   var ae = document.activeElement, keep = ae && ae.id === 'q' ? {v:ae.value, s:ae.selectionStart} : null;
-  var body = S.tab === 'money' ? moneyHtml() : S.tab === 'books' ? booksHtml() : S.tab === 'fit' ? fitHtml() : S.tab === 'stats' ? statsHtml() : S.tab === 'intake' ? intakeHtml() : S.tab === 'mood' ? moodPage() : S.tab === 'plan' ? planHtml() : S.tab === 'work' ? workHtml() : S.tab === 'skills' ? skillsHtml() : todayHtml();
-  app.innerHTML = '<div class="wrap' + (S.enter ? ' enter' : '') + '">' + bannerHtml() + body + '</div>' + drawerHtml() + fabHtml() + bnavHtml();
+  var body = S.tab === 'money' ? moneyHtml() : S.tab === 'books' ? booksHtml() : S.tab === 'fit' ? fitHtml() : S.tab === 'stats' ? statsHtml() : S.tab === 'intake' ? intakeHtml() : S.tab === 'mood' ? moodPage() : S.tab === 'plan' ? planHtml() : S.tab === 'work' ? workHtml() : S.tab === 'skills' ? skillsHtml() : S.tab === 'notes' ? notesHtml() : todayHtml();
+  app.innerHTML = '<div class="wrap' + (S.enter ? ' enter' : '') + '">' + bannerHtml() + subNavHtml() + body + '</div>' + drawerHtml() + fabHtml() + bnavHtml();
   if (S.tab === 'money' && S.mseg === 'exp') fillExpList();
   if (S.enter){
     // stagger the cards in, then let later redraws (data syncs) stay still
@@ -1133,7 +1133,13 @@ function render(){
   if (keep){ var q = $('#q'); if (q){ q.focus(); try { q.setSelectionRange(keep.s, keep.s); } catch (e) {} } }
   tick();
 }
-function markImg(cls){ return '<img class="mark ' + (cls || '') + '" src="icons/mark.png?v=2" alt="pr">'; }
+// Health and Growth each group three or two screens; the strip at the top moves between them
+var SUBNAV = {fit:[['fit','Fitness'],['intake','Intake'],['mood','Mood']], plan:[['plan','Year plan'],['skills','Skills'],['notes','Tasks & notes']]};
+SUBNAV.intake = SUBNAV.mood = SUBNAV.fit; SUBNAV.skills = SUBNAV.notes = SUBNAV.plan;
+function subNavHtml(){
+  var g = SUBNAV[S.tab]; if (!g) return '';
+  return '<div class="seg sm">' + g.map(function(o){ return '<button class="' + (S.tab === o[0] ? 'on' : '') + '" data-act="tab" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</div>';
+}function markImg(cls){ return '<img class="mark ' + (cls || '') + '" src="icons/mark.png?v=2" alt="pr">'; }
 // numbers roll up from zero when a screen opens
 function cnt(n, fmt){ return '<span class="cnt" data-n="' + (+n || 0) + '" data-f="' + (fmt || '') + '">' + (fmt === 'money' ? money(n, 0) : Math.round(n)) + '</span>'; }
 function countUp(el){
@@ -1169,16 +1175,13 @@ function drawerHtml(){
     ['work', 'Work day', (function(){ var w = openWd(), a = w ? wdActive(w) : null; return w ? (a ? awayOf(a).icon + ' ' + awayOf(a).verb : '🟢 Working') + ' · ' + hm(wdWork(w)) : workMsOn(t) ? hm(workMsOn(t)) + ' worked today' : 'Not checked in'; })()],
     ['money', 'Money', money(sum(monthExps(ym), 'amt'), 0) + ' this month'],
     ['books', 'Books', streakTxt(readStreak(), 'reading')],
-    ['fit', 'Fitness', streakTxt(moveStreak(), 'move')],
-    ['intake', 'Intake', '💧 ' + intake(t, 'water') + '/' + S.cfg.waterGoal + ' · 🥤 ' + intake(t, 'cola') + ' · 🍰 ' + intake(t, 'sweet') + ' today'],
-    ['mood', 'Mood', dayRec(t).mood ? 'Today ' + MOODS[dayRec(t).mood - 1] + ' · see your trend' : 'How are you feeling today?'],
-    ['skills', 'Skills', S.focus && S.focus.phase !== 'break' ? '⏱ Focus running · ' + esc(S.focus.label) : skills().length ? (Math.round(sum(skills().map(function(s){ return skillWeek(s.id); })) * 10) / 10) + ' h practised this week' : 'Hours, levels & focus timer'],
-    ['plan', 'Year plan', reviewWeekDue() ? '🗓️ Weekly review is due' : list('ygoal').filter(function(g){ return +g.year === +t.slice(0, 4); }).length + ' goals for ' + t.slice(0, 4) + ' · reviews']
+    ['fit', 'Health', streakTxt(moveStreak(), 'move') + ' · 💧 ' + intake(t, 'water') + '/' + S.cfg.waterGoal + (dayRec(t).mood ? ' · ' + MOODS[dayRec(t).mood - 1] : ''), ['fit', 'intake', 'mood']],
+    ['plan', 'Growth', S.focus && S.focus.phase !== 'break' ? '⏱ Focus running · ' + esc(S.focus.label) : reviewWeekDue() ? '🗓️ Weekly review is due' : 'Year plan · skills · tasks & notes', ['plan', 'skills', 'notes']]
   ];
   return '<div class="drawer' + (S.drawer ? ' open' : '') + '"><div class="dscrim" data-act="drawer-close"></div><div class="dpanel">' +
     '<div class="brand">' + markImg() + '<div><b>Daybook<i>.</i></b><small>' + esc(dLong(t)) + '</small></div></div>' +
     tabs.map(function(x, i){
-      return '<button class="nav-i' + (S.tab === x[0] ? ' on' : '') + '" style="--i:' + i + '" data-act="tab" data-v="' + x[0] + '"><span class="ic">' + svg(x[0]) + '</span>' +
+      return '<button class="nav-i' + ((x[3] || [x[0]]).indexOf(S.tab) >= 0 ? ' on' : '') + '" style="--i:' + i + '" data-act="tab" data-v="' + x[0] + '"><span class="ic">' + svg(x[0]) + '</span>' +
         '<span class="grow"><span class="nt">' + x[1] + '</span><br><span class="nm">' + x[2] + '</span></span></button>';
     }).join('') +
     '<div class="dfoot"><button class="nav-i" style="--i:11" data-act="settings"><span class="ic">' + svg('gear') + '</span><span class="nt">Settings</span></button>' +
@@ -1191,7 +1194,7 @@ function bnavHtml(){
     return '<button class="' + (S.tab === x[0] ? 'on' : '') + '" data-act="tab" data-v="' + x[0] + '">' + svg(x[0]) + '<span>' + x[1] + '</span></button>';
   }).join('') + '<button class="' + (more ? 'on' : '') + '" data-act="drawer">' + svg('menu') + '<span>' + (more ? esc(TAB_NAMES[S.tab] || 'More') : 'More') + '</span></button></nav>';
 }
-var TAB_NAMES = {work:'Work day', books:'Books', fit:'Fitness', intake:'Intake', mood:'Mood', skills:'Skills', plan:'Year plan'};
+var TAB_NAMES = {work:'Work day', books:'Books', fit:'Fitness', intake:'Intake', mood:'Mood', skills:'Skills', plan:'Year plan', notes:'Tasks & notes'};
 function fabHtml(){
   var a = '', extra = '', label = '';
   // screens whose main action isn't "add a record" get a labelled button instead of a bare +
@@ -1203,7 +1206,7 @@ function fabHtml(){
   else if (S.tab === 'books') a = 'add-book';
   else if (S.tab === 'fit') a = 'add-work';
   else if (S.tab === 'plan') a = S.pseg === 'review' ? '' : 'add-yg';
-  else if (S.tab === 'skills') a = 'add-skill';  if (S.tab === 'money' && S.mseg === 'rec') a = 'add-rec';
+  else if (S.tab === 'skills') a = 'add-skill';  else if (S.tab === 'notes') a = S.nseg === 'notes' ? 'nt-add' : '';  if (S.tab === 'money' && S.mseg === 'rec') a = 'add-rec';
   if (S.tab === 'books' && S.bseg === 'stats') a = '';
   if (S.tab === 'books' && S.bseg === 'quotes') a = 'add-quote';
   return a ? '<button class="fab" data-act="' + a + '" aria-label="Add">+</button>' : '';
@@ -1283,7 +1286,7 @@ function todayHtml(){
     var due = reviewWeekDue(), foc = currentFocus();
     if (due) h += '<button class="card pink" style="display:block;width:100%;text-align:left;border:0;cursor:pointer" data-act="review" data-v="' + due + '"><div class="row between"><div><div class="small muted">🗓️ Weekly review</div><div class="t" style="margin-top:2px">' + weekLabel(due) + ': 3 minutes to look back</div></div><span style="font-size:22px">›</span></div></button>';
     if (foc) h += '<div class="card"><div class="small muted">🎯 This week\'s focus</div><div class="mid" style="margin-top:4px;text-transform:none">' + esc(foc.focus) + '</div></div>';  }
-  h += plannerHtml(d);
+  h += plannerHtml(d) + (d === t ? upcomingTasksHtml() : '');
 
   // Day review (the + / − / → table)
   h += reviewCard(d);
@@ -1798,23 +1801,49 @@ function workHtml(){
   }).join('') + '</div>' : '<div class="card">' + empty('🕘', 'Finished days show up here with the full break, drive and outing log.') + '</div>');
   return h;
 }
-// one-time copy of check-in history from the Diagnosis Room app (same account, users/{uid}/data/wday_*)
-function importDrWorkdays(uid){
-  if (LOCAL || S.cfg.wdImported || S.wdImporting || !window.firebase) return;
-  S.wdImporting = true;
+// one-time copies from the Diagnosis Room app (same account, users/{uid}/data/<prefix>*)
+function nextPrefix(p){ return p.slice(0, -1) + String.fromCharCode(p.charCodeAt(p.length - 1) + 1); }
+function drDocs(uid, prefix){
   var fp = firebase.firestore.FieldPath.documentId();
-  firebase.firestore().collection('users').doc(uid).collection('data').orderBy(fp).startAt('wday_').endAt('wday_').get({source:'server'}).then(function(snap){
+  return firebase.firestore().collection('users').doc(uid).collection('data').where(fp, '>=', prefix).where(fp, '<', nextPrefix(prefix)).get({source:'server'});
+}
+// check-in history (the first version of this import used a range that matched nothing, so it runs again as wdImported2)
+function importDrWorkdays(uid){
+  if (LOCAL || S.cfg.wdImported2 || S.wdImporting || !window.firebase) return;
+  S.wdImporting = true;
+  drDocs(uid, 'wday_').then(function(snap){
     var n = 0;
     snap.forEach(function(doc){
       if (S.recs[doc.id]) return;
       var o = doc.data(); o.t = 'wday'; if (!o.date && o.checkInAt) o.date = iso(new Date(o.checkInAt));
       put(doc.id, o); n++;
     });
-    saveCfg({wdImported:true});
+    saveCfg({wdImported2:true});
     if (n) toast('💼 Brought over ' + n + ' check-in day' + (n === 1 ? '' : 's') + ' from Diagnosis Room');
   }).catch(function(e){ S.wdImporting = false; console.warn('workday import', e); });
 }
-
+// open tasks and lookups from Diagnosis Room become day-planner tasks: on their due day, or today when undated or overdue.
+// Client-linked items (deliverables and client requests) stay in Diagnosis Room with the client.
+function importDrTasks(uid){
+  if (LOCAL || S.cfg.tasksImported || S.tkImporting || !window.firebase) return;
+  S.tkImporting = true;
+  drDocs(uid, 'lookup_').then(function(snap){
+    var t0 = today(), byDay = {}, n = 0, every = {weekly:'every week', biweekly:'every 2 weeks', monthly:'every month'};
+    snap.forEach(function(doc){
+      var o = doc.data(); if (!o || o.done || o.source || !(o.text || '').trim()) return;
+      var due = o.dueDate && o.dueDate >= t0 ? o.dueDate : t0, look = o.category === 'lookup';
+      (byDay[due] = byDay[due] || []).push({id:'drt_' + doc.id.replace('lookup_', ''), text:(look ? '🔎 ' : '') + o.text.trim() + (o.repeat ? ' (' + (every[o.repeat] || 'repeats') + ')' : ''), done:false, top:false});
+      n++;
+    });
+    Object.keys(byDay).forEach(function(d){
+      var have = {}, ex = dayTasks(d); ex.forEach(function(x){ have[x.id] = 1; });
+      var add = byDay[d].filter(function(x){ return !have[x.id]; });
+      if (add.length) saveTasks(d, ex.concat(add));
+    });
+    saveCfg({tasksImported:true});
+    if (n) toast('🗒️ Brought over ' + n + ' task' + (n === 1 ? '' : 's') + ' from Diagnosis Room');
+  }).catch(function(e){ S.tkImporting = false; console.warn('task import', e); });
+}
 // ---------- DAY PLANNER: tasks for the day, up to 3 starred as top priorities ----------
 // Tasks live on the day doc (day.tasks). Unfinished ones from earlier days move to today once a day.
 function dayTasks(d){ return (dayRec(d).tasks || []).slice(); }
@@ -1834,6 +1863,21 @@ function plannerHtml(d){
     (!ts.length ? '<div class="small muted" style="margin-bottom:10px">What do you want to get done? Star up to 3 as your top priorities.</div>' : '') +
     '<div class="row" style="margin-top:10px;gap:8px"><input id="tk-new" data-day="' + d + '" placeholder="Add a task…" enterkeyhint="done"><button class="btn sm" data-act="task-add" data-day="' + d + '">Add</button></div></div>';
 }
+// tasks planned for later days: a short list so they are not forgotten until the day arrives
+function upcomingTasksHtml(){
+  var t = today(), rows = [];
+  Object.keys(S.recs).forEach(function(k){
+    if (k.indexOf('day_') !== 0) return; var d = k.slice(4); if (d <= t) return;
+    dayTasks(d).forEach(function(x){ if (!x.done) rows.push({d:d, x:x}); });
+  });
+  if (!rows.length) return '';
+  rows.sort(function(a, b){ return a.d < b.d ? -1 : a.d > b.d ? 1 : 0; });
+  return '<div class="card"><div class="h2">📅 Coming up<span class="tiny muted">' + rows.length + ' task' + (rows.length === 1 ? '' : 's') + '</span></div>' +
+    rows.slice(0, 6).map(function(r){
+      return '<div class="ptask"><button class="tick-box" data-act="task-tog" data-v="' + r.x.id + '" data-day="' + r.d + '" aria-label="Done"></button><span class="grow tl">' + esc(r.x.text) + ' <span class="badge">' + dShort(r.d) + '</span></span>' +
+        '<button class="tdel" data-act="task-del" data-v="' + r.x.id + '" data-day="' + r.d + '" aria-label="Delete">×</button></div>';
+    }).join('') + (rows.length > 6 ? '<div class="small muted" style="margin-top:6px">+' + (rows.length - 6) + ' more on later days</div>' : '') + '</div>';
+}
 function carryTasks(){
   var t = today(); if (S.carried === t) return; S.carried = t;
   var moved = [];
@@ -1845,6 +1889,63 @@ function carryTasks(){
   if (moved.length){ saveTasks(t, dayTasks(t).concat(moved)); toast('🗒️ Moved ' + moved.length + ' unfinished task' + (moved.length === 1 ? '' : 's') + ' to today'); }
 }
 
+// ---------- NOTES: free text you want to keep ----------
+function notesAll(){ return list('note').sort(function(a, b){ return (b.pin ? 1 : 0) - (a.pin ? 1 : 0) || (b.at || 0) - (a.at || 0); }); }
+function noteCard(n){
+  var first = (n.text || '').split('\n')[0], title = (n.title || '').trim() || first.slice(0, 60) || 'Untitled';
+  var body = (n.title || '').trim() ? (n.text || '') : (n.text || '').split('\n').slice(1).join('\n');
+  return '<button class="card" style="display:block;width:100%;text-align:left;border:0;cursor:pointer" data-act="nt-open" data-id="' + n.id + '"><div class="row between"><div class="t ell">' + (n.pin ? '📌 ' : '') + esc(title) + '</div><span class="tiny muted">' + dShort(n.date || today()) + '</span></div>' +
+    (body.trim() ? '<div class="small muted" style="margin-top:4px;white-space:pre-wrap;max-height:3.9em;overflow:hidden">' + esc(body.trim().slice(0, 220)) + '</div>' : '') + '</button>';
+}
+function notesListHtml(){
+  var q = (S.nq || '').toLowerCase().trim();
+  var ns = notesAll().filter(function(n){ return !q || ((n.title || '') + ' ' + (n.text || '')).toLowerCase().indexOf(q) >= 0; });
+  if (!ns.length) return '<div class="card">' + empty('📝', q ? 'No notes match that search.' : 'Write down ideas, things to remember, links, anything at all. Tap + to start.', q ? '' : '<button class="btn sm" data-act="nt-add">New note</button>') + '</div>';
+  return ns.map(noteCard).join('');
+}
+// Tasks and notes share one screen: the task list reads and writes the same day-planner tasks as Today
+function allOpenTasks(){
+  var t = today(), rows = [];
+  Object.keys(S.recs).forEach(function(k){
+    if (k.indexOf('day_') !== 0) return; var d = k.slice(4); if (d < t) return;
+    dayTasks(d).forEach(function(x){ if (!x.done) rows.push({d:d, x:x}); });
+  });
+  rows.sort(function(a, b){ return a.d < b.d ? -1 : a.d > b.d ? 1 : 0; });
+  return rows;
+}
+function tasksPaneHtml(){
+  var t = today(), rows = allOpenTasks(), doneToday = dayTasks(t).filter(function(x){ return x.done; });
+  function row(r){
+    return '<div class="ptask"><button class="tick-box" data-act="task-tog" data-v="' + r.x.id + '" data-day="' + r.d + '" aria-label="Done"></button><span class="grow tl">' + esc(r.x.text) + (r.x.from ? ' <span class="badge">from ' + dShort(r.x.from) + '</span>' : '') + '</span>' +
+      '<button class="tdel" data-act="task-del" data-v="' + r.x.id + '" data-day="' + r.d + '" aria-label="Delete">×</button></div>';
+  }
+  var h = '<div class="card"><div class="row" style="gap:8px"><input id="tp-new" class="grow" placeholder="Add a task…" enterkeyhint="done"><input type="date" id="tp-date" value="' + t + '" style="width:140px"><button class="btn sm" data-act="tp-add">Add</button></div></div>';
+  if (!rows.length) return h + '<div class="card">' + empty('✅', 'Nothing left to do. Add a task above, or pick a later date to plan ahead.') + '</div>';
+  var days = [], by = {};
+  rows.forEach(function(r){ if (!by[r.d]){ by[r.d] = []; days.push(r.d); } by[r.d].push(r); });
+  days.forEach(function(d){
+    var label = d === t ? 'Today' : d === addDays(t, 1) ? 'Tomorrow' : dayLabel(d);
+    h += '<div class="card"><div class="h2">' + label + '<span class="tiny muted">' + by[d].length + '</span></div>' + by[d].map(row).join('') + '</div>';
+  });
+  return h + (doneToday.length ? '<div class="small muted" style="text-align:center;margin:6px 0 14px">✓ ' + doneToday.length + ' done today</div>' : '');
+}
+function notesHtml(){
+  var seg = S.nseg === 'notes' ? 'notes' : 'tasks', nTasks = allOpenTasks().length;
+  var h = topHtml('Tasks & notes', 'Things to do and things to remember') +
+    '<div class="seg"><button class="' + (seg === 'tasks' ? 'on' : '') + '" data-act="nseg" data-v="tasks">✅ Tasks' + (nTasks ? ' · ' + nTasks : '') + '</button><button class="' + (seg === 'notes' ? 'on' : '') + '" data-act="nseg" data-v="notes">📝 Notes</button></div>';
+  if (seg === 'tasks') return h + tasksPaneHtml();
+  return h + '<div class="card" style="padding:10px 12px"><input id="nq" placeholder="Search notes…" value="' + esc(S.nq || '') + '" enterkeyhint="search"></div><div id="nlist">' + notesListHtml() + '</div>';
+}document.addEventListener('input', function(e){
+  if (e.target && e.target.id === 'nq'){ S.nq = e.target.value; var l = $('#nlist'); if (l) l.innerHTML = notesListHtml(); }
+});
+function memoForm(n){
+  n = n || {};
+  openSheet(shead(n.id ? 'Edit note' : 'New note') +
+    fld('Title (optional)', '<input id="nt-title" value="' + esc(n.title || '') + '" placeholder="Title">') +
+    fld('Note', '<textarea id="nt-text" rows="9" placeholder="Write anything…">' + esc(n.text || '') + '</textarea>') +
+    '<label class="row" style="gap:8px;margin:8px 0"><input type="checkbox" id="nt-pin" style="width:auto"' + (n.pin ? ' checked' : '') + '> 📌 Pin to the top</label>' +
+    '<input type="hidden" id="nt-id" value="' + (n.id || '') + '"><div class="btns">' + (n.id ? '<button class="btn bad" data-act="nt-del" data-id="' + n.id + '">Delete</button>' : '') + '<button class="btn" data-act="nt-save">Save</button></div>', n.id ? null : '#nt-text');
+}
 // ---------- SKILLS: practice hours with levels (the 10,000-hour idea) ----------
 var LEVELS = [[0,'Starter'],[10,'Beginner'],[50,'Learner'],[100,'Practitioner'],[250,'Skilled'],[500,'Advanced'],[1000,'Expert'],[10000,'Master']];
 function skills(){ return list('skill').sort(function(a, b){ return (a.at || 0) - (b.at || 0); }); }
@@ -2796,7 +2897,8 @@ function quickSheet(){
   openSheet(shead('Add') + '<div class="quick" style="grid-template-columns:1fr 1fr">' +
     '<button data-act="add-exp"><span>💸</span>Expense</button><button data-act="add-read"><span>📖</span>Reading</button>' +
     '<button data-act="add-work"><span>🏃</span>Workout</button><button data-act="note"><span>📝</span>Day note</button>' +
-    '<button data-act="add-sub"><span>🔁</span>Subscription</button><button data-act="add-book"><span>📘</span>Book</button></div>');
+    '<button data-act="add-sub"><span>🔁</span>Subscription</button><button data-act="add-book"><span>📘</span>Book</button>' +
+    '<button data-act="nt-add"><span>🗒️</span>Note</button><button data-act="go-tasks"><span>✅</span>Task</button></div>');
 }
 
 // settings
@@ -2948,19 +3050,35 @@ var A = {
     setTimeout(function(){ var n = $('#tk-new'); if (n) n.focus(); }, 30);
   },
   'task-tog':function(el){
-    var d = S.day, before = dayScore(d), ts = dayTasks(d).map(function(x){ return x.id === el.dataset.v ? Object.assign({}, x, {done:!x.done}) : x; }); saveTasks(d, ts);
+    var d = el.dataset.day || S.day, before = dayScore(d), ts = dayTasks(d).map(function(x){ return x.id === el.dataset.v ? Object.assign({}, x, {done:!x.done}) : x; }); saveTasks(d, ts);
     var x = ts.filter(function(t2){ return t2.id === el.dataset.v; })[0];
     if (x && x.done){ try { navigator.vibrate && navigator.vibrate(10); } catch (e) {} if (before < 100 && dayScore(d) >= 100){ confetti(); toast('Full day! 🔥'); } }
   },
   'task-top':function(el){
-    var d = S.day, ts = dayTasks(d), x = ts.filter(function(t2){ return t2.id === el.dataset.v; })[0]; if (!x) return;
+    var d = el.dataset.day || S.day, ts = dayTasks(d), x = ts.filter(function(t2){ return t2.id === el.dataset.v; })[0]; if (!x) return;
     if (!x.top && ts.filter(function(t2){ return t2.top; }).length >= 3){ toast('Keep it to 3 top priorities', 'warn'); return; }
     saveTasks(d, ts.map(function(t2){ return t2.id === x.id ? Object.assign({}, t2, {top:!t2.top}) : t2; }));
   },
-  'task-del':function(el){ var d = S.day; saveTasks(d, dayTasks(d).filter(function(x){ return x.id !== el.dataset.v; })); },
+  'task-del':function(el){ var d = el.dataset.day || S.day; saveTasks(d, dayTasks(d).filter(function(x){ return x.id !== el.dataset.v; })); },
   // recurring
   'add-rec':function(){ subForm({kind:'rec', per:'month', next:today(), cat:'bills', pay:'Cash', autoLog:true, remind:1, status:'active'}); },
-  // skills
+  // notes
+  'nseg':function(el){ S.nseg = el.dataset.v; render(); },
+  'tp-add':function(){
+    var i = $('#tp-new'), text = i ? i.value.trim() : ''; if (!text){ if (i) i.focus(); return; }
+    var d = val('tp-date') || today(); if (d < today()) d = today();
+    saveTasks(d, dayTasks(d).concat([{id:uid(), text:text, done:false, top:false}]));
+    setTimeout(function(){ var n = $('#tp-new'); if (n) n.focus(); }, 30);
+  },
+  'go-tasks':function(){ if (sheetOpen) hideSheet(); S.tab = 'notes'; S.nseg = 'tasks'; S.enter = true; render(); window.scrollTo(0, 0); setTimeout(function(){ var n = $('#tp-new'); if (n) n.focus(); }, 200); },  'nt-add':function(){ if (sheetOpen) hideSheet(); memoForm(); },
+  'nt-open':function(el){ var n = notesAll().filter(function(x){ return x.id === el.dataset.id; })[0]; if (n) memoForm(n); },
+  'nt-save':function(){
+    var text = val('nt-text').trim(), title = val('nt-title').trim(); if (!text && !title){ toast('Write something first', 'warn'); return; }
+    var id = val('nt-id') || 'note_' + uid(), old = S.recs[id] || {};
+    put(id, {t:'note', title:title, text:text, pin:!!($('#nt-pin') && $('#nt-pin').checked), date:old.date || today()});
+    closeSheet(); toast('Note saved');
+  },
+  'nt-del':function(el){ if (confirm('Delete this note?')){ del(el.dataset.id); closeSheet(); } },  // skills
   'add-skill':function(){ skillForm(); },
   skill:function(el){ var s = skills().filter(function(x){ return x.id === el.dataset.id; })[0]; if (s) skillSheet(s); },
   'skill-edit':function(el){ var s = skills().filter(function(x){ return x.id === el.dataset.id; })[0]; if (s) skillForm(s); },
