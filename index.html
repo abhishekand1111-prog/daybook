@@ -49,7 +49,26 @@ html,body{margin:0;background:var(--bg);color:var(--ink)}
 body{font:15px/1.45 'DM Sans',system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;overscroll-behavior-y:none}
 button,input,select,textarea{font:inherit;color:inherit}
 button{transition:transform .15s var(--ease),background-color .2s,color .2s,box-shadow .2s}
+button{transition:transform .12s var(--ease),background-color .15s,color .15s,border-color .15s,box-shadow .15s,opacity .15s;-webkit-tap-highlight-color:transparent}
 button:active{transform:scale(.97)}
+button.card:active,.card button.item:active{transform:scale(.99)}
+html,body{overscroll-behavior-y:contain}
+.card.folded>:not(.h2){display:none}
+.card.folded .h2{margin:0}
+.h2.hasfold{justify-content:flex-start;gap:8px;cursor:pointer}
+.fold{flex:none;width:30px;height:30px;margin-left:auto;border:0;border-radius:10px;background:var(--chip);color:var(--mute);font-size:13px;cursor:pointer;display:grid;place-items:center;transition:transform .2s var(--ease),background-color .15s}
+.h2.hasfold>*:not(.fold)~.fold{margin-left:0}
+.card.folded .fold{transform:rotate(-90deg)}
+.card.unfold>:not(.h2){animation:unfold .22s var(--ease) both}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}}
+.lpill{position:fixed;left:12px;right:12px;max-width:536px;margin:0 auto;bottom:calc(env(safe-area-inset-bottom) + 74px);z-index:21;display:flex;align-items:center;gap:6px;background:var(--char);color:#fff;border-radius:16px;padding:6px 6px 6px 12px;box-shadow:0 12px 28px rgba(0,0,0,.25);animation:lpin .3s var(--ease) both}
+@keyframes lpin{from{opacity:0;transform:translateY(12px)}}
+.lpgo{flex:1;min-width:0;display:flex;align-items:center;gap:8px;border:0;background:none;color:inherit;font:inherit;font-size:13.5px;font-weight:600;text-align:left;cursor:pointer;padding:6px 0}
+.lpn{flex:none;font-size:11px;font-weight:800;background:rgba(255,255,255,.18);border-radius:99px;padding:1px 7px}
+.lpbtn{flex:none;border:0;background:var(--acc);color:#fff;font:inherit;font-size:13px;font-weight:700;border-radius:12px;padding:9px 12px;cursor:pointer}
+body.haspill .fab{bottom:calc(env(safe-area-inset-bottom) + 138px)}
+body.haspill .toast{bottom:calc(env(safe-area-inset-bottom) + 146px)}
+body.haspill .wrap{padding-bottom:calc(env(safe-area-inset-bottom) + 230px)}
 a{color:var(--acc)}
 .wrap{max-width:560px;margin:0 auto;padding:0 16px calc(env(safe-area-inset-bottom) + 170px)}
 
@@ -172,7 +191,7 @@ svg.i{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke
 .sheet.open{visibility:visible}
 .scrim{position:absolute;inset:0;background:rgba(20,20,22,.5);opacity:0;transition:opacity .3s var(--ease)}
 .sheet.open .scrim{opacity:1}
-.panel{position:absolute;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;background:var(--card);border-radius:28px 28px 0 0;max-height:92vh;overflow-y:auto;padding:8px 16px calc(env(safe-area-inset-bottom) + 20px);transform:translateY(105%);transition:transform .42s var(--ease)}
+.panel{position:absolute;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;background:var(--card);border-radius:28px 28px 0 0;max-height:92vh;overflow-y:auto;padding:8px 16px calc(env(safe-area-inset-bottom) + 20px);transform:translateY(105%);transition:transform .32s var(--ease)}
 .sheet.open .panel{transform:none}
 .grab{width:42px;height:5px;border-radius:9px;background:var(--line);margin:4px auto 12px}
 .shead{display:flex;align-items:center;justify-content:space-between;margin:0 0 14px}
@@ -414,16 +433,16 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 .lbar i{position:absolute;top:0;bottom:0;border-radius:99px}
 .lbar i.up{background:linear-gradient(90deg,var(--acc),var(--acc2))}
 .lbar i.down{background:var(--bad)}
-.enter .cal .cd{animation:rise .5s var(--ease) both;animation-delay:calc(.15s + var(--c, 0) * 12ms)}
+.enter .cal .cd{animation:rise .3s var(--ease) both;animation-delay:calc(.08s + var(--c, 0) * 6ms)}
 
 /* motion: content flows in when a screen opens */
-.enter>*:not(.top){animation:rise .55s var(--ease) both;animation-delay:calc(var(--i, 0) * 55ms)}
-@keyframes rise{from{opacity:0;transform:translateY(16px)}}
-.enter .bar>i{animation:growx 1s var(--ease) both;animation-delay:.25s}
+.enter>*:not(.top){animation:rise .34s var(--ease) both;animation-delay:calc(var(--i, 0) * 32ms)}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}}
+.enter .bar>i{animation:growx .6s var(--ease) both;animation-delay:.12s}
 @keyframes growx{from{width:0}}
-.enter .bars .b i{animation:growy .9s var(--ease) both;animation-delay:calc(.2s + var(--j, 0) * 40ms)}
+.enter .bars .b i{animation:growy .6s var(--ease) both;animation-delay:calc(.1s + var(--j, 0) * 25ms)}
 @keyframes growy{from{height:0}}
-.enter .ring .arc{animation:ringin 1.2s var(--ease) both;animation-delay:.2s}
+.enter .ring .arc{animation:ringin .8s var(--ease) both;animation-delay:.1s}
 @keyframes ringin{from{stroke-dasharray:0 100}}
 .confetti{position:fixed;top:-12px;width:9px;height:14px;border-radius:2px;z-index:70;pointer-events:none;animation:fall linear forwards}
 @keyframes fall{to{transform:translate(var(--dx),105vh) rotate(var(--rot));opacity:.9}}
@@ -442,7 +461,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 <script>
 (function(){
 'use strict';
-var APP_VERSION = 'v19';
+var APP_VERSION = 'v20';
 
 // ---------- utils ----------
 function $(s, r){ return (r || document).querySelector(s); }
@@ -1367,11 +1386,13 @@ function render(){
   if (!S.ready){ app.innerHTML = '<div class="load">Loading your data…</div>'; return; }
   var ae = document.activeElement, keep = ae && ae.id === 'q' ? {v:ae.value, s:ae.selectionStart} : null;
   var body = S.tab === 'money' ? moneyHtml() : S.tab === 'books' ? booksHtml() : S.tab === 'fit' ? fitHtml() : S.tab === 'stats' ? statsHtml() : S.tab === 'intake' ? intakeHtml() : S.tab === 'mood' ? moodPage() : S.tab === 'plan' ? planHtml() : S.tab === 'work' ? workHtml() : S.tab === 'skills' ? skillsHtml() : S.tab === 'notes' ? notesHtml() : todayHtml();
-  app.innerHTML = '<div class="wrap' + (S.enter ? ' enter' : '') + '">' + bannerHtml() + subNavHtml() + body + '</div>' + drawerHtml() + fabHtml() + bnavHtml();
+  app.innerHTML = '<div class="wrap' + (S.enter ? ' enter' : '') + '">' + bannerHtml() + subNavHtml() + body + '</div>' + drawerHtml() + fabHtml() + livePillHtml() + bnavHtml();
+  document.body.classList.toggle('haspill', !!$('.lpill'));
   if (S.tab === 'money' && S.mseg === 'exp') fillExpList();
+  applyFolds();
   if (S.enter){
     // stagger the cards in, then let later redraws (data syncs) stay still
-    $$('.wrap > *').forEach(function(c, i){ c.style.setProperty('--i', Math.min(i, 9)); });
+    $$('.wrap > *').forEach(function(c, i){ c.style.setProperty('--i', Math.min(i, 6)); });
     $$('.bars').forEach(function(b){ $$('.b i', b).forEach(function(x, j){ x.style.setProperty('--j', j); }); });
     $$('.cal .cd').forEach(function(x, j){ x.style.setProperty('--c', j); });
     $$('.cnt').forEach(countUp);
@@ -1392,7 +1413,7 @@ function subNavHtml(){
 // numbers roll up from zero when a screen opens
 function cnt(n, fmt){ return '<span class="cnt" data-n="' + (+n || 0) + '" data-f="' + (fmt || '') + '">' + (fmt === 'money' ? money(n, 0) : Math.round(n)) + '</span>'; }
 function countUp(el){
-  var n = +el.dataset.n, f = el.dataset.f, t0 = performance.now(), dur = 900;
+  var n = +el.dataset.n, f = el.dataset.f, t0 = performance.now(), dur = 600;
   if (!n) return;
   function step(t){
     var k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3), v = n * e;
@@ -1450,6 +1471,8 @@ function fabHtml(){
   if (S.tab === 'intake'){ a = 'intake'; extra = ' data-k="water" data-v="1" data-day="' + S.day + '"'; label = '+ 💧 Water'; }
   else if (S.tab === 'mood'){ a = 'note'; label = '+ Mood'; }
   else if (S.tab === 'work'){ var ow = openWd(); a = ow ? 'wd-out' : 'wd-in'; label = ow ? '🚪 Check out' : '💼 Check in'; }
+  // checked in: the same Check out button floats on Today too
+  else if (S.tab === 'today' && openWd() && S.day === today()){ a = wdActive(openWd()) ? 'wd-end' : 'wd-out'; label = wdActive(openWd()) ? '▶ Back to work' : '🚪 Check out'; }
   if (label) return '<button class="fab wide" data-act="' + a + '"' + extra + '>' + label + '</button>';
   if (S.tab === 'money') a = S.mseg === 'subs' ? 'add-sub' : S.mseg === 'goals' ? 'add-goal' : 'add-exp';
   else if (S.tab === 'books') a = 'add-book';
@@ -1563,6 +1586,48 @@ function todayHtml(){
   if (w.length && on('workouts')) h += '<div class="card"><div class="h2">Workouts</div>' + w.map(workItem).join('') + '</div>';
   h += '<button class="link custom" data-act="today-edit">⚙ Customize Today</button>';
   return h;
+}
+
+// ---------- minimise / show any section (like the audit app's dashboard groups) ----------
+// Every card with a heading gets a ▾ button; the state is kept per screen + heading on this phone.
+var FOLDS = lsGet('db-folds', {});
+function applyFolds(){
+  $$('.wrap .card').forEach(function(card){
+    var h = card.querySelector(':scope > .h2');
+    if (!h || card.classList.contains('hero') || h.querySelector('[data-act="rev-open"],.fold')) return;
+    var title = (h.firstChild && h.firstChild.nodeType === 3 ? h.firstChild.textContent : h.textContent).replace(/[^\w\s&]/g, '').trim().toLowerCase().slice(0, 40);
+    if (!title) return;
+    var key = S.tab + ':' + title, first = h.firstElementChild;
+    if (first) first.style.marginLeft = 'auto';
+    h.classList.add('hasfold'); card.dataset.fk = key;
+    h.insertAdjacentHTML('beforeend', '<button class="fold" data-act="fold" aria-label="Minimise or show">▾</button>');
+    if (FOLDS[key]) card.classList.add('folded');
+  });
+}
+function toggleFold(card){
+  var k = card && card.dataset.fk; if (!k) return;
+  if (FOLDS[k]) delete FOLDS[k]; else FOLDS[k] = 1;
+  lsSet('db-folds', FOLDS);
+  card.classList.toggle('folded', !!FOLDS[k]);
+  if (!FOLDS[k]){ card.classList.remove('unfold'); void card.offsetWidth; card.classList.add('unfold'); }
+}
+
+// ---------- the live pill: what's running follows you to every screen ----------
+function livePillHtml(){
+  if (S.tab === 'today' || !liveCount() || (S.cfg.todayHide || {}).live) return '';
+  var w = openWd(), n = liveCount(), body, btn;
+  if (w){
+    var a = wdActive(w), ac = a ? awayOf(a) : null;
+    body = (ac ? ac.icon + ' ' + ac.verb : '💼 Working') + ' · <span class="wtick" data-k="' + (a ? 'away' : 'work') + '">' + (a ? hms(wdAway(w, a)) : hm(wdWork(w))) + '</span>';
+    btn = a ? '<button class="lpbtn" data-act="wd-end">▶ Back</button>' : '<button class="lpbtn" data-act="wd-out">🚪 Check out</button>';
+  } else if (S.timer){
+    body = '📖 Reading · <span class="tick">0:00</span>'; btn = '<button class="lpbtn" data-act="timer-stop">Stop &amp; log</button>';
+  } else {
+    var br = S.focus.phase === 'break', fl = Math.max(0, S.focus.start + S.focus.dur * 60000 - Date.now());
+    body = (br ? '☕ Break' : '⏱ Focus') + ' · <span class="ftick">' + Math.floor(fl / 60000) + ':' + pad(Math.floor(fl / 1000) % 60) + '</span>';
+    btn = '<button class="lpbtn" data-act="' + (br ? 'focus-stop' : 'focus-done') + '">' + (br ? 'Skip' : 'Finish') + '</button>';
+  }
+  return '<div class="lpill"><button class="lpgo" data-act="tab" data-v="today"><span class="live"></span><span class="ell">' + body + '</span>' + (n > 1 ? '<span class="lpn">+' + (n - 1) + '</span>' : '') + '</button>' + btn + '</div>';
 }
 
 // ---------- Live now: whatever is running shows at the top of Today, with its controls ----------
@@ -3546,6 +3611,7 @@ var A = {
   },
   'wd-toggle':function(el){ S.wdOpen = S.wdOpen === el.dataset.v ? null : el.dataset.v; render(); },
   undo:function(){ var u = S.undo; S.undo = null; $('#toast').className = 'toast'; if (u) u(); },
+  fold:function(el){ toggleFold(el.closest('.card')); },
   'rev-open':function(){ S.revOpen = !S.revOpen; render(); },
   'gs-save':function(){
     var k = val('gs-k'), g = GOALS[k], v = val('gs-v'), p = {}; if (!g) return;
@@ -3993,6 +4059,9 @@ function closeIfOpen(){ if (sheetOpen) closeSheet(); }
 
 document.addEventListener('click', function(e){
   if (lpFired){ lpFired = false; if (e.target.closest && e.target.closest('[data-gk]')){ e.preventDefault(); return; } }
+  // tapping a section's heading (not its links) minimises or shows it
+  var fh = e.target.closest('.card > .h2.hasfold');
+  if (fh && !e.target.closest('button,a,input,select')){ toggleFold(fh.parentNode); return; }
   var el = e.target.closest('[data-act]');
   if (!el) return;
   var fn = A[el.dataset.act];
