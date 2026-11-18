@@ -216,6 +216,10 @@ button.b{border:0;background:none;padding:0;font:inherit;cursor:pointer}
 .ring .c .neg{color:#ffd166}
 .tplchip{display:inline-block;max-width:100%;margin:0 0 12px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:inherit;font:inherit;font-size:12.5px;font-weight:600;border-radius:99px;padding:5px 12px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tplchip b{opacity:.6;font-size:10px;margin-left:2px}
+.tedit{display:block;margin:10px 0 0 auto;border:0;background:none;color:inherit;opacity:.6;font:inherit;font-size:12px;cursor:pointer}
+.trow{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line)}.trow .em{font-size:20px;width:28px;text-align:center}
+.trow.off b{opacity:.45;text-decoration:line-through}
+.tbtn{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:15px;cursor:pointer}.tbtn:disabled{opacity:.3;cursor:default}
 .tplchip.set{background:rgba(96,165,250,.2);border-color:#60a5fa;color:#bfdbfe}
 .item.tplon{background:var(--accbg);border-radius:14px}
 .htiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
@@ -417,7 +421,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 <script>
 (function(){
 'use strict';
-var APP_VERSION = 'v16';
+var APP_VERSION = 'v17';
 
 // ---------- utils ----------
 function $(s, r){ return (r || document).querySelector(s); }
@@ -484,6 +488,7 @@ var ICON = {
   skills:'<path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/>',
   work:'<rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>',
   plan:'<rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4M8 14l2.5 2.5L16 12"/>',
+  notes:'<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h5"/>',
   gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'
 };
 function svg(name){ return '<svg class="i" viewBox="0 0 24 24">' + ICON[name] + '</svg>'; }
@@ -532,7 +537,7 @@ var GOAL_EMOJI = ['🎯','🛟','🏍️','🚗','🏠','✈️','💻','📱','
 var DEFAULT_CFG = {
   cur:'₹', total:0, alertPct:80, budgets:{}, cats:DEFAULT_CATS,
   readMin:20, moveMin:30, moveDays:5,
-  waterGoal:8, glassMl:250, colaMax:0, sweetMax:1, freeze:true, pagesPerDay:20, workGoal:0, wdImported:false, tplWeek:{},
+  waterGoal:8, glassMl:250, colaMax:0, sweetMax:1, freeze:true, pagesPerDay:20, workGoal:0, wdImported:false, tplWeek:{}, wakeBy:'06:30', bedBy:'23:00', tileOrder:[], tileHide:{},
   habits:[{id:'wake', name:'Up by 6:30', emoji:'⏰'}]
 };
 var GOOD_PTS = 40;   // a day with this many points counts as a good day
@@ -659,7 +664,7 @@ function del(id){
 }
 function saveCfg(patch){
   var c = {};
-  ['cur','total','alertPct','budgets','cats','readMin','moveMin','moveDays','habits','waterGoal','glassMl','colaMax','sweetMax','freeze','pagesPerDay','workGoal','wdImported','wdImported2','tasksImported','reminders','tplWeek'].forEach(function(k){ c[k] = S.cfg[k]; });
+  ['cur','total','alertPct','budgets','cats','readMin','moveMin','moveDays','habits','waterGoal','glassMl','colaMax','sweetMax','freeze','pagesPerDay','workGoal','wdImported','wdImported2','tasksImported','reminders','tplWeek','wakeBy','bedBy','tileOrder','tileHide'].forEach(function(k){ c[k] = S.cfg[k]; });
   for (var k in patch) c[k] = patch[k];
   c.t = 'config';
   put('config', c);
@@ -775,7 +780,8 @@ function idx(){
       continue;
     }
     else if (r.t === 'day'){
-      if (r.water != null || r.cola != null || r.sweet != null){ if (!I.intakeFirst || r.date < I.intakeFirst) I.intakeFirst = r.date; }    } else continue;
+      if (r.water != null || r.cola != null || r.sweet != null){ if (!I.intakeFirst || r.date < I.intakeFirst) I.intakeFirst = r.date; }
+      if (r.wake || r.bed){ if (!I.sleepFirst || r.date < I.sleepFirst) I.sleepFirst = r.date; }    } else continue;
     if (!I.first || r.date < I.first) I.first = r.date;
   }
   return IDX = I;
@@ -800,7 +806,7 @@ function streak(test){
 function readStreak(){ return streakStats(kindById('read')).cur; }
 function moveStreak(){ return streakStats(kindById('move')).cur; }
 function weekStart(d){ var x = pd(d), w = (x.getDay() + 6) % 7; x.setDate(x.getDate() - w); return iso(x); }
-function dayChecks(d){
+function dayChecks(d, raw){
   var c = S.cfg, out = [];
   var rm = readMinsOn(d), mm = moveMinsOn(d), day = dayRec(d);
   out.push({k:'read', label:'Read ' + c.readMin + ' min', done:rm >= c.readMin, prog:rm + ' / ' + c.readMin + ' min', act:'add-read', ic:'📖', sh:'Read'});
@@ -817,6 +823,12 @@ function dayChecks(d){
     out.push({k:'cola', label:'🥤 ' + (+c.colaMax ? 'Cola: ' + c.colaMax + ' max' : 'No cola'), done:co <= c.colaMax, prog:co ? co + ' had' : '', act:'go-intake', lim:true, ic:'🥤', cnt:co + ' / ' + c.colaMax, plus:'cola'});
     out.push({k:'sweet', label:'🍰 ' + (+c.sweetMax ? 'Desserts: ' + c.sweetMax + ' max' : 'No desserts'), done:sw <= c.sweetMax, prog:sw ? sw + ' had' : '', act:'go-intake', lim:true, ic:'🍰', cnt:sw + ' / ' + c.sweetMax, plus:'sweet'});
   }
+  // wake-up and bed time count from the day you first log one (today always shows them)
+  if (d >= today() || (idx().sleepFirst && d >= idx().sleepFirst)){
+    var sl = sleepMins(d);
+    out.push({k:'wake', label:'Up by ' + clock12(c.wakeBy || '06:30'), done:wakeOk(d), prog:day.wake ? 'Up ' + clock12(day.wake) + (sl ? ' · ' + mins(sl) + ' sleep' : '') : 'Goal ' + clock12(c.wakeBy || '06:30'), act:'sleep-log', sv:'wake', ic:'🌅', sh:'Wake up'});
+    out.push({k:'bed', label:'In bed by ' + clock12(c.bedBy || '23:00'), done:bedOk(d), prog:day.bed ? 'Bed ' + clock12(day.bed) : 'Goal ' + clock12(c.bedBy || '23:00'), act:'sleep-log', sv:'bed', ic:'🌙', sh:'Bed time'});
+  }
   var tops = (day.tasks || []).filter(function(x){ return x.top; });
   if (tops.length) out.push({k:'top', label:'⭐ Finish your top ' + tops.length, done:tops.every(function(x){ return x.done; }), prog:tops.filter(function(x){ return x.done; }).length + ' / ' + tops.length, act:'go-planner', ic:'⭐', sh:'Top tasks'});
   if (+c.workGoal > 0){ var wm = workMsOn(d) / 3600000; out.push({k:'work', label:'💼 Work ' + c.workGoal + 'h', done:wm >= c.workGoal, prog:(wm ? wm.toFixed(1) : 0) + ' / ' + c.workGoal + 'h', act:'go-work', ic:'💼', sh:'Work'}); }
@@ -829,7 +841,11 @@ function dayChecks(d){
       done:habitDone(h, v), prog:k === 'reach' ? v + ' / ' + h.target + ' ' + (h.unit || '') : (v ? v + ' ' + (h.unit || '') : ''), act:'habit-log', hid:h.id,
       ic:ic, sh:h.name, lim:k === 'limit', cnt:k === 'limit' ? v + ' / ' + h.target + ' ' + (h.unit || '') : ''});
   });
-  return out.filter(function(x){ return !tplSkips(d, x.k); });
+  if (raw) return out;
+  var ord = S.cfg.tileOrder || [], hide = S.cfg.tileHide || {};
+  out = out.filter(function(x){ return !hide[x.k] && !tplSkips(d, x.k); });
+  // your order from Edit tiles first, anything new after it in its usual place
+  return out.map(function(x, i){ var o = ord.indexOf(x.k); return [o < 0 ? 1000 + i : o, x]; }).sort(function(a, b){ return a[0] - b[0]; }).map(function(p){ return p[1]; });
 }
 
 // ---------- day templates ----------
@@ -841,13 +857,68 @@ var TEMPLATES = {
   gym:{name:'Gym day', emoji:'🏋️', desc:'Move goal doubled', skip:{}, move:2},
   rest:{name:'Rest day', emoji:'🛋️', desc:'No move goal. Your move streak waits', skip:{move:1}},
   off:{name:'Day off', emoji:'🏖️', desc:'No work or focus goals', skip:{work:1, focus:1}},
-  travel:{name:'Travel day', emoji:'✈️', desc:'Only water, cola, desserts and the review count. Spending isn\'t judged', skip:{read:1, move:1, work:1, focus:1, skills:1, spend:1, nospend:1, top:1, habits:1, score:1}},
-  sick:{name:'Sick day', emoji:'🤒', desc:'Only water and the review count. Every streak waits', skip:{read:1, move:1, work:1, focus:1, skills:1, spend:1, nospend:1, cola:1, sweet:1, top:1, habits:1, score:1, allin:1}}
+  travel:{name:'Travel day', emoji:'✈️', desc:'Only water, cola, desserts and the review count. Spending isn\'t judged', skip:{read:1, move:1, work:1, focus:1, skills:1, spend:1, nospend:1, top:1, habits:1, score:1, wake:1, bed:1}},
+  sick:{name:'Sick day', emoji:'🤒', desc:'Only water and the review count. Every streak waits', skip:{read:1, move:1, work:1, focus:1, skills:1, spend:1, nospend:1, cola:1, sweet:1, top:1, habits:1, score:1, allin:1, wake:1, bed:1}}
 };
 function tplId(d){ var v = dayRec(d).tpl; if (v && TEMPLATES[v]) return v; var w = (S.cfg.tplWeek || {})[pd(d).getDay()]; return w && TEMPLATES[w] ? w : 'normal'; }
 function tplOf(d){ return TEMPLATES[tplId(d)]; }
 function tplSkips(d, key){ var s = tplOf(d).skip; return !!(s[key] || (s.habits && key.indexOf('h_') === 0)); }
 function moveGoal(d){ return (+S.cfg.moveMin || 1) * (tplOf(d).move || 1); }
+// ---------- wake-up & bed time ----------
+// Times are stored as "HH:MM" on the day record (day.wake, day.bed). A bed time after midnight but
+// before 5 am belongs to the evening before, so it's compared as 24:xx.
+function hhmm(s){ var p = String(s || '').split(':'); return p.length < 2 ? null : (+p[0]) * 60 + (+p[1]); }
+function bedMins(s){ var m = hhmm(s); return m == null ? null : m < 300 ? m + 1440 : m; }
+function clock12(s){ var m = hhmm(s); if (m == null) return ''; var h = Math.floor(m / 60), mm = m % 60; return ((h + 11) % 12 + 1) + ':' + pad(mm) + (h < 12 ? ' am' : ' pm'); }
+function wakeOk(d){ var w = hhmm(dayRec(d).wake); return w != null && w <= hhmm(S.cfg.wakeBy || '06:30'); }
+function bedOk(d){ var b = bedMins(dayRec(d).bed); return b != null && b <= bedMins(S.cfg.bedBy || '23:00'); }
+// sleep that ended this morning: last night's bed time to today's wake-up
+function sleepMins(d){ var b = bedMins(dayRec(addDays(d, -1)).bed), w = hhmm(dayRec(d).wake); if (b == null || w == null) return 0; var s = w + 1440 - b; return s > 0 && s < 960 ? s : 0; }
+function nowHHMM(){ var n = new Date(); return pad(n.getHours()) + ':' + pad(n.getMinutes()); }
+function sleepForm(kind){
+  var bed = kind === 'bed', t = today(), now = new Date();
+  // logging bed time after midnight goes on the day you're closing
+  var dd = bed && S.day === t && now.getHours() < 5 ? addDays(t, -1) : S.day, cur = dayRec(dd)[kind];
+  var goal = bed ? S.cfg.bedBy || '23:00' : S.cfg.wakeBy || '06:30';
+  openSheet(shead(bed ? '🌙 Bed time' : '🌅 Wake-up time') +
+    '<div class="small muted" style="margin-bottom:10px">' + esc(dayLabel(dd)) + ' · goal ' + (bed ? 'in bed by ' : 'up by ') + clock12(goal) + '</div>' +
+    fld(bed ? 'Went to bed at' : 'Woke up at', '<input id="sl-time" type="time" value="' + esc(cur || nowHHMM()) + '">') +
+    '<input type="hidden" id="sl-kind" value="' + kind + '"><input type="hidden" id="sl-day" value="' + dd + '">' +
+    '<div class="btns">' + (cur ? '<button class="btn ghost" data-act="sleep-clear">Clear</button>' : '') + '<button class="btn" data-act="sleep-save">Save</button></div>', '#sl-time');
+}
+function sleepSet(dd, kind, v){
+  var r = strip(dayRec(dd)); r.t = 'day'; r.date = dd;
+  if (v) r[kind] = v; else delete r[kind];
+  put('day_' + dd, r); closeSheet();
+  if (!v) return toast('Cleared');
+  var ok = kind === 'bed' ? bedOk(dd) : wakeOk(dd), sl = kind === 'wake' ? sleepMins(dd) : 0;
+  toast((kind === 'bed' ? '🌙 Bed ' : '🌅 Up ') + clock12(v) + (sl ? ' · ' + mins(sl) + ' sleep' : '') + (ok ? ' · on time, +' + PT.sleep + ' pts' : ' · later than your goal'));
+}
+
+// ---------- edit Today's tiles ----------
+// Order and hide every check. A hidden one is off: it isn't shown and doesn't count toward the day.
+function tileList(){
+  var raw = dayChecks(today(), true);
+  if (!raw.some(function(x){ return x.k === 'top'; })) raw.push({k:'top', ic:'⭐', sh:'Top tasks', note:'shows when you star tasks'});
+  var ord = S.cfg.tileOrder || [];
+  return raw.map(function(x, i){ var o = ord.indexOf(x.k); return [o < 0 ? 1000 + i : o, x]; }).sort(function(a, b){ return a[0] - b[0]; }).map(function(p){ return p[1]; });
+}
+function tileKeys(){ return tileList().map(function(x){ return x.k; }); }
+function tilesSheet(){
+  var ts = tileList(), hide = S.cfg.tileHide || {};
+  var h = shead('Edit tiles') + '<div class="small muted" style="margin:-4px 0 10px">Move tiles up or down, or hide the ones you don\'t want. Hidden ones are off: they don\'t count toward your day.</div>' +
+    ts.map(function(x, i){
+      var off = !!hide[x.k], nm = x.sh || x.label || '';
+      if (nm.indexOf(x.ic) === 0) nm = nm.slice(x.ic.length).trim();
+      return '<div class="trow' + (off ? ' off' : '') + '"><span class="em">' + x.ic + '</span><span class="grow"><b>' + esc(nm) + '</b><br><span class="tiny muted">' + (x.lim ? 'Stay under' : x.note || 'Tile') + '</span></span>' +
+        '<button class="tbtn" data-act="tile-move" data-v="' + x.k + '" data-d="-1"' + (i ? '' : ' disabled') + ' aria-label="Move up">↑</button>' +
+        '<button class="tbtn" data-act="tile-move" data-v="' + x.k + '" data-d="1"' + (i < ts.length - 1 ? '' : ' disabled') + ' aria-label="Move down">↓</button>' +
+        '<button class="chip' + (off ? '' : ' on') + '" data-act="tile-hide" data-v="' + x.k + '">' + (off ? 'Hidden' : 'Shown') + '</button></div>';
+    }).join('') +
+    '<div class="btns" style="margin-top:12px"><button class="btn ghost" data-act="tiles-reset">Reset</button><button class="btn" data-act="close">Done</button></div>' +
+    '<div class="hint">Wake-up and bed-time goals, and your own habits, are set in Settings.</div>';
+  openSheet(h);
+}
 function noteWritten(day){ return !!((day.note && day.note.trim()) || (day.pl || []).length || (day.mi || []).length || (day.nx || []).length); }
 // the habit checks only (no note, top tasks or spend): what the all-in streak asks for
 function habitChecks(d){ return dayChecks(d).filter(function(x){ return /^(read|move|water|cola|sweet|work|h_)/.test(x.k); }); }
@@ -870,6 +941,8 @@ function streakKinds(){
     {id:'work', name:'Work hours', emoji:'💼', desc:(+c.workGoal || 1) + 'h worked a day', start:I.workFirst || t, test:function(d){ return workMsOn(d) >= (+c.workGoal || 1) * 3600000; }, part:function(d){ return workMsOn(d) > 0; }},
     {id:'focus', name:'Focus blocks', emoji:'⏱', desc:'At least one focus block a day', start:I.focusFirst || t, test:function(d){ return (I.focus[d] || 0) > 0; }},
     {id:'skills', name:'Practice', emoji:'⭐', desc:'Practised a skill', start:I.pracFirst || t, test:function(d){ return (I.prac[d] || 0) > 0; }},
+    {id:'wake', name:'Early riser', emoji:'🌅', desc:'Up by ' + clock12(c.wakeBy || '06:30'), start:I.sleepFirst || t, test:function(d){ return wakeOk(d); }},
+    {id:'bed', name:'Bed on time', emoji:'🌙', desc:'In bed by ' + clock12(c.bedBy || '23:00'), start:I.sleepFirst || t, test:function(d){ return bedOk(d); }},
     {id:'nospend', name:'No-spend days', emoji:'🪙', desc:'Days you spend nothing', start:I.expFirst || '9999', limit:true, rare:true, test:function(d){ return !(spendOn(d) > 0); }}
   ];
   (c.habits || []).forEach(function(h){
@@ -921,7 +994,7 @@ function streakStats(k){
 // Every day earns points for what you did and loses points for limits you broke. Going past a goal
 // (an extra-long run, more reading) earns more; each dessert or cola over the limit costs more than
 // the one before. Streaks you keep alive add a bonus on top, and all-in days count double.
-var PT = {goal:10, part:3, glass:1, water:5, kept:5, over:5, spendOk:3, spendBad:5, work:5, top:5, note:2, focus:2, prac:5, habit:5, habitBad:10};
+var PT = {sleep:5, goal:10, part:3, glass:1, water:5, kept:5, over:5, spendOk:3, spendBad:5, work:5, top:5, note:2, focus:2, prac:5, habit:5, habitBad:10};
 function overCost(n){ return n > 0 ? PT.over * n * (n + 1) / 2 : 0; }   // 1 over: -5, 2 over: -15, 3 over: -30
 function dayActive(d){
   var I = idx(), day = dayRec(d);
@@ -963,6 +1036,8 @@ function pointsOn(d){
     if (noteWritten(day)) add('📝 Day note written', PT.note);
     if (I.focus[d]) add('⏱ ' + I.focus[d] + ' focus block' + (I.focus[d] === 1 ? '' : 's'), Math.min(4, I.focus[d]) * PT.focus, '⏱ Focus blocks done');
     if (I.prac[d]) add('🎯 Practised a skill', PT.prac);
+    if (wakeOk(d)) add('🌅 Up on time (' + clock12(day.wake) + ')', PT.sleep, '🌅 Up on time');
+    if (bedOk(d)) add('🌙 In bed on time (' + clock12(day.bed) + ')', PT.sleep, '🌙 In bed on time');
     (c.habits || []).forEach(function(h){
       if (h.since && d < h.since) return;
       var v = habitVal(d, h), k = habitKind(h), nm = (h.emoji ? h.emoji + ' ' : '') + h.name;
@@ -1028,6 +1103,7 @@ function dayFacts(d){
   if (moveMinsOn(d)) f.push('💪 ' + moveMinsOn(d) + ' min');
   if (intake(d, 'water')) f.push('💧 ' + intake(d, 'water'));
   if (tplId(d) !== 'normal') f.push(tplOf(d).emoji + ' ' + tplOf(d).name);
+  if (sleepMins(d)) f.push('😴 ' + mins(sleepMins(d)) + ' sleep');
   if (workMsOn(d)) f.push('💼 ' + hm(workMsOn(d)));
   if (idx().prac[d]) f.push('🎯 ' + idx().prac[d] + ' min');
   if (day.weight) f.push('⚖️ ' + day.weight + ' kg');
@@ -1134,8 +1210,8 @@ function render(){
   tick();
 }
 // Health and Growth each group three or two screens; the strip at the top moves between them
-var SUBNAV = {fit:[['fit','Fitness'],['intake','Intake'],['mood','Mood']], plan:[['plan','Year plan'],['skills','Skills'],['notes','Tasks & notes']]};
-SUBNAV.intake = SUBNAV.mood = SUBNAV.fit; SUBNAV.skills = SUBNAV.notes = SUBNAV.plan;
+var SUBNAV = {fit:[['fit','Fitness'],['intake','Intake'],['mood','Mood']], plan:[['plan','Year plan'],['skills','Skills']]};
+SUBNAV.intake = SUBNAV.mood = SUBNAV.fit; SUBNAV.skills = SUBNAV.plan;
 function subNavHtml(){
   var g = SUBNAV[S.tab]; if (!g) return '';
   return '<div class="seg sm">' + g.map(function(o){ return '<button class="' + (S.tab === o[0] ? 'on' : '') + '" data-act="tab" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</div>';
@@ -1176,7 +1252,8 @@ function drawerHtml(){
     ['money', 'Money', money(sum(monthExps(ym), 'amt'), 0) + ' this month'],
     ['books', 'Books', streakTxt(readStreak(), 'reading')],
     ['fit', 'Health', streakTxt(moveStreak(), 'move') + ' · 💧 ' + intake(t, 'water') + '/' + S.cfg.waterGoal + (dayRec(t).mood ? ' · ' + MOODS[dayRec(t).mood - 1] : ''), ['fit', 'intake', 'mood']],
-    ['plan', 'Growth', S.focus && S.focus.phase !== 'break' ? '⏱ Focus running · ' + esc(S.focus.label) : reviewWeekDue() ? '🗓️ Weekly review is due' : 'Year plan · skills · tasks & notes', ['plan', 'skills', 'notes']]
+    ['plan', 'Growth', S.focus && S.focus.phase !== 'break' ? '⏱ Focus running · ' + esc(S.focus.label) : reviewWeekDue() ? '🗓️ Weekly review is due' : 'Year plan · skills', ['plan', 'skills']],
+    ['notes', 'Tasks & notes', (function(){ var n = allOpenTasks().length, m = notesAll().length; return (n ? n + ' open task' + (n === 1 ? '' : 's') : 'No open tasks') + ' · ' + m + ' note' + (m === 1 ? '' : 's'); })()]
   ];
   return '<div class="drawer' + (S.drawer ? ' open' : '') + '"><div class="dscrim" data-act="drawer-close"></div><div class="dpanel">' +
     '<div class="brand">' + markImg() + '<div><b>Daybook<i>.</i></b><small>' + esc(dLong(t)) + '</small></div></div>' +
@@ -1257,15 +1334,15 @@ function todayHtml(){
     '<button class="ptsline" data-act="go-points">Level ' + lv.lv + (al.cur ? ' · 🏆 ' + al.cur + '-day all-in' : '') + ' · points ›</button></div></div>' +
     '<div class="htiles">' + dos.map(function(c){
       var act = c.habit ? 'habit' : c.plus ? 'intake' : c.act;
-      return '<button class="htile' + (c.done ? ' done' : '') + '" data-act="' + act + '" data-v="' + (c.habit || c.hid || (c.plus ? 1 : '')) + '"' + (c.plus ? ' data-k="' + c.plus + '" data-day="' + d + '"' : '') + '>' +
-        '<span class="hi">' + c.ic + '</span><span class="hn">' + esc(c.sh || c.label) + '</span><span class="hp">' + (c.done ? '✓ Done' : esc(c.prog || 'Tap when done')) + '</span>' +
+      return '<button class="htile' + (c.done ? ' done' : '') + '" data-act="' + act + '" data-v="' + (c.habit || c.hid || c.sv || (c.plus ? 1 : '')) + '"' + (c.plus ? ' data-k="' + c.plus + '" data-day="' + d + '"' : '') + '>' +
+        '<span class="hi">' + c.ic + '</span><span class="hn">' + esc(c.sh || c.label) + '</span><span class="hp">' + (c.done ? '✓ ' + (c.sv ? esc(c.prog) : 'Done') : esc(c.prog || 'Tap when done')) + '</span>' +
         (c.plus ? '<span class="hplus">+1</span>' : '') + '</button>';
     }).join('') + '</div>' +
     (lims.length ? '<div class="under"><span class="ul">Stay under</span>' + lims.map(function(c){
       var act = c.plus ? 'intake' : c.act;
       return '<button class="uchip' + (c.done ? '' : ' over') + '" data-act="' + act + '" data-v="' + (c.hid || (c.plus ? 1 : '')) + '"' + (c.plus ? ' data-k="' + c.plus + '" data-day="' + d + '"' : '') + '>' +
         c.ic + ' ' + esc(c.cnt) + (c.plus ? ' <b>+</b>' : '') + '</button>';
-    }).join('') + '</div>' : '') + '</div>';
+    }).join('') + '</div>' : '') + '<button class="tedit" data-act="tiles-edit">✎ Edit tiles</button></div>';
 
   if (d === t){
     h += '<div class="quick">' +
@@ -1275,9 +1352,6 @@ function todayHtml(){
       '<button data-act="quick"><span>＋</span>More</button></div>';
   }
   if (d === t){
-    var ow = openWd();
-    if (ow && (ow.date !== t || Date.now() - ow.checkInAt > 16 * 3600000)) h += '<button class="alert bad" style="width:100%;border:0;text-align:left;cursor:pointer" data-act="tab" data-v="work">⏱️<div><b>Still checked in</b> since ' + dShort(ow.date) + ' ' + clockOf(ow.checkInAt) + '. Check out if that day is done.</div></button>';
-    h += workCard(true);
     if (S.focus) h += focusCard();
     var lastDl = lsGet('db-lastdl', 0);
     if (Object.keys(S.recs).length > 20 && Date.now() - lastDl > 7 * 864e5) h += '<button class="alert info" style="width:100%;border:0;text-align:left;cursor:pointer" data-act="backup">💾<div><b>Weekly backup:</b> tap to save a copy of your data to this phone' + (lastDl ? ' (last one ' + dShort(iso(new Date(lastDl))) + ')' : '') + '.</div></button>';
@@ -2064,17 +2138,18 @@ function readStatsHtml(){
 // For reminders that fire even when the app is closed, "Add to phone calendar" saves them as daily alarms.
 var REM_PRESETS = [
   {label:'Drink water', emoji:'💧', time:'11:00', kind:'water'}, {label:'Drink water', emoji:'💧', time:'15:00', kind:'water'},
-  {label:'Check in for work', emoji:'💼', time:'09:30', kind:'checkin'}, {label:'Check out of work', emoji:'🚪', time:'19:30', kind:'checkout'},
+  {label:'Log your wake-up', emoji:'🌅', time:'07:00', kind:'wake'}, {label:'Wind down for bed', emoji:'🌙', time:'22:30', kind:'bed'},
   {label:'Log today\'s expenses', emoji:'💸', time:'21:00', kind:'expense'}, {label:'Read before bed', emoji:'📖', time:'22:00', kind:'read'},
   {label:'Write the day note', emoji:'📝', time:'22:30', kind:'note'}, {label:'Weekly review', emoji:'🗓️', time:'19:00', kind:'review'}
 ];
-function reminders(){ return S.cfg.reminders || []; }
+// office check-in / check-out reminders were retired; old ones are hidden and dropped on the next save
+function reminders(){ return (S.cfg.reminders || []).filter(function(r){ return r.kind !== 'checkin' && r.kind !== 'checkout'; }); }
 function remDue(r){
   // skip reminders that no longer apply today
   var t = today(), c = S.cfg;
   if (r.kind === 'water') return intake(t, 'water') < c.waterGoal;
-  if (r.kind === 'checkin') return !openWd() && !workMsOn(t);
-  if (r.kind === 'checkout') return !!openWd();
+  if (r.kind === 'wake') return !dayRec(t).wake;
+  if (r.kind === 'bed') return !dayRec(t).bed;
   if (r.kind === 'expense') return !spendOn(t);
   if (r.kind === 'read') return readMinsOn(t) < c.readMin;
   if (r.kind === 'note') return !noteWritten(dayRec(t));
@@ -2919,9 +2994,11 @@ function settingsSheet(){
     fld('Glass size (ml)', '<input id="set-ml" inputmode="numeric" value="' + S.cfg.glassMl + '">') +
     fld('🥤 Cola max a day', '<input id="set-cola" inputmode="numeric" value="' + S.cfg.colaMax + '">') +
     fld('🍰 Desserts max a day', '<input id="set-sweet" inputmode="numeric" value="' + S.cfg.sweetMax + '">') +
-    fld('💼 Work hours a day', '<input id="set-work" inputmode="decimal" value="' + (+S.cfg.workGoal || '') + '" placeholder="0 = off">') + '</div>' +
+    fld('💼 Work hours a day', '<input id="set-work" inputmode="decimal" value="' + (+S.cfg.workGoal || '') + '" placeholder="0 = off">') +
+    fld('🌅 Up by', '<input id="set-wake" type="time" value="' + esc(S.cfg.wakeBy || '06:30') + '">') +
+    fld('🌙 In bed by', '<input id="set-bed" type="time" value="' + esc(S.cfg.bedBy || '23:00') + '">') + '</div>' +
     '<div class="lbl">❄️ Streak freeze: one missed day a week won\'t break a streak</div>' + chips('freeze', [['on','On'],['off','Off']], S.cfg.freeze !== false ? 'on' : 'off') +
-    '<button class="btn sm" data-act="set-save">Save targets</button>' +
+    '<div class="btns"><button class="btn sm" data-act="set-save">Save targets</button><button class="btn sm ghost" data-act="tiles-edit">✎ Edit Today\'s tiles</button></div>' +
     '<div class="sec">Daily habits (count toward the day score)</div>' +
     (S.cfg.habits || []).map(function(hb){
       return '<div class="row between" style="padding:8px 0;border-top:1px solid var(--line)"><div class="grow"><div class="t">' + esc(hb.emoji || '✅') + ' ' + esc(hb.name) + '</div><div class="tiny muted">' + esc(habitDesc(hb)) + '</div></div>' +
@@ -3205,6 +3282,20 @@ var A = {
     toast('🚪 Checked out · ' + hm(chan(r.work)) + ' worked');
   },
   'wd-toggle':function(el){ S.wdOpen = S.wdOpen === el.dataset.v ? null : el.dataset.v; render(); },
+  'sleep-log':function(el){ sleepForm(el.dataset.v); },
+  'sleep-save':function(){ sleepSet(val('sl-day'), val('sl-kind'), val('sl-time')); },
+  'sleep-clear':function(){ sleepSet(val('sl-day'), val('sl-kind'), ''); },
+  'tiles-edit':function(){ tilesSheet(); },
+  'tile-move':function(el){
+    var keys = tileKeys(), i = keys.indexOf(el.dataset.v), j = i + (+el.dataset.d);
+    if (i < 0 || j < 0 || j >= keys.length) return;
+    keys.splice(j, 0, keys.splice(i, 1)[0]); saveCfg({tileOrder:keys}); var sc = $('#panel').scrollTop; setTimeout(function(){ tilesSheet(); $('#panel').scrollTop = sc; }, 0);
+  },
+  'tile-hide':function(el){
+    var hd = Object.assign({}, S.cfg.tileHide || {}), k = el.dataset.v; if (hd[k]) delete hd[k]; else hd[k] = 1;
+    saveCfg({tileHide:hd}); var sc = $('#panel').scrollTop; setTimeout(function(){ tilesSheet(); $('#panel').scrollTop = sc; }, 0);
+  },
+  'tiles-reset':function(){ saveCfg({tileOrder:[], tileHide:{}}); toast('Tiles back to the default'); setTimeout(tilesSheet, 0); },
   'tpl-open':function(){ tplSheet(); },
   'tpl-set':function(el){
     var dd = el.dataset.day, r = strip(dayRec(dd)); r.t = 'day'; r.date = dd; r.tpl = el.dataset.v; put('day_' + dd, r);
@@ -3541,7 +3632,7 @@ var A = {
     var cur = val('set-cur').trim() || '₹';
     saveCfg({cur:cur, readMin:Math.max(1, +num(val('set-read')) || 20), moveMin:Math.max(1, +num(val('set-move')) || 30), moveDays:Math.min(7, Math.max(1, +num(val('set-days')) || 5)),
       waterGoal:Math.max(1, +num(val('set-water')) || 8), glassMl:Math.max(50, +num(val('set-ml')) || 250),
-      colaMax:Math.max(0, Math.round(num(val('set-cola')))), sweetMax:Math.max(0, Math.round(num(val('set-sweet')))), workGoal:Math.max(0, Math.min(16, num(val('set-work'))))});
+      colaMax:Math.max(0, Math.round(num(val('set-cola')))), sweetMax:Math.max(0, Math.round(num(val('set-sweet')))), workGoal:Math.max(0, Math.min(16, num(val('set-work')))), wakeBy:val('set-wake') || '06:30', bedBy:val('set-bed') || '23:00'});
     toast('Saved'); settingsSheet();
   },
   'habit-edit':function(el){ habitForm((S.cfg.habits || []).filter(function(h){ return h.id === el.dataset.v; })[0]); },
