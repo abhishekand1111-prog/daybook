@@ -230,6 +230,13 @@ button.b{border:0;background:none;padding:0;font:inherit;cursor:pointer}
 .evecard .muted{color:rgba(255,255,255,.7)}
 .everow{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--line)}
 .evn{min-width:26px;text-align:center;font-size:16px}
+.livehead{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--acc);margin:4px 2px 8px}
+.hlcard{background:linear-gradient(135deg,var(--accbg),var(--card))}
+.hlrow{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line);font-size:14px;font-weight:600}.hlrow:first-of-type{border-top:0}
+.hli{font-size:20px;width:26px;text-align:center}
+.link.custom{display:block;margin:6px auto 0;padding:10px;font-size:13px}
+.bnav button{position:relative}.bdot{position:absolute;top:6px;left:calc(50% + 8px);width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 2px var(--card);animation:livepulse 1.4s infinite}
+@keyframes livepulse{0%,100%{opacity:1}50%{opacity:.35}}
 .tedit{display:block;margin:0 0 0 auto;min-height:32px;padding:6px 4px !important;border:0;background:none;color:inherit;opacity:.6;font:inherit;font-size:12px;cursor:pointer}
 .trow{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line)}.trow .em{font-size:20px;width:28px;text-align:center}
 .trow.off b{opacity:.45;text-decoration:line-through}
@@ -435,7 +442,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 <script>
 (function(){
 'use strict';
-var APP_VERSION = 'v18';
+var APP_VERSION = 'v19';
 
 // ---------- utils ----------
 function $(s, r){ return (r || document).querySelector(s); }
@@ -551,7 +558,7 @@ var GOAL_EMOJI = ['🎯','🛟','🏍️','🚗','🏠','✈️','💻','📱','
 var DEFAULT_CFG = {
   cur:'₹', total:0, alertPct:80, budgets:{}, cats:DEFAULT_CATS,
   readMin:20, moveMin:30, moveDays:5,
-  waterGoal:8, glassMl:250, colaMax:0, sweetMax:1, freeze:true, pagesPerDay:20, workGoal:0, wdImported:false, tplWeek:{}, wakeBy:'06:30', bedBy:'23:00', tileOrder:[], tileHide:{},
+  waterGoal:8, glassMl:250, colaMax:0, sweetMax:1, freeze:true, pagesPerDay:20, workGoal:0, wdImported:false, tplWeek:{}, wakeBy:'06:30', bedBy:'23:00', tileOrder:[], tileHide:{}, todayHide:{},
   rewards:[{id:'rw1', emoji:'🍰', name:'Guilt-free dessert', cost:150, free:'sweet'}, {id:'rw2', emoji:'🍕', name:'Cheat meal', cost:300}, {id:'rw3', emoji:'🎬', name:'Movie night', cost:500}, {id:'rw4', emoji:'📚', name:'A new book', cost:800}],
   habits:[{id:'wake', name:'Up by 6:30', emoji:'⏰'}]
 };
@@ -680,7 +687,7 @@ function del(id){
 }
 function saveCfg(patch){
   var c = {};
-  ['cur','total','alertPct','budgets','cats','readMin','moveMin','moveDays','habits','waterGoal','glassMl','colaMax','sweetMax','freeze','pagesPerDay','workGoal','wdImported','wdImported2','tasksImported','reminders','tplWeek','wakeBy','bedBy','tileOrder','tileHide','rewards'].forEach(function(k){ c[k] = S.cfg[k]; });
+  ['cur','total','alertPct','budgets','cats','readMin','moveMin','moveDays','habits','waterGoal','glassMl','colaMax','sweetMax','freeze','pagesPerDay','workGoal','wdImported','wdImported2','tasksImported','reminders','tplWeek','wakeBy','bedBy','tileOrder','tileHide','rewards','todayHide'].forEach(function(k){ c[k] = S.cfg[k]; });
   for (var k in patch) c[k] = patch[k];
   c.t = 'config';
   put('config', c);
@@ -1371,6 +1378,7 @@ function render(){
     S.enter = false;
   }
   onScroll();
+  if (S.tab === 'today') setTimeout(celebrateHighlights, 600);
   if (keep){ var q = $('#q'); if (q){ q.focus(); try { q.setSelectionRange(keep.s, keep.s); } catch (e) {} } }
   tick();
 }
@@ -1432,7 +1440,7 @@ function drawerHtml(){
 function bnavHtml(){
   var main = ['today', 'notes', 'money'], more = main.indexOf(S.tab) < 0;
   return '<nav class="bnav">' + [['today', 'Today'], ['notes', 'Tasks'], ['money', 'Money']].map(function(x){
-    return '<button class="' + (S.tab === x[0] ? 'on' : '') + '" data-act="tab" data-v="' + x[0] + '">' + svg(x[0]) + '<span>' + x[1] + '</span></button>';
+    return '<button class="' + (S.tab === x[0] ? 'on' : '') + '" data-act="tab" data-v="' + x[0] + '">' + svg(x[0]) + (x[0] === 'today' && S.tab !== 'today' && liveCount() ? '<i class="bdot"></i>' : '') + '<span>' + x[1] + '</span></button>';
   }).join('') + '<button class="' + (more ? 'on' : '') + '" data-act="drawer">' + svg('menu') + '<span>' + (more ? esc(TAB_NAMES[S.tab] || 'More') : 'More') + '</span></button></nav>';
 }
 var TAB_NAMES = {stats:'Insights', work:'Work day', books:'Books', fit:'Fitness', intake:'Intake', mood:'Mood', skills:'Skills', plan:'Year plan', notes:'Tasks & notes'};
@@ -1486,7 +1494,7 @@ function todayHtml(){
     (d !== t ? '<button data-act="day-today" style="width:auto;padding:0 10px;font-size:13px">Today</button><button data-act="day-next" aria-label="Next day">›</button>' : '') + '</div>';
   var h = topHtml(d === t ? greet : dayLabel(d), dLong(d), nav);
 
-  h += timerHtml();
+  if (d === t) h += liveHtml();
 
   // hero: points first, the day's progress as the ring; goals as tiles, limits as counters
   var pt = pointsOn(d), lv = levelOf(pointsTotal()), al = streakStats(kindById('allin'));
@@ -1508,42 +1516,126 @@ function todayHtml(){
         c.ic + ' ' + esc(c.cnt) + (c.plus ? ' <b>+</b>' : '') + '</button>';
     }).join('') + '</div>' : '') + '<div class="row between" style="margin-top:10px"><span class="tiny" style="opacity:.5">Hold a tile to change its goal</span><button class="tedit" data-act="tiles-edit">✎ Edit tiles</button></div></div>';
 
+  // every section below can be hidden from "Customize Today" (S.cfg.todayHide)
+  var hid = S.cfg.todayHide || {};
+  function on(k){ return !hid[k]; }
+
+  // something exceptional today: personal bests, streak milestones, a finished book…
+  if (on('highlights')){ var hl = highlightsOn(d); if (hl.length) h += '<div class="card hlcard"><div class="h2">✨ Highlights' + (d === t ? '' : '<span class="tiny muted">that day</span>') + '</div>' + hl.map(function(x){ return '<div class="hlrow"><span class="hli">' + x.ic + '</span><span>' + esc(x.text) + '</span></div>'; }).join('') + '</div>'; }
+
   // after 8 pm the day's close comes first
   var evening = d === t && new Date().getHours() >= 20;
-  if (evening){ if (!dayRec(d).closed) h += '<button class="card evecard" data-act="eve-open"><div class="row between"><div><div class="t">🌙 Close your day</div><div class="small muted">2 minutes: intake, bed time, mood and your + − → rows</div></div><span class="chev">›</span></div></button>'; h += reviewCard(d, true); }
+  if (evening){ if (!dayRec(d).closed && on('evening')) h += '<button class="card evecard" data-act="eve-open"><div class="row between"><div><div class="t">🌙 Close your day</div><div class="small muted">2 minutes: intake, bed time, mood and your + − → rows</div></div><span class="chev">›</span></div></button>'; if (on('review')) h += reviewCard(d, true); }
 
-  if (d === t){
+  if (d === t && on('quick')){
     h += '<div class="quick">' +
       '<button data-act="add-exp"><span>💸</span>Expense</button>' +
       '<button data-act="nt-add"><span>📝</span>Note</button>' +
       '<button data-act="go-tasks"><span>✅</span>Task</button>' +
       '<button data-act="quick"><span>＋</span>More</button></div>';
   }
-  if (d === t){
-    if (S.focus) h += focusCard();
+  if (d === t && on('backup')){
     var lastDl = lsGet('db-lastdl', 0);
     if (Object.keys(S.recs).length > 20 && Date.now() - lastDl > 7 * 864e5) h += '<button class="alert info" style="width:100%;border:0;text-align:left;cursor:pointer" data-act="backup">💾<div><b>Weekly backup:</b> tap to save a copy of your data to this phone' + (lastDl ? ' (last one ' + dShort(iso(new Date(lastDl))) + ')' : '') + '.</div></button>';
   }
-  if (d === t){
+  if (d === t && on('week')){
     var due = reviewWeekDue(), foc = currentFocus();
     if (due) h += '<button class="card pink" style="display:block;width:100%;text-align:left;border:0;cursor:pointer" data-act="review" data-v="' + due + '"><div class="row between"><div><div class="small muted">🗓️ Weekly review</div><div class="t" style="margin-top:2px">' + weekLabel(due) + ': 3 minutes to look back</div></div><span style="font-size:22px">›</span></div></button>';
-    if (foc) h += '<div class="card"><div class="small muted">🎯 This week\'s focus</div><div class="mid" style="margin-top:4px;text-transform:none">' + esc(foc.focus) + '</div></div>';  }
-  h += plannerHtml(d) + (d === t ? upcomingTasksHtml() : '');
+    if (foc) h += '<div class="card"><div class="small muted">🎯 This week\'s focus</div><div class="mid" style="margin-top:4px;text-transform:none">' + esc(foc.focus) + '</div></div>';
+  }
+  if (on('planner')) h += plannerHtml(d);
+  if (d === t && on('coming')) h += upcomingTasksHtml();
 
   // Day review (the + / − / → table); in the evening it moves up under the tiles instead
-  if (!evening) h += reviewCard(d, true);
+  if (!evening && on('review')) h += reviewCard(d, true);
 
   // Money today
-  var spentDay = exps().filter(function(e){ return e.date === d; }), up = d === t ? upcomingSubs(3) : [];
-  h += '<div class="card"><div class="h2">Money ' + (d === t ? 'today' : 'that day') + '<button class="link" data-act="tab" data-v="money">Money</button></div>' +
-    '<div class="row between"><div><div class="mid">' + money(sum(spentDay, 'amt')) + '</div><div class="small muted">' + spentDay.length + ' expense' + (spentDay.length === 1 ? '' : 's') + '</div></div>' +
-    (+S.cfg.total > 0 ? '<div style="text-align:right"><div class="small muted">Left this month</div><div class="t">' + money(S.cfg.total - sum(monthExps(ymOf(t)), 'amt'), 0) + '</div></div>' : '') + '</div>' +
-    up.map(function(s){ var st = subState(s); return '<button class="item" data-act="sub" data-id="' + s.id + '"><div class="em">🔁</div><div class="grow"><div class="t ell">' + esc(s.name) + '</div><div class="small ' + st.cls + '">' + st.txt + '</div></div><div class="amt">' + money(s.amt) + '</div></button>'; }).join('') + '</div>';
+  if (on('money')){
+    var spentDay = exps().filter(function(e){ return e.date === d; }), up = d === t ? upcomingSubs(3) : [];
+    h += '<div class="card"><div class="h2">Money ' + (d === t ? 'today' : 'that day') + '<button class="link" data-act="tab" data-v="money">Money</button></div>' +
+      '<div class="row between"><div><div class="mid">' + money(sum(spentDay, 'amt')) + '</div><div class="small muted">' + spentDay.length + ' expense' + (spentDay.length === 1 ? '' : 's') + '</div></div>' +
+      (+S.cfg.total > 0 ? '<div style="text-align:right"><div class="small muted">Left this month</div><div class="t">' + money(S.cfg.total - sum(monthExps(ymOf(t)), 'amt'), 0) + '</div></div>' : '') + '</div>' +
+      up.map(function(s){ var st = subState(s); return '<button class="item" data-act="sub" data-id="' + s.id + '"><div class="em">🔁</div><div class="grow"><div class="t ell">' + esc(s.name) + '</div><div class="small ' + st.cls + '">' + st.txt + '</div></div><div class="amt">' + money(s.amt) + '</div></button>'; }).join('') + '</div>';
+  }
 
   // Workouts that day
   var w = works().filter(function(x){ return x.date === d; });
-  if (w.length) h += '<div class="card"><div class="h2">Workouts</div>' + w.map(workItem).join('') + '</div>';
+  if (w.length && on('workouts')) h += '<div class="card"><div class="h2">Workouts</div>' + w.map(workItem).join('') + '</div>';
+  h += '<button class="link custom" data-act="today-edit">⚙ Customize Today</button>';
   return h;
+}
+
+// ---------- Live now: whatever is running shows at the top of Today, with its controls ----------
+function liveCount(){ return (S.timer ? 1 : 0) + (S.focus ? 1 : 0) + (openWd() ? 1 : 0); }
+function liveHtml(){
+  if (!liveCount() || (S.cfg.todayHide || {}).live) return '';
+  var h = '<div class="livehead"><span class="live"></span>Live now</div>';
+  h += timerHtml();
+  if (S.focus) h += focusCard();
+  var ow = openWd();
+  if (ow){
+    if (ow.date !== today() || Date.now() - ow.checkInAt > 16 * 3600000) h += '<button class="alert bad" style="width:100%;border:0;text-align:left;cursor:pointer" data-act="tab" data-v="work">⏱️<div><b>Still checked in</b> since ' + dShort(ow.date) + ' ' + clockOf(ow.checkInAt) + '. Check out if that day is done.</div></button>';
+    h += workCard(true);
+  }
+  return h;
+}
+
+// ---------- Customize Today: hide any section ----------
+var TODAY_SECTIONS = [['live', '● Live now', 'Running timers and your work check-in'], ['highlights', '✨ Highlights', 'Personal bests and milestones'], ['evening', '🌙 Close your day', 'The evening card after 8 pm'],
+  ['quick', '⚡ Quick buttons', 'Expense · Note · Task · More'], ['week', '🗓️ Weekly review & focus', 'When a review is due'], ['planner', '🗒️ Plan for the day', 'Today\'s tasks'],
+  ['coming', '📅 Coming up', 'Tasks on later days'], ['review', '📋 Day review', 'The + − → table'], ['money', '💸 Money today', 'Spending and upcoming subscriptions'],
+  ['workouts', '🏃 Workouts', 'Workouts logged that day'], ['backup', '💾 Backup reminder', 'The weekly backup card']];
+function todaySheet(){
+  var hid = S.cfg.todayHide || {};
+  openSheet(shead('Customize Today') + '<div class="small muted" style="margin:-4px 0 10px">Hide what you don\'t use. The tiles card always stays; edit it with ✎ Edit tiles.</div>' +
+    TODAY_SECTIONS.map(function(x){
+      var off = !!hid[x[0]];
+      return '<div class="trow' + (off ? ' off' : '') + '"><span class="grow"><b>' + x[1] + '</b><br><span class="tiny muted">' + x[2] + '</span></span><button class="chip' + (off ? '' : ' on') + '" data-act="today-hide" data-v="' + x[0] + '">' + (off ? 'Hidden' : 'Shown') + '</button></div>';
+    }).join('') + '<div class="btns" style="margin-top:12px"><button class="btn" data-act="close">Done</button></div>');
+}
+
+// ---------- highlights: exceptional things on a day ----------
+// Compared with the 30 days before it (needs at least 7 logged days there), plus milestones that day.
+function highlightsOn(d){
+  var I = idx(); I.hl = I.hl || {};
+  if (I.hl[d]) return I.hl[d];
+  var out = [], prev = [];
+  for (var i = 1; i <= 30; i++){ var p = addDays(d, -i); if (dayActive(p)) prev.push(p); }
+  function best(fn, min, ic, txt){
+    var v = fn(d); if (!(v >= min) || prev.length < 7) return;
+    var mx = Math.max.apply(null, prev.map(fn)); if (v > mx) out.push({ic:ic, text:txt(v)});
+  }
+  if (dayActive(d)){
+    best(function(x){ return pointsOn(x).total; }, 20, '⚡', function(v){ return 'Best day in 30 days: ' + ptsTxt(v) + ' pts'; });
+    best(moveMinsOn, 20, '💪', function(v){ return 'Most active day in 30 days: ' + mins(v); });
+    best(readMinsOn, 15, '📖', function(v){ return 'Most reading in 30 days: ' + mins(v); });
+    best(function(x){ return workMsOn(x) / 60000; }, 60, '💼', function(v){ return 'Longest work day in 30 days: ' + mins(v); });
+    if (sleepMins(d) >= 480) out.push({ic:'😴', text:'A full night: ' + mins(sleepMins(d)) + ' of sleep'});
+    if (I.expFirst && I.expFirst < d && !spendOn(d) && d < today()) out.push({ic:'🪙', text:'No-spend day'});
+    var al = kindById('allin'); if (al.test(d) && !tplSkips(d, 'allin')) out.push({ic:'🏆', text:'All-in day: every habit kept'});
+  }
+  books().forEach(function(b){ if (b.status === 'done' && b.finished === d) out.push({ic:'📚', text:'Finished “' + b.title + '”'}); });
+  // streak milestones reached exactly on this day
+  streakKinds().forEach(function(k){
+    var r = streakStats(k).runOn[d];
+    if (r && MILESTONES.indexOf(r) >= 0 && r >= 7) out.push({ic:'🔥', text:r + '-day ' + k.name.toLowerCase() + ' streak'});
+  });
+  return I.hl[d] = out;
+}
+// a new highlight for today gets a small celebration, once
+function celebrateHighlights(){
+  if (!S.ready || S.tab !== 'today' || S.day !== today()) return;
+  var t = today(), hl = highlightsOn(t), seen = lsGet('db-hl-seen', {}), mine = seen[t] || [], fresh = hl.filter(function(x){ return mine.indexOf(x.text) < 0; });
+  if (!fresh.length) return;
+  var keep = {}; keep[t] = mine.concat(fresh.map(function(x){ return x.text; })); lsSet('db-hl-seen', keep);
+  if (mine.length || fresh.length){ confetti(); toast('✨ ' + fresh[0].ic + ' ' + fresh[0].text); }
+}
+function recentHighlightsHtml(){
+  var t = today(), rows = [];
+  for (var i = 0; i < 14 && rows.length < 12; i++){ var d = addDays(t, -i); highlightsOn(d).forEach(function(x){ rows.push([d, x]); }); }
+  return '<div class="card hlcard"><div class="h2">✨ Recent highlights<span class="tiny muted">last 14 days</span></div>' +
+    (rows.length ? rows.map(function(r){ return '<div class="hlrow"><span class="hli">' + r[1].ic + '</span><span class="grow">' + esc(r[1].text) + '</span><span class="tiny muted">' + (r[0] === t ? 'Today' : dShort(r[0])) + '</span></div>'; }).join('')
+      : '<div class="small muted">Beat a 30-day best, hit a streak milestone or finish a book and it shows up here.</div>') + '</div>';
 }
 
 function timerHtml(){
@@ -2684,6 +2776,7 @@ function pointsHtml(){
     '<div style="text-align:right"><div class="small muted">Level</div><div class="mid">' + lv.lv + '</div><div class="small muted" style="margin-top:6px">This week</div><div class="mid">' + ptsTxt(wk) + '</div></div></div>' +
     '<div style="margin-top:12px">' + bar((tot - lv.from) / (lv.to - lv.from) * 100) + '</div>' +
     '<div class="small muted" style="margin-top:6px">' + (lv.to - tot) + ' pts to level ' + (lv.lv + 1) + ' · last week by now ' + ptsTxt(lwk) + (wk > lwk ? ' <span class="good">▲</span>' : wk < lwk ? ' <span class="bad">▼</span>' : '') + '</div></div>';
+  h += recentHighlightsHtml();
   h += rewardsHtml();
   // last 14 days
   var ds = []; for (var i = 13; i >= 0; i--) ds.push(addDays(t, -i));
@@ -3168,7 +3261,7 @@ function settingsSheet(){
     fld('🌅 Up by', '<input id="set-wake" type="time" value="' + esc(S.cfg.wakeBy || '06:30') + '">') +
     fld('🌙 In bed by', '<input id="set-bed" type="time" value="' + esc(S.cfg.bedBy || '23:00') + '">') + '</div>' +
     '<div class="lbl">❄️ Streak freeze: one missed day a week won\'t break a streak</div>' + chips('freeze', [['on','On'],['off','Off']], S.cfg.freeze !== false ? 'on' : 'off') +
-    '<div class="btns"><button class="btn sm" data-act="set-save">Save targets</button><button class="btn sm ghost" data-act="tiles-edit">✎ Edit Today\'s tiles</button></div>' +
+    '<div class="btns"><button class="btn sm" data-act="set-save">Save targets</button><button class="btn sm ghost" data-act="tiles-edit">✎ Edit Today\'s tiles</button><button class="btn sm ghost" data-act="today-edit">⚙ Customize Today</button></div>' +
     '<div class="sec">Daily habits (count toward the day score)</div>' +
     (S.cfg.habits || []).map(function(hb){
       return '<div class="row between" style="padding:8px 0;border-top:1px solid var(--line)"><div class="grow"><div class="t">' + esc(hb.emoji || '✅') + ' ' + esc(hb.name) + '</div><div class="tiny muted">' + esc(habitDesc(hb)) + '</div></div>' +
@@ -3510,6 +3603,8 @@ var A = {
   'sleep-save':function(){ sleepSet(val('sl-day'), val('sl-kind'), val('sl-time')); },
   'sleep-clear':function(){ sleepSet(val('sl-day'), val('sl-kind'), ''); },
   'tiles-edit':function(){ tilesSheet(); },
+  'today-edit':function(){ todaySheet(); },
+  'today-hide':function(el){ var hd = Object.assign({}, S.cfg.todayHide || {}), k = el.dataset.v; if (hd[k]) delete hd[k]; else hd[k] = 1; saveCfg({todayHide:hd}); var sc = $('#panel').scrollTop; setTimeout(function(){ todaySheet(); $('#panel').scrollTop = sc; }, 0); },
   'tile-move':function(el){
     var keys = tileKeys(), i = keys.indexOf(el.dataset.v), j = i + (+el.dataset.d);
     if (i < 0 || j < 0 || j >= keys.length) return;
