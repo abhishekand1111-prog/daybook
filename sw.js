@@ -1,4 +1,4 @@
-const CACHE = 'daybook-v25';
+const CACHE = 'daybook-v30';
 const SHELL = ['./', './index.html', './manifest.json', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/favicon-32.png', './icons/mark.png'];
 
 self.addEventListener('install', function(event){
@@ -15,7 +15,7 @@ self.addEventListener('activate', function(event){
   self.clients.claim();
 });
 
-// Tapping a reminder or focus notification brings Daybook to the front (or opens it).
+// Tapping a reminder or focus notification brings Day to the front (or opens it).
 self.addEventListener('notificationclick', function(event){
   event.notification.close();
   event.waitUntil(

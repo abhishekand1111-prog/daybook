@@ -1,6 +1,6 @@
 {
-  "name": "Daybook",
-  "short_name": "Daybook",
+  "name": "Day",
+  "short_name": "Day",
   "description": "Money, books, fitness and your day.",
   "start_url": "./",
   "scope": "./",

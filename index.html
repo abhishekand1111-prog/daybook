@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Daybook</title>
+<title>Day</title>
 <meta name="description" content="Money, reading, fitness and the day, in one place.">
 <meta name="theme-color" content="#f6f6f7">
 <meta name="robots" content="noindex">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Daybook">
+<meta name="apple-mobile-web-app-title" content="Day">
 <link rel="manifest" href="manifest.json?v=2">
 <link rel="icon" href="icons/favicon-32.png?v=2">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=2">
@@ -174,6 +174,8 @@ svg.i{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke
 .brand b i{font-style:normal;color:var(--acc)}
 .brand small{display:block;color:var(--mute);font-size:12px;margin-top:3px}
 .mark{width:46px;height:46px;border-radius:14px;background:#000;display:block;flex:none;object-fit:cover}
+.tohome{cursor:pointer;min-width:0}
+.tohome h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mark.lg{width:84px;height:84px;border-radius:24px;margin:0 auto 18px;box-shadow:0 14px 30px rgba(0,0,0,.25)}
 .nav-i{display:flex;align-items:center;gap:13px;width:100%;border:0;background:none;padding:12px 12px;border-radius:16px;cursor:pointer;text-align:left;margin:2px 0;color:var(--ink)}
 .nav-i .ic{width:38px;height:38px;border-radius:12px;background:var(--chip);display:grid;place-items:center;flex:none;transition:background-color .2s,color .2s}
@@ -256,6 +258,12 @@ button.b{border:0;background:none;padding:0;font:inherit;cursor:pointer}
 .link.custom{display:block;margin:6px auto 0;padding:10px;font-size:13px}
 .bnav button{position:relative}.bdot{position:absolute;top:6px;left:calc(50% + 8px);width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 2px var(--card);animation:livepulse 1.4s infinite}
 @keyframes livepulse{0%,100%{opacity:1}50%{opacity:.35}}
+.nav-sec{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--mute);padding:14px 12px 4px}
+.kgrow{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.kg{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;font-weight:700;color:var(--mute)}
+.kg i{font-style:normal;width:100%;max-width:40px;aspect-ratio:1;border-radius:12px;display:grid;place-items:center;font-size:12px;font-weight:800;background:var(--chip);color:var(--mute)}
+.kg.ok i{background:var(--good);color:#fff}.kg.now i{background:var(--accbg);color:var(--acc);outline:2px solid var(--acc);outline-offset:-2px;font-size:10.5px}.kg.fut i{background:transparent;border:1.5px dashed var(--line)}
+.mline1{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;cursor:pointer;font:inherit;color:inherit;padding:12px 16px}.mline1 .em{font-size:22px}
 .tedit{display:block;margin:0 0 0 auto;min-height:32px;padding:6px 4px !important;border:0;background:none;color:inherit;opacity:.6;font:inherit;font-size:12px;cursor:pointer}
 .trow{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line)}.trow .em{font-size:20px;width:28px;text-align:center}
 .trow.off b{opacity:.45;text-decoration:line-through}
@@ -473,7 +481,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 <script>
 (function(){
 'use strict';
-var APP_VERSION = 'v25';
+var APP_VERSION = 'v30';
 
 // ---------- utils ----------
 function $(s, r){ return (r || document).querySelector(s); }
@@ -1431,8 +1439,8 @@ function render(){
   tick();
 }
 // Health and Growth each group three or two screens; the strip at the top moves between them
-var SUBNAV = {fit:[['fit','Fitness'],['intake','Intake'],['mood','Mood']], plan:[['plan','Year plan'],['skills','Skills'],['work','Work day']]};
-SUBNAV.intake = SUBNAV.mood = SUBNAV.fit; SUBNAV.skills = SUBNAV.work = SUBNAV.plan;
+var SUBNAV = {fit:[['fit','Fitness'],['intake','Intake'],['mood','Mood']]};
+SUBNAV.intake = SUBNAV.mood = SUBNAV.fit;
 function subNavHtml(){
   var g = SUBNAV[S.tab]; if (!g) return '';
   return '<div class="seg sm">' + g.map(function(o){ return '<button class="' + (S.tab === o[0] ? 'on' : '') + '" data-act="tab" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</div>';
@@ -1454,46 +1462,58 @@ window.addEventListener('scroll', onScroll, {passive:true});
 function bannerHtml(){
   if (!S.syncErr) return '';
   var msg = S.syncErr === 'permission-denied'
-    ? '<b>Sync is blocked.</b> Firestore rules don\'t allow Daybook yet. Paste the updated rules file in the Firebase console.'
+    ? '<b>Sync is blocked.</b> Firestore rules don\'t allow Day yet. Paste the updated rules file in the Firebase console.'
     : '<b>Sync problem:</b> ' + esc(S.syncErr);
   return '<div class="alert bad">⚠️<div>' + msg + '</div></div>';
 }
+// Every screen carries Today's greeting line: the screen name, then "Good evening · Thu, 19 Nov · 9:42 pm".
+// On screens other than Today, tapping the title takes you home to Today.
+function nowClock(){ var n = new Date(), h = n.getHours(); return ((h + 11) % 12 + 1) + ':' + pad(n.getMinutes()) + (h < 12 ? ' am' : ' pm'); }
+function greetWord(){ var hi = new Date().getHours(); return hi < 12 ? 'Good morning' : hi < 17 ? 'Good afternoon' : 'Good evening'; }
+function greetLine(){ return greetWord() + ' · ' + pd(today()).toLocaleDateString('en-IN', {weekday:'short', day:'numeric', month:'short'}) + ' · <span class="clk">' + nowClock() + '</span>'; }
 function topHtml(title, sub, right){
+  var home = S.tab !== 'today';
   return '<div class="top"><button class="icon-btn" data-act="drawer" aria-label="Menu">' + svg('menu') + '</button>' +
-    '<div class="grow"><h1>' + title + '<i>.</i></h1>' + (sub ? '<div class="sub">' + sub + '</div>' : '') + '</div>' +
+    '<div class="grow' + (home ? ' tohome' : '') + '"' + (home ? ' data-act="go-today"' : '') + '><h1>' + title + '<i>.</i></h1><div class="sub">' + (home ? greetLine() : sub || '') + '</div></div>' +
     (right || '') + '</div>';
 }
 function drawerHtml(){
   var t = today(), ym = ymOf(t);
   var top = streakKinds().map(function(k){ return [k, streakStats(k).cur]; }).sort(function(a, b){ return b[1] - a[1]; })[0];
+  // grouped by the daily loop; Work, Tasks and Skills live in the footer, so they're not repeated here
+  var dn = dayChecks(t).filter(function(c){ return c.done; }).length, dt = dayChecks(t).length;
   var tabs = [
-    ['today', 'Today', dayScore(t) + '% day score'],
-    ['stats', 'Insights', '⚡ ' + ptsTxt(pointsOn(t).total) + ' pts today' + (top && top[1] ? ' · 🔥 ' + top[1] + '-day ' + top[0].name.toLowerCase() : '')],
-    ['money', 'Money', money(sum(monthExps(ym), 'amt'), 0) + ' this month'],
+    ['#', 'Daily'],
+    ['today', 'Today', '⚡ ' + ptsTxt(pointsOn(t).total) + ' pts · ' + dn + ' of ' + dt + ' done'],
+    ['#', 'Grow'],
     ['books', 'Books', streakTxt(readStreak(), 'reading')],
-    ['fit', 'Health', streakTxt(moveStreak(), 'move') + ' · 💧 ' + intake(t, 'water') + '/' + S.cfg.waterGoal + (dayRec(t).mood ? ' · ' + MOODS[dayRec(t).mood - 1] : ''), ['fit', 'intake', 'mood']],
-    ['plan', 'Growth', S.focus && S.focus.phase !== 'break' ? '⏱ Focus running · ' + esc(S.focus.label) : reviewWeekDue() ? '🗓️ Weekly review is due' : openWd() ? '🟢 At work · ' + hm(wdWork(openWd())) : 'Year plan · skills · work day', ['plan', 'skills', 'work']],
-    ['notes', 'Tasks & notes', (function(){ var n = allOpenTasks().length, m = notesAll().length; return (n ? n + ' open task' + (n === 1 ? '' : 's') : 'No open tasks') + ' · ' + m + ' note' + (m === 1 ? '' : 's'); })()]
+    ['fit', 'Health', streakTxt(moveStreak(), 'move') + ' · 💧 ' + intake(t, 'water') + '/' + S.cfg.waterGoal, ['fit', 'intake', 'mood']],
+    ['#', 'Progress'],
+    ['stats', 'Progress', 'Level ' + levelOf(pointsTotal()).lv + (top && top[1] ? ' · 🔥 ' + top[1] + '-day ' + top[0].name.toLowerCase() : ' · points & streaks')],
+    ['plan', 'Year plan', reviewWeekDue() ? '🗓️ Weekly review is due' : 'Goals & weekly reviews'],
+    ['#', 'Money'],
+    ['money', 'Money', money(sum(monthExps(ym), 'amt'), 0) + ' this month']
   ];
   return '<div class="drawer' + (S.drawer ? ' open' : '') + '"><div class="dscrim" data-act="drawer-close"></div><div class="dpanel">' +
-    '<div class="brand">' + markImg() + '<div><b>Daybook<i>.</i></b><small>' + esc(dLong(t)) + '</small></div></div>' +
+    '<div class="brand"><div><b>Day<i>.</i></b><small>' + esc(dLong(t)) + '</small></div></div>' +
     tabs.map(function(x, i){
+      if (x[0] === '#') return '<div class="nav-sec">' + x[1] + '</div>';
       return '<button class="nav-i' + ((x[3] || [x[0]]).indexOf(S.tab) >= 0 ? ' on' : '') + '" style="--i:' + i + '" data-act="tab" data-v="' + x[0] + '"><span class="ic">' + svg(x[0]) + '</span>' +
         '<span class="grow"><span class="nt">' + x[1] + '</span><br><span class="nm">' + x[2] + '</span></span></button>';
     }).join('') +
     '<div class="dfoot"><button class="nav-i" style="--i:11" data-act="settings"><span class="ic">' + svg('gear') + '</span><span class="nt">Settings</span></button>' +
-    '<div class="tiny muted" style="padding:6px 12px">Daybook ' + APP_VERSION + '</div></div></div></div>';
+    '<div class="tiny muted" style="padding:6px 12px">Day ' + APP_VERSION + '</div></div></div></div>';
 }
 // bottom bar: the three screens used most, everything else under More (the drawer)
 function bnavHtml(){
-  var main = ['work', 'notes', 'skills'], more = main.indexOf(S.tab) < 0;
+  var main = ['work', 'notes', 'skills'], more = main.indexOf(S.tab) < 0 && S.tab !== 'today';
   return '<nav class="bnav">' + [['work', 'Work'], ['notes', 'Tasks'], ['skills', 'Skills']].map(function(x){
     // a green dot while you're checked in (Work) or a focus block is running (Skills)
-    var live = S.tab !== x[0] && (x[0] === 'work' ? !!openWd() : x[0] === 'skills' ? !!S.focus : false);
+    var live = S.tab !== x[0] && (x[0] === 'work' ? !!openWd() : x[0] === 'skills' ? !!S.focus : x[0] === 'today' ? !!S.timer : false);
     return '<button class="' + (S.tab === x[0] ? 'on' : '') + '" data-act="tab" data-v="' + x[0] + '">' + svg(x[0]) + (live ? '<i class="bdot"></i>' : '') + '<span>' + x[1] + '</span></button>';
   }).join('') + '<button class="' + (more ? 'on' : '') + '" data-act="drawer">' + svg('menu') + '<span>' + (more ? esc(TAB_NAMES[S.tab] || 'More') : 'More') + '</span></button></nav>';
 }
-var TAB_NAMES = {today:'Today', money:'Money', stats:'Insights', work:'Work day', books:'Books', fit:'Fitness', intake:'Intake', mood:'Mood', skills:'Skills', plan:'Year plan', notes:'Tasks & notes'};
+var TAB_NAMES = {today:'Today', money:'Money', stats:'Progress', work:'Work day', books:'Books', fit:'Fitness', intake:'Intake', mood:'Mood', skills:'Skills', plan:'Year plan', notes:'Tasks & notes'};
 function fabHtml(){
   var a = '', extra = '', label = '';
   // screens whose main action isn't "add a record" get a labelled button instead of a bare +
@@ -1503,7 +1523,7 @@ function fabHtml(){
   // checked in: the same Check out button floats on Today too
   else if (S.tab === 'today' && openWd() && S.day === today()){ a = wdActive(openWd()) ? 'wd-end' : 'wd-out'; label = wdActive(openWd()) ? '▶ Back to work' : '🚪 Check out'; }
   if (label) return '<button class="fab wide" data-act="' + a + '"' + extra + '>' + label + '</button>';
-  if (S.tab === 'money') a = S.mseg === 'subs' ? 'add-sub' : S.mseg === 'goals' ? 'add-goal' : 'add-exp';
+  if (S.tab === 'money') a = S.mseg === 'subs' ? 'add-sub' : S.mseg === 'goals' ? 'add-goal' : S.mseg === 'reports' ? '' : 'add-exp';
   else if (S.tab === 'books') a = 'add-book';
   else if (S.tab === 'fit') a = 'add-work';
   else if (S.tab === 'plan') a = S.pseg === 'review' ? '' : 'add-yg';
@@ -1528,7 +1548,7 @@ function bar(pct, cls){ return '<div class="bar ' + (cls || '') + '"><i style="w
 
 // ---------- auth ----------
 function authHtml(){
-  return '<div class="auth">' + markImg('lg') + '<h1 style="text-align:center;margin:0 0 4px">Daybook<i>.</i></h1>' +
+  return '<div class="auth">' + markImg('lg') + '<h1 style="text-align:center;margin:0 0 4px">Day<i>.</i></h1>' +
     '<p class="muted" style="text-align:center;margin:0 0 22px">Money, books, fitness and your day.</p>' +
     '<label class="fld"><span>Email</span><input id="a-email" type="email" autocomplete="username"></label>' +
     '<label class="fld"><span>Password</span><input id="a-pass" type="password" autocomplete="current-password"></label>' +
@@ -1544,7 +1564,7 @@ function todayHtml(){
   var hi = new Date().getHours(), greet = hi < 12 ? 'Good morning' : hi < 17 ? 'Good afternoon' : 'Good evening';
   var nav = '<div class="daynav"><button data-act="day-prev" aria-label="Previous day">‹</button>' +
     (d !== t ? '<button data-act="day-today" style="width:auto;padding:0 10px;font-size:13px">Today</button><button data-act="day-next" aria-label="Next day">›</button>' : '') + '</div>';
-  var h = topHtml(d === t ? greet : dayLabel(d), dLong(d), nav);
+  var h = topHtml(d === t ? greet : dayLabel(d), dLong(d) + (d === t ? ' · <span class="clk">' + nowClock() + '</span>' : ''), nav);
 
   if (d === t) h += liveHtml();
 
@@ -1579,6 +1599,9 @@ function todayHtml(){
   var hid = S.cfg.todayHide || {};
   function on(k){ return !hid[k]; }
 
+  // the reason to show up: this week's chain of good days and the streaks you'd lose today
+  if (d === t && on('chain')) h += keepGoingHtml();
+
   // something exceptional today: personal bests, streak milestones, a finished book…
   if (on('highlights')){ var hl = highlightsOn(d); if (hl.length) h += '<div class="card hlcard"><div class="h2">✨ Highlights' + (d === t ? '' : '<span class="tiny muted">that day</span>') + '</div>' + hl.map(function(x){ return '<div class="hlrow"><span class="hli">' + x.ic + '</span><span>' + esc(x.text) + '</span></div>'; }).join('') + '</div>'; }
 
@@ -1586,6 +1609,13 @@ function todayHtml(){
   var evening = d === t && new Date().getHours() >= 20;
   if (evening){ if (!dayRec(d).closed && on('evening')) h += '<button class="card evecard" data-act="eve-open"><div class="row between"><div><div class="t">🌙 Close your day</div><div class="small muted">2 minutes: intake, bed time, mood and your + − → rows</div></div><span class="chev">›</span></div></button>'; if (on('review')) h += reviewCard(d, true); }
 
+  if (d === t && on('week')){
+    var due = reviewWeekDue(), foc = currentFocus();
+    if (due) h += '<button class="card pink" style="display:block;width:100%;text-align:left;border:0;cursor:pointer" data-act="review" data-v="' + due + '"><div class="row between"><div><div class="small muted">🗓️ Weekly review</div><div class="t" style="margin-top:2px">' + weekLabel(due) + ': 3 minutes to look back</div></div><span style="font-size:22px">›</span></div></button>';
+    if (foc) h += '<div class="card"><div class="small muted">🎯 This week\'s focus</div><div class="mid" style="margin-top:4px;text-transform:none">' + esc(foc.focus) + '</div></div>';
+  }
+  // what to do today, then quick logging
+  if (on('planner')) h += plannerHtml(d);
   if (d === t && on('quick')){
     h += '<div class="quick">' +
       '<button data-act="add-exp"><span>💸</span>Expense</button>' +
@@ -1593,33 +1623,20 @@ function todayHtml(){
       '<button data-act="go-tasks"><span>✅</span>Task</button>' +
       '<button data-act="quick"><span>＋</span>More</button></div>';
   }
-  if (d === t && on('backup')){
-    var lastDl = lsGet('db-lastdl', 0);
-    if (Object.keys(S.recs).length > 20 && Date.now() - lastDl > 7 * 864e5) h += '<button class="alert info" style="width:100%;border:0;text-align:left;cursor:pointer" data-act="backup">💾<div><b>Weekly backup:</b> tap to save a copy of your data to this phone' + (lastDl ? ' (last one ' + dShort(iso(new Date(lastDl))) + ')' : '') + '.</div></button>';
-  }
-  if (d === t && on('week')){
-    var due = reviewWeekDue(), foc = currentFocus();
-    if (due) h += '<button class="card pink" style="display:block;width:100%;text-align:left;border:0;cursor:pointer" data-act="review" data-v="' + due + '"><div class="row between"><div><div class="small muted">🗓️ Weekly review</div><div class="t" style="margin-top:2px">' + weekLabel(due) + ': 3 minutes to look back</div></div><span style="font-size:22px">›</span></div></button>';
-    if (foc) h += '<div class="card"><div class="small muted">🎯 This week\'s focus</div><div class="mid" style="margin-top:4px;text-transform:none">' + esc(foc.focus) + '</div></div>';
-  }
-  if (on('planner')) h += plannerHtml(d);
-  if (d === t && on('coming')) h += upcomingTasksHtml();
 
   // Day review (the + / − / → table); in the evening it moves up under the tiles instead
   if (!evening && on('review')) h += reviewCard(d, true);
 
-  // Money today
+  // Money: one line, the detail lives on the Money screen
   if (on('money')){
-    var spentDay = exps().filter(function(e){ return e.date === d; }), up = d === t ? upcomingSubs(3) : [];
-    h += '<div class="card"><div class="h2">Money ' + (d === t ? 'today' : 'that day') + '<button class="link" data-act="tab" data-v="money">Money</button></div>' +
-      '<div class="row between"><div><div class="mid">' + money(sum(spentDay, 'amt')) + '</div><div class="small muted">' + spentDay.length + ' expense' + (spentDay.length === 1 ? '' : 's') + '</div></div>' +
-      (+S.cfg.total > 0 ? '<div style="text-align:right"><div class="small muted">Left this month</div><div class="t">' + money(S.cfg.total - sum(monthExps(ymOf(t)), 'amt'), 0) + '</div></div>' : '') + '</div>' +
-      up.map(function(s){ var st = subState(s); return '<button class="item" data-act="sub" data-id="' + s.id + '"><div class="em">🔁</div><div class="grow"><div class="t ell">' + esc(s.name) + '</div><div class="small ' + st.cls + '">' + st.txt + '</div></div><div class="amt">' + money(s.amt) + '</div></button>'; }).join('') + '</div>';
+    var spentDay = sum(exps().filter(function(e){ return e.date === d; }), 'amt'), up = d === t ? upcomingSubs(3) : [];
+    h += '<button class="card mline1" data-act="tab" data-v="money"><span class="em">💸</span><span class="grow"><b>' + money(spentDay, 0) + '</b> <span class="muted">spent ' + (d === t ? 'today' : 'that day') + '</span>' +
+      (+S.cfg.total > 0 ? '<br><span class="tiny muted">' + money(S.cfg.total - sum(monthExps(ymOf(t)), 'amt'), 0) + ' left this month' + (up.length ? ' · 🔁 ' + up.length + ' renewal' + (up.length === 1 ? '' : 's') + ' in 3 days' : '') + '</span>' : '') + '</span><span class="chev">›</span></button>';
   }
-
-  // Workouts that day
-  var w = works().filter(function(x){ return x.date === d; });
-  if (w.length && on('workouts')) h += '<div class="card"><div class="h2">Workouts</div>' + w.map(workItem).join('') + '</div>';
+  if (d === t && on('backup')){
+    var lastDl = lsGet('db-lastdl', 0);
+    if (Object.keys(S.recs).length > 20 && Date.now() - lastDl > 7 * 864e5) h += '<button class="alert info" style="width:100%;border:0;text-align:left;cursor:pointer" data-act="backup">💾<div><b>Weekly backup:</b> tap to save a copy of your data to this phone' + (lastDl ? ' (last one ' + dShort(iso(new Date(lastDl))) + ')' : '') + '.</div></button>';
+  }
   h += '<button class="link custom" data-act="today-edit">⚙ Customize Today</button>';
   return h;
 }
@@ -1683,11 +1700,37 @@ function liveHtml(){
   return h;
 }
 
+// ---------- Keep it going: the week's chain of good days + the streaks you'd lose today ----------
+function keepGoingHtml(){
+  var t = today(), ws = weekStart(t), good = 0, cells = '';
+  for (var i = 0; i < 7; i++){
+    var d = addDays(ws, i), g = d <= t && goodDay(d), cls = d > t ? 'fut' : g ? 'ok' : d === t ? 'now' : 'miss';
+    if (g) good++;
+    cells += '<div class="kg ' + cls + '"><span>' + pd(d).toLocaleDateString('en-IN', {weekday:'narrow'}) + '</span><i>' + (g ? '✓' : d === t ? ptsTxt(pointsOn(t).total) : d > t ? '' : '·') + '</i></div>';
+  }
+  var ACT = {read:['add-read', ''], move:['add-work', ''], walk:['add-work', ''], skills:['go-skills', ''], focus:['go-skills', ''], work:['go-work', ''], wake:['sleep-log', 'wake'], bed:['sleep-log', 'bed']};
+  var risk = streakKinds().filter(function(k){
+    if (k.limit || k.id === 'allin' || tplSkips(t, k.id)) return false;
+    var s = streakStats(k); return s.cur >= 2 && dayStatus(k, t) !== 'done';
+  }).sort(function(a, b){ return streakStats(b).cur - streakStats(a).cur; }).slice(0, 3);
+  var rows = risk.map(function(k){
+    var s = streakStats(k), a = ACT[k.id], hb = k.id.indexOf('h_') === 0 ? (S.cfg.habits || []).filter(function(x){ return 'h_' + x.id === k.id; })[0] : null;
+    if (hb) a = habitKind(hb) === 'yes' ? ['habit', hb.id] : ['habit-log', hb.id];
+    if (k.id === 'water') a = null;
+    var btn = k.id === 'water' ? '<button class="btn sm" data-act="intake" data-k="water" data-v="1" data-day="' + t + '">+1 💧</button>' : a ? '<button class="btn sm" data-act="' + a[0] + '" data-v="' + a[1] + '">Do it</button>' : '';
+    return '<div class="row between ptrow small"><span>' + k.emoji + ' <b>' + s.cur + '-day ' + esc(k.name.toLowerCase()) + '</b> <span class="muted">· ' + esc(k.desc) + '</span></span>' + btn + '</div>';
+  }).join('');
+  var sc = streakStats(kindById('score')).cur;
+  return '<div class="card kgcard"><div class="h2">🔥 Keep it going</div>' +
+    '<div class="small" style="margin:-4px 0 10px"><b>' + good + ' good day' + (good === 1 ? '' : 's') + '</b> this week' + (sc >= 2 ? ' · <b>' + sc + '</b> in a row' : '') + '</div>' +
+    '<div class="kgrow">' + cells + '</div><div class="tiny muted" style="margin:6px 0 2px">A good day is ' + GOOD_PTS + '+ points. Don\'t break the chain.</div>' +
+    (rows ? '<div class="lbl" style="margin-top:10px">Streaks to keep alive today</div>' + rows : '') + '</div>';
+}
+
 // ---------- Customize Today: hide any section ----------
-var TODAY_SECTIONS = [['live', '● Live now', 'Running timers and your work check-in'], ['highlights', '✨ Highlights', 'Personal bests and milestones'], ['evening', '🌙 Close your day', 'The evening card after 8 pm'],
-  ['quick', '⚡ Quick buttons', 'Expense · Note · Task · More'], ['week', '🗓️ Weekly review & focus', 'When a review is due'], ['planner', '🗒️ Plan for the day', 'Today\'s tasks'],
-  ['coming', '📅 Coming up', 'Tasks on later days'], ['review', '📋 Day review', 'The + − → table'], ['money', '💸 Money today', 'Spending and upcoming subscriptions'],
-  ['workouts', '🏃 Workouts', 'Workouts logged that day'], ['backup', '💾 Backup reminder', 'The weekly backup card']];
+var TODAY_SECTIONS = [['live', '● Live now', 'Running timers and your work check-in'], ['chain', '🔥 Keep it going', 'This week\'s good days and streaks at risk'], ['highlights', '✨ Highlights', 'Personal bests and milestones'],
+  ['evening', '🌙 Close your day', 'The evening card after 8 pm'], ['week', '🗓️ Weekly review & focus', 'When a review is due'], ['planner', '🗒️ Plan for the day', 'Today\'s tasks'],
+  ['quick', '⚡ Quick buttons', 'Expense · Note · Task · More'], ['review', '📋 Day review', 'The + − → table'], ['money', '💸 Money line', 'Spent today and left this month'], ['backup', '💾 Backup reminder', 'The weekly backup card']];
 function todaySheet(){
   var hid = S.cfg.todayHide || {};
   openSheet(shead('Customize Today') + '<div class="small muted" style="margin:-4px 0 10px">Hide what you don\'t use. The tiles card always stays; edit it with ✎ Edit tiles.</div>' +
@@ -1748,6 +1791,7 @@ function timerHtml(){
     '<button class="btn sm" data-act="timer-stop">Stop &amp; log</button><button class="x" data-act="timer-cancel" aria-label="Cancel timer">×</button></div>';
 }
 function tick(){
+  $$('.clk').forEach(function(el){ var c = nowClock(); if (el.textContent !== c) el.textContent = c; });
   var wt = $$('.wtick');
   if (wt.length){
     var w = openWd();
@@ -1771,7 +1815,11 @@ setInterval(tick, 1000);
 // ---------- MONEY ----------
 function moneyHtml(){
   var h = topHtml('Money', monthName(ymOf(today())));
-  h += seg('mseg', [['overview','Overview'],['exp','Expenses'],['subs','Subscriptions'],['rec','🔄 Recurring'],['goals','Goals']], S.mseg);
+  // Bills holds subscriptions and recurring payments; Reports is the month breakdown (was under Insights)
+  var bills = S.mseg === 'subs' || S.mseg === 'rec';
+  h += '<div class="seg">' + [['overview','Overview'],['exp','Expenses'],['subs','Bills'],['goals','Goals'],['reports','Reports']].map(function(o){ return '<button class="' + (o[0] === S.mseg || (o[0] === 'subs' && bills) ? 'on' : '') + '" data-act="seg" data-name="mseg" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</div>';
+  if (bills) h += '<div class="chips">' + [['subs','🔁 Subscriptions'],['rec','🔄 Recurring']].map(function(o){ return '<button class="chip ' + (o[0] === S.mseg ? 'on' : '') + '" data-act="seg" data-name="mseg" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</div>';
+  if (S.mseg === 'reports') return h + moneyStats();
   if (S.mseg === 'exp') return h + expHtml();
   if (S.mseg === 'subs') return h + subsHtml();
   if (S.mseg === 'rec') return h + recHtml();
@@ -1867,7 +1915,7 @@ function recHtml(){
   var all = subs().filter(isRec), act = all.filter(function(s){ return s.status === 'active'; });
   var m = sum(act.map(subMonthly)), h = '';
   h += '<div class="stats"><div class="stat"><div class="k">Per month</div><div class="v">' + money(m, 0) + '</div></div><div class="stat"><div class="k">Per year</div><div class="v">' + money(m * 12, 0) + '</div></div></div>';
-  if (!all.length) return h + '<div class="card">' + empty('🔄', 'Milk, maid, cook, newspaper, EMI: costs that repeat every day, week or month. Daybook logs them for you.', '<button class="btn sm" data-act="add-rec">Add recurring expense</button>') + '</div>';
+  if (!all.length) return h + '<div class="card">' + empty('🔄', 'Milk, maid, cook, newspaper, EMI: costs that repeat every day, week or month. Day logs them for you.', '<button class="btn sm" data-act="add-rec">Add recurring expense</button>') + '</div>';
   var groups = [['day','Every day'],['week','Every week'],['month','Every month'],['quarter','Every 3 months'],['half','Every 6 months'],['year','Every year']];
   groups.forEach(function(g){
     var arr = all.filter(function(s){ return (s.per || 'month') === g[0]; }).sort(function(a, b){ return (a.status === 'active' ? 0 : 1) - (b.status === 'active' ? 0 : 1) || b.amt - a.amt; });
@@ -2203,7 +2251,7 @@ function moodHtml(){
     return '<div class="lift"><div class="small"><b>' + r.e + ' Days ' + esc(r.txt) + '</b><span class="' + (up ? 'good' : 'bad') + '"> ' + (up ? '+' : '−') + Math.abs(r.diff).toFixed(1) + '</span></div>' +
       '<div class="lbar"><i class="' + (up ? 'up' : 'down') + '" style="width:' + w + '%;' + (up ? 'left:50%' : 'right:50%') + '"></i></div></div>';
   }).join('') + '<div class="tiny muted" style="margin-top:8px">Average mood (out of 5) on those days compared with other days, from the last 90 days. A pattern, not proof.</div>'
-    : '<div class="small muted">Log your mood for a couple of weeks. Daybook will then show which habits go with your better days.</div>') + '</div>';
+    : '<div class="small muted">Log your mood for a couple of weeks. Day will then show which habits go with your better days.</div>') + '</div>';
   return h;
 }
 // ---------- QUOTES ----------
@@ -2608,7 +2656,7 @@ function readStatsHtml(){
 }
 
 // ---------- REMINDERS ----------
-// While the app is open (or in the background) Daybook shows a notification at each reminder time.
+// While the app is open (or in the background) Day shows a notification at each reminder time.
 // For reminders that fire even when the app is closed, "Add to phone calendar" saves them as daily alarms.
 var REM_PRESETS = [
   {label:'Drink water', emoji:'💧', time:'11:00', kind:'water'}, {label:'Drink water', emoji:'💧', time:'15:00', kind:'water'},
@@ -2649,7 +2697,7 @@ function checkReminders(){
     var p = String(r.time || '').split(':'), m = (+p[0]) * 60 + (+p[1]);
     if (nowM >= m && nowM - m <= 30 && fired[r.id] !== t){
       fired[r.id] = t; lsSet('db-rem-fired', fired);
-      if (remDue(r)) notify((r.emoji ? r.emoji + ' ' : '') + r.label, 'Daybook reminder');
+      if (remDue(r)) notify((r.emoji ? r.emoji + ' ' : '') + r.label, 'Day reminder');
     }
   });
 }
@@ -2657,14 +2705,14 @@ setInterval(checkReminders, 30000);
 function remindersSheet(){
   var rs = reminders(), perm = window.Notification ? Notification.permission : 'unsupported';
   var h = shead('🔔 Reminders') +
-    (perm !== 'granted' ? '<div class="alert info">🔔<div>' + (perm === 'denied' ? 'Notifications are blocked for Daybook. Allow them in your phone\'s app settings.' : '<b>Allow notifications</b> so reminders can pop up.') + (perm === 'default' ? '<br><button class="btn sm" style="margin-top:8px" data-act="rem-perm">Allow</button>' : '') + '</div></div>' : '') +
+    (perm !== 'granted' ? '<div class="alert info">🔔<div>' + (perm === 'denied' ? 'Notifications are blocked for Day. Allow them in your phone\'s app settings.' : '<b>Allow notifications</b> so reminders can pop up.') + (perm === 'default' ? '<br><button class="btn sm" style="margin-top:8px" data-act="rem-perm">Allow</button>' : '') + '</div></div>' : '') +
     (rs.length ? rs.slice().sort(function(a, b){ return a.time < b.time ? -1 : 1; }).map(function(r){
       return '<div class="row" style="padding:8px 0;border-top:1px solid var(--line);gap:8px"><input type="time" value="' + esc(r.time) + '" data-rem="' + r.id + '" style="width:110px"><span class="grow small' + (r.off ? ' muted' : '') + '">' + esc((r.emoji || '') + ' ' + r.label) + '</span>' +
         '<button class="chip' + (r.off ? '' : ' on') + '" data-act="rem-tog" data-v="' + r.id + '">' + (r.off ? 'Off' : 'On') + '</button><button class="tdel" data-act="rem-del" data-v="' + r.id + '">×</button></div>';
     }).join('') : '<div class="small muted">No reminders yet. Add some below.</div>') +
     '<div class="sec">Add</div><div class="chips">' + REM_PRESETS.map(function(p, i){ return '<button class="chip" data-act="rem-add" data-v="' + i + '">' + p.emoji + ' ' + esc(p.label) + ' ' + p.time + '</button>'; }).join('') + '</div>' +
     '<div class="row" style="gap:8px"><input id="rem-time" type="time" value="08:00" style="width:110px"><input id="rem-label" placeholder="Your own reminder" class="grow"><button class="btn sm" data-act="rem-add" data-v="custom">Add</button></div>' +
-    '<div class="sec">Even when the app is closed</div><div class="hint" style="margin:0 0 10px">Pop-ups work while Daybook is open or in the background. To be reminded even when it\'s closed, add them to your phone calendar as daily alarms.</div>' +
+    '<div class="sec">Even when the app is closed</div><div class="hint" style="margin:0 0 10px">Pop-ups work while Day is open or in the background. To be reminded even when it\'s closed, add them to your phone calendar as daily alarms.</div>' +
     '<button class="btn ghost block" data-act="rem-ics">📅 Add reminders to phone calendar</button>';
   openSheet(h);
 }
@@ -2675,7 +2723,7 @@ function remIcs(){
     return ['BEGIN:VEVENT','UID:rem-' + r.id + '@daybook','DTSTAMP:' + stamp,'DTSTART:' + d0 + 'T' + tt,'DURATION:PT5M','RRULE:FREQ=DAILY','SUMMARY:' + (r.emoji || '') + ' ' + label,
       'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:' + label,'TRIGGER:PT0M','END:VALARM','END:VEVENT'].join('\r\n');
   });
-  return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Daybook//EN'].concat(ev).concat(['END:VCALENDAR']).join('\r\n');
+  return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Day//EN'].concat(ev).concat(['END:VCALENDAR']).join('\r\n');
 }
 
 // ---------- APP LOCK (PIN, optional fingerprint) + weekly snapshots ----------
@@ -2686,7 +2734,7 @@ function unb64(s){ return Uint8Array.from(atob(s), function(c){ return c.charCod
 function sha(s){ return crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)).then(b64); }
 function lockHtml(){
   var L = lockCfg(), wait = Math.max(0, (S.lockWait || 0) - Date.now());
-  return '<div class="lock"><img class="mark lg" src="icons/mark.png?v=2" alt="pr"><div class="mid" style="text-align:center">Daybook is locked</div>' +
+  return '<div class="lock"><img class="mark lg" src="icons/mark.png?v=2" alt="pr"><div class="mid" style="text-align:center">Day is locked</div>' +
     '<div class="pin">' + [0, 1, 2, 3, 4, 5].slice(0, L && L.len || 4).map(function(i){ return '<i class="' + (i < (S.pinIn || '').length ? 'on' : '') + '"></i>'; }).join('') + '</div>' +
     '<div class="small" style="text-align:center;min-height:20px;color:var(--bad)">' + (wait ? 'Too many tries. Wait ' + Math.ceil(wait / 1000) + 's' : esc(S.lockMsg || '')) + '</div>' +
     '<div class="keys">' + [1, 2, 3, 4, 5, 6, 7, 8, 9, 'bio', 0, 'del'].map(function(k){
@@ -2701,7 +2749,7 @@ function unlock(){ S.locked = false; S.pinIn = ''; S.fails = 0; renderLock(); }
 function bioCreate(){
   if (!window.PublicKeyCredential || !navigator.credentials) return Promise.reject(new Error('Fingerprint unlock isn\'t available here'));
   var ch = crypto.getRandomValues(new Uint8Array(32)), uidb = crypto.getRandomValues(new Uint8Array(16));
-  return navigator.credentials.create({publicKey:{challenge:ch, rp:{name:'Daybook', id:location.hostname}, user:{id:uidb, name:'daybook', displayName:'Daybook'},
+  return navigator.credentials.create({publicKey:{challenge:ch, rp:{name:'Day', id:location.hostname}, user:{id:uidb, name:'daybook', displayName:'Day'},
     pubKeyCredParams:[{type:'public-key', alg:-7}, {type:'public-key', alg:-257}], authenticatorSelection:{authenticatorAttachment:'platform', userVerification:'required', residentKey:'discouraged'}, timeout:60000}})
     .then(function(c){ return b64(c.rawId); });
 }
@@ -2716,7 +2764,7 @@ function lockSheet(){
       (canBio ? '<button class="btn ghost block" style="margin-bottom:8px" data-act="lock-biotog">' + (L.bio ? 'Turn off fingerprint' : '👆 Also unlock with fingerprint') + '</button>' : '') +
       fld('Current PIN (to change or turn off)', '<input id="lk-old" type="password" inputmode="numeric" maxlength="6">') +
       '<div class="btns"><button class="btn bad" data-act="lock-off">Turn off lock</button><button class="btn ghost" data-act="lock-change">Change PIN</button></div>'
-    : '<div class="small muted" style="margin-bottom:12px">Ask for a PIN (and optionally your fingerprint) when Daybook opens, so nobody can look at your money, notes or moods if they pick up your unlocked phone.</div>') +
+    : '<div class="small muted" style="margin-bottom:12px">Ask for a PIN (and optionally your fingerprint) when Day opens, so nobody can look at your money, notes or moods if they pick up your unlocked phone.</div>') +
     '<div id="lk-new"' + (L ? ' hidden' : '') + '>' + fld('New PIN (4–6 digits)', '<input id="lk-p1" type="password" inputmode="numeric" maxlength="6">') + fld('Type it again', '<input id="lk-p2" type="password" inputmode="numeric" maxlength="6">') +
     '<button class="btn block" data-act="lock-set">Save PIN</button></div>' +
     '<div class="hint" style="margin-top:12px">The lock is saved on this phone only. If you forget the PIN, tap "Forgot PIN?" and sign in again; your data is safe online.</div>';
@@ -2747,7 +2795,7 @@ function snapTake(force){
 }
 function snapsSheet(){
   snapList().then(function(all){
-    var h = shead('💾 Snapshots on this phone') + '<div class="small muted" style="margin-bottom:12px">Daybook saves a full copy of your data on this phone once a week and keeps the last 4. Use one to undo a big mistake.</div>' +
+    var h = shead('💾 Snapshots on this phone') + '<div class="small muted" style="margin-bottom:12px">Day saves a full copy of your data on this phone once a week and keeps the last 4. Use one to undo a big mistake.</div>' +
       (all.length ? all.map(function(s){ return '<div class="row between" style="padding:8px 0;border-top:1px solid var(--line)"><div><div class="t">' + new Date(s.at).toLocaleDateString('en-IN', {day:'numeric', month:'short', year:'numeric'}) + '</div><div class="tiny muted">' + s.n + ' records</div></div><button class="btn sm ghost" data-act="snap-restore" data-v="' + s.at + '">Restore</button></div>'; }).join('') : '<div class="small muted">No snapshots yet.</div>') +
       '<button class="btn ghost block" style="margin-top:12px" data-act="snap-now">Take a snapshot now</button>';
     openSheet(h);
@@ -2882,7 +2930,7 @@ function planHtml(){
   if (S.pseg === 'review') return h + reviewsHtml();
   var gs = list('ygoal').filter(function(g){ return +g.year === S.year; }).sort(function(a, b){ return (a.at || 0) - (b.at || 0); });
   h += '<div class="month"><button data-act="year" data-v="-1">‹</button><b>' + S.year + '</b><button data-act="year" data-v="1">›</button></div>';
-  if (!gs.length) return h + '<div class="card">' + empty('🎯', 'Set a few big goals for the year: read 24 books, run 500 km, save ₹2 lakh. Daybook fills in the progress from what you log.', '<button class="btn sm" data-act="add-yg">Add a year goal</button>') + '</div>';
+  if (!gs.length) return h + '<div class="card">' + empty('🎯', 'Set a few big goals for the year: read 24 books, run 500 km, save ₹2 lakh. Day fills in the progress from what you log.', '<button class="btn sm" data-act="add-yg">Add a year goal</button>') + '</div>';
   var done = gs.filter(function(g){ return ygValue(g) >= g.target; }).length;
   var yp = Math.round(Math.min(1, Math.max(0, (diffDays(S.year + '-01-01', today()) + 1) / (diffDays(S.year + '-01-01', S.year + '-12-31') + 1))) * 100);
   h += '<div class="card hero"><div class="row between"><div><div class="small muted">' + S.year + ' so far</div><div class="big">' + done + '<span class="mid muted"> / ' + gs.length + '</span></div><div class="small muted">goals reached</div></div>' +
@@ -2903,7 +2951,7 @@ function ygForm(g){
 }
 function ygHint(){
   var t = getChip('ygtype'), el = $('#yg-hint'); if (!el) return;
-  el.textContent = t === 'custom' ? 'You count this one yourself with + on the goal.' : 'Filled in automatically from what you log in Daybook.';
+  el.textContent = t === 'custom' ? 'You count this one yourself with + on the goal.' : 'Filled in automatically from what you log in Day.';
   var u = $('#yg-unit'); if (u) u.disabled = t !== 'custom';
 }
 function ygSheet(g){
@@ -2970,9 +3018,10 @@ function currentFocus(){
 
 // ---------- INSIGHTS ----------
 function statsHtml(){
-  var h = topHtml('Insights', '');
-  h += seg('iseg', [['points','Points'],['streaks','Streaks'],['patterns','Patterns'],['money','Money'],['life','Activity']], S.iseg);
-  return h + (S.iseg === 'life' ? lifeStats() : S.iseg === 'money' ? moneyStats() : S.iseg === 'points' ? pointsHtml() : S.iseg === 'patterns' ? patternsHtml() : streaksHtml());
+  var h = topHtml('Progress', 'Points, streaks and what works for you');
+  if (['points', 'streaks', 'patterns'].indexOf(S.iseg) < 0) S.iseg = 'points';
+  h += seg('iseg', [['points','⚡ Score'],['streaks','🔥 Streaks'],['patterns','🔍 Patterns']], S.iseg);
+  return h + (S.iseg === 'points' ? pointsHtml() : S.iseg === 'patterns' ? patternsHtml() : streaksHtml());
 }
 // what a day earned and lost, line by line
 function pointsCard(d, compact){
@@ -3111,32 +3160,6 @@ function moneyStats(){
   h += '<div class="btns"><button class="btn ghost" data-act="csv" data-v="month">⬇ ' + monShort(ym) + ' CSV</button><button class="btn ghost" data-act="csv" data-v="all">⬇ All expenses CSV</button></div>';
   return h;
 }
-function lifeStats(){
-  var t = today(), h = '';
-  var ds = []; for (var i = 13; i >= 0; i--) ds.push(addDays(t, -i));
-  var sc = ds.map(dayScore);
-  h += '<div class="card"><div class="h2">Day score, last 14 days</div><div class="bars">' + ds.map(function(d, i){
-    return '<div class="b ' + (d === t ? '' : 'dim') + '"><em>' + (sc[i] || '') + '</em><i style="height:' + sc[i] + '%"></i><span>' + pd(d).getDate() + '</span></div>';
-  }).join('') + '</div><div class="small muted" style="margin-top:8px">Average ' + Math.round(sum(sc) / sc.length) + '%</div></div>';
-
-  var wks = []; for (var j = 7; j >= 0; j--) wks.push(addDays(weekStart(t), -7 * j));
-  function weekSum(fn, w){ var s = 0; for (var k = 0; k < 7; k++) s += fn(addDays(w, k)); return s; }
-  var rv = wks.map(function(w){ return weekSum(readMinsOn, w); }), mv = wks.map(function(w){ return weekSum(moveMinsOn, w); });
-  var rmx = Math.max.apply(null, rv.concat([1])), mmx = Math.max.apply(null, mv.concat([1]));
-  function wkBars(v, mx){ return '<div class="bars">' + wks.map(function(w, i){ return '<div class="b ' + (i === wks.length - 1 ? '' : 'dim') + '"><em>' + (v[i] || '') + '</em><i style="height:' + (v[i] / mx * 100) + '%"></i><span>' + pd(w).getDate() + '/' + (pd(w).getMonth() + 1) + '</span></div>'; }).join('') + '</div>'; }
-  h += '<div class="card"><div class="h2">Reading minutes per week</div>' + wkBars(rv, rmx) + '</div>';
-  h += '<div class="card"><div class="h2">Active minutes per week</div>' + wkBars(mv, mmx) + '</div>';
-
-  var yr = t.slice(0, 4), fin = books().filter(function(b){ return b.status === 'done' && String(b.finished || '').slice(0, 4) === yr; });
-  var conc = 0; reads().forEach(function(r){ conc += (r.concepts || []).length; });
-  var moods = []; for (var m = 0; m < 30; m++){ var dr = S.recs['day_' + addDays(t, -m)]; if (dr && dr.mood) moods.push(dr.mood); }
-  h += '<div class="stats"><div class="stat"><div class="k">Books finished ' + yr + '</div><div class="v">' + fin.length + '</div></div>' +
-    '<div class="stat"><div class="k">Concepts learned</div><div class="v">' + conc + '</div></div>' +
-    '<div class="stat"><div class="k">Reading streak</div><div class="v">' + readStreak() + ' days</div></div>' +
-    '<div class="stat"><div class="k">Mood, 30 days</div><div class="v">' + (moods.length ? MOODS[Math.round(sum(moods) / moods.length) - 1] : '–') + '</div></div></div>';
-  return h;
-}
-
 // ---------- sheets ----------
 var sheetOpen = false;
 function openSheet(html, focusSel){
@@ -3282,11 +3305,11 @@ function icsFor(s){
   var d = s.next.replace(/-/g, ''), e = addDays(s.next, 1).replace(/-/g, '');
   var stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
   var name = String(s.name).replace(/[,;\\]/g, ' ');
-  return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Daybook//EN','BEGIN:VEVENT',
+  return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Day//EN','BEGIN:VEVENT',
     'UID:' + s.id + '@daybook','DTSTAMP:' + stamp,'DTSTART;VALUE=DATE:' + d,'DTEND;VALUE=DATE:' + e,
     (s.trial ? '' : 'RRULE:' + rule),
     'SUMMARY:' + (s.trial ? 'Trial ends: ' : 'Renews: ') + name + ' ' + money(s.amt).replace('₹', 'Rs '),
-    'DESCRIPTION:From Daybook',
+    'DESCRIPTION:From Day',
     'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:' + name + (s.trial ? ' trial ends' : ' renews') + ' soon','TRIGGER:-P' + (rem - 1 > 0 ? (rem - 1) + 'D' : '') + 'T15H','END:VALARM',
     'END:VEVENT','END:VCALENDAR'].filter(Boolean).join('\r\n');
 }
@@ -3491,7 +3514,7 @@ function settingsSheet(){
     '<button class="btn ghost block" style="margin-bottom:8px" data-act="snaps">💾 Weekly snapshots on this phone</button>' +
     '<input type="file" id="restore-file" accept="application/json,.json" hidden>' +
     '<div class="btns" style="margin-top:14px"><button class="btn bad" data-act="signout">Sign out</button></div>' +
-    '<p class="tiny muted" style="text-align:center;margin-top:14px">Daybook ' + APP_VERSION + '</p>';
+    '<p class="tiny muted" style="text-align:center;margin-top:14px">Day ' + APP_VERSION + '</p>';
   openSheet(h);
 }
 // ready-made tiles for "+ Add a tile"; the goal can be changed before saving
@@ -3623,7 +3646,7 @@ var A = {
     err.textContent = 'Signing in…';
     Store.signIn(e, p).catch(function(x){ err.textContent = x && x.code === 'auth/invalid-credential' ? 'Wrong email or password.' : (x && x.message) || 'Could not sign in.'; });
   },
-  signout:function(){ if (confirm('Sign out of Daybook on this phone?')){ closeSheet(); Store.signOut(); } },
+  signout:function(){ if (confirm('Sign out of Day on this phone?')){ closeSheet(); Store.signOut(); } },
   quick:function(){ quickSheet(); },
 
   // day
@@ -3675,9 +3698,9 @@ var A = {
     var n = val('sk-name').trim(); if (!n){ toast('Name the skill', 'warn'); return; }
     var id = val('sk-id') || 'skill_' + uid(), old = S.recs[id] || {}, base = num(val('sk-base'));
     put(id, {t:'skill', name:n, emoji:val('sk-emoji').trim() || '🎯', weekly:num(val('sk-weekly')), baseHours:base, created:old.created || today()});
-    // hours practised before Daybook count once, as a starting session
+    // hours practised before Day count once, as a starting session
     var bid = 'prac_base_' + id.replace('skill_', '');
-    if (base > 0) put(bid, {t:'prac', skillId:id, date:old.created || today(), mins:Math.round(base * 60), note:'Before Daybook', via:'base'}); else if (S.recs[bid]) del(bid);
+    if (base > 0) put(bid, {t:'prac', skillId:id, date:old.created || today(), mins:Math.round(base * 60), note:'Before Day', via:'base'}); else if (S.recs[bid]) del(bid);
     closeSheet(); toast('Skill saved');
   },
   'skill-del':function(el){ if (confirm('Delete this skill and its practice log?')){ pracs(el.dataset.id).forEach(function(p){ del(p.id); }); del(el.dataset.id); closeSheet(); } },
@@ -3696,6 +3719,7 @@ var A = {
     lsSet('db-focus', S.focus); lsSet('db-focus-last', {dur:dur, target:target}); render();
     toast('⏱ Focus for ' + dur + ' min. You\'ve got this.');
   },
+  'go-today':function(){ S.tab = 'today'; S.day = today(); lsSet('db-tab', 'today'); closeIfOpen(); S.enter = true; if (S.drawer) setDrawer(false); render(); window.scrollTo(0, 0); },
   'go-skills':function(){ S.tab = 'skills'; lsSet('db-tab', 'skills'); S.enter = true; render(); window.scrollTo(0, 0); },
   'sp-set':function(el){
     var tm = addDays(today(), 1), r = strip(dayRec(tm)), id = el.dataset.id, m = +el.dataset.m;
@@ -3724,7 +3748,7 @@ var A = {
   },
   'rem-tog':function(el){ saveCfg({reminders:reminders().map(function(r){ return r.id === el.dataset.v ? Object.assign({}, r, {off:!r.off}) : r; })}); remindersSheet(); },
   'rem-del':function(el){ saveCfg({reminders:reminders().filter(function(r){ return r.id !== el.dataset.v; })}); remindersSheet(); },
-  'rem-ics':function(){ if (!reminders().filter(function(r){ return !r.off; }).length){ toast('Add a reminder first', 'warn'); return; } download('daybook-reminders.ics', remIcs(), 'text/calendar'); },
+  'rem-ics':function(){ if (!reminders().filter(function(r){ return !r.off; }).length){ toast('Add a reminder first', 'warn'); return; } download('day-reminders.ics', remIcs(), 'text/calendar'); },
   // app lock
   lock:function(){ lockSheet(); },
   'lock-set':function(){
@@ -4262,7 +4286,7 @@ var A = {
     toast(ok ? (h.emoji || '✅') + ' ' + h.name + ' done ✓' : habitKind(h) === 'limit' ? 'Over your limit of ' + h.target + ' ' + (h.unit || '') : tot + ' / ' + h.target + ' ' + (h.unit || ''), ok ? '' : 'warn');
     if (ok && before < 100 && dayScore(S.day) >= 100){ confetti(); toast('Full day! 🔥'); }
   },
-  backup:function(){ download('daybook-backup-' + today() + '.json', JSON.stringify({app:'daybook', v:1, at:new Date().toISOString(), recs:S.recs}, null, 1), 'application/json'); lsSet('db-lastdl', Date.now()); renderSoon(); },
+  backup:function(){ download('day-backup-' + today() + '.json', JSON.stringify({app:'daybook', v:1, at:new Date().toISOString(), recs:S.recs}, null, 1), 'application/json'); lsSet('db-lastdl', Date.now()); renderSoon(); },
   restore:function(){ $('#restore-file').click(); },
   csv:function(el){
     var arr = el.dataset.v === 'month' ? monthExps(S.imonth) : exps();
@@ -4318,12 +4342,12 @@ document.addEventListener('change', function(e){
   fr.onload = function(){
     try {
       var d = JSON.parse(fr.result), recs = d && d.recs;
-      if (!recs || d.app !== 'daybook') throw new Error('not a Daybook backup');
+      if (!recs || d.app !== 'daybook') throw new Error('not a Day backup');
       var n = Object.keys(recs).length;
       if (!confirm('Restore ' + n + ' records from this backup? Records with the same id are overwritten; nothing else is deleted.')) return;
       Object.keys(recs).forEach(function(k){ S.recs[k] = recs[k]; Store.put(k, recs[k]); });
       dataArrived(); closeSheet(); toast('Restored ' + n + ' records');
-    } catch (x) { toast('That file isn\'t a Daybook backup', 'bad'); }
+    } catch (x) { toast('That file isn\'t a Day backup', 'bad'); }
   };
   fr.readAsText(e.target.files[0]);
 });
@@ -4403,7 +4427,7 @@ function seed(){
   P('skill_s1', {t:'skill', name:'Sales calls', emoji:'📞', weekly:4, baseHours:0, created:addDays(t, -30)});
   P('skill_s2', {t:'skill', name:'Spanish', emoji:'🇪🇸', weekly:2, baseHours:0, created:addDays(t, -20)});
   for (var sp2 = 0; sp2 < 14; sp2++) if (rnd() > .35) P('prac_s' + sp2, {t:'prac', skillId:sp2 % 2 ? 'skill_s2' : 'skill_s1', date:addDays(t, -sp2), mins:25 + Math.floor(rnd() * 50), note:sp2 % 2 ? 'Duolingo + podcast' : 'Cold calls to QSRs', via:'manual'});
-  P('prac_base_s1', {t:'prac', skillId:'skill_s1', date:addDays(t, -30), mins:60 * 42, note:'Before Daybook', via:'base'});
+  P('prac_base_s1', {t:'prac', skillId:'skill_s1', date:addDays(t, -30), mins:60 * 42, note:'Before Day', via:'base'});
   P('focus_s1', {t:'focus', date:addDays(t, -1), mins:25, label:'Work', skillId:''});
   P('focus_s2', {t:'focus', date:addDays(t, -1), mins:50, label:'Work', skillId:''});
   P('sub_rec1', {t:'sub', kind:'rec', name:'Milk', amt:66, per:'day', next:t, anchor:pd(t).getDate(), cat:'groc', autoLog:true, trial:false, remind:1, pay:'Cash', status:'active', created:addDays(t, -40)});
