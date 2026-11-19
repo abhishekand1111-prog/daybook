@@ -270,7 +270,18 @@ button.b{border:0;background:none;padding:0;font:inherit;cursor:pointer}
 .htile .hp{font-size:11px;opacity:.65;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .htile.done{background:rgba(34,197,94,.18);border-color:rgba(34,197,94,.45)}
 .htile.done .hp{color:#86efac;opacity:1;font-weight:700}
-.htile .hplus{position:absolute;top:7px;right:8px;font-size:11px;font-weight:800;background:var(--acc);color:#fff;border-radius:99px;padding:1px 6px}
+.htile{overflow:hidden}
+.htile>span:not(.hfill):not(.hplus):not(.hrisk){position:relative}
+.hfill{position:absolute!important;left:0;right:0;bottom:0;height:var(--f,0);background:linear-gradient(0deg,rgba(255,79,163,.28),rgba(255,79,163,.1));transition:height .35s var(--ease);pointer-events:none}
+.heat{display:grid;grid-template-rows:repeat(7,1fr);grid-auto-flow:column;grid-auto-columns:1fr;gap:4px}
+.heat i,.heatkey i{display:block;aspect-ratio:1;border-radius:4px;background:var(--chip)}
+.heatkey{display:flex;align-items:center;gap:4px;margin-top:10px}.heatkey i{width:12px;display:inline-block}
+.heat .l1,.heatkey .l1{background:rgba(34,197,94,.3)}.heat .l2,.heatkey .l2{background:rgba(34,197,94,.55)}.heat .l3,.heatkey .l3{background:rgba(34,197,94,.8)}.heat .l4,.heatkey .l4{background:#15803d}
+.heat .fut{background:transparent;border:1px dashed var(--line)}.heat .now{outline:2px solid var(--acc);outline-offset:1px}
+.recall .rtext{font-size:16px;font-weight:600;line-height:1.45}
+.hrisk{position:absolute!important;bottom:8px;right:8px;font-size:11px;font-weight:800;opacity:.75}
+.hrisk.late{opacity:1;color:#fdba74;animation:livepulse 1.6s infinite}
+.htile .hplus{z-index:1;position:absolute;top:7px;right:8px;font-size:11px;font-weight:800;background:var(--acc);color:#fff;border-radius:99px;padding:1px 6px}
 .htile.pop{animation:pop .45s var(--ease)}
 .under{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.12)}
 .under .ul{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;opacity:.6;margin-right:2px}
@@ -462,7 +473,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 <script>
 (function(){
 'use strict';
-var APP_VERSION = 'v21';
+var APP_VERSION = 'v22';
 
 // ---------- utils ----------
 function $(s, r){ return (r || document).querySelector(s); }
@@ -1072,12 +1083,13 @@ function sleepForm(kind){
     '<div class="btns">' + (cur ? '<button class="btn ghost" data-act="sleep-clear">Clear</button>' : '') + '<button class="btn" data-act="sleep-save">Save</button></div>', '#sl-time');
 }
 function sleepSet(dd, kind, v){
-  var r = strip(dayRec(dd)); r.t = 'day'; r.date = dd;
+  var r = strip(dayRec(dd)), prev = dayRec(dd)[kind]; r.t = 'day'; r.date = dd;
   if (v) r[kind] = v; else delete r[kind];
   put('day_' + dd, r); closeSheet();
-  if (!v) return toast('Cleared');
+  var undo = function(){ var u = strip(dayRec(dd)); u.t = 'day'; u.date = dd; if (prev) u[kind] = prev; else delete u[kind]; put('day_' + dd, u); toast('Undone'); };
+  if (!v) return toast('Cleared', '', undo);
   var ok = kind === 'bed' ? bedOk(dd) : wakeOk(dd), sl = kind === 'wake' ? sleepMins(dd) : 0;
-  toast((kind === 'bed' ? '🌙 Bed ' : '🌅 Up ') + clock12(v) + (sl ? ' · ' + mins(sl) + ' sleep' : '') + (ok ? ' · on time, +' + PT.sleep + ' pts' : ' · later than your goal'));
+  toast((kind === 'bed' ? '🌙 Bed ' : '🌅 Up ') + clock12(v) + (sl ? ' · ' + mins(sl) + ' sleep' : '') + (ok ? ' · on time, +' + PT.sleep + ' pts' : ' · later than your goal'), '', undo);
 }
 
 // ---------- edit Today's tiles ----------
@@ -1527,13 +1539,20 @@ function todayHtml(){
   var tp = tplOf(d), tpid = tplId(d);
   h += '<div class="card hero"><button class="tplchip' + (tpid !== 'normal' ? ' set' : '') + '" data-act="tpl-open">' + tp.emoji + ' ' + tp.name + (tpid !== 'normal' ? ' · ' + esc(tp.desc.split('.')[0]) : '') + ' <b>▾</b></button><div class="row" style="gap:16px">' + ring(pct, '<span class="' + (pt.total < 0 ? 'neg' : '') + '">' + ptsTxt(pt.total) + '</span>', 'pts ' + (d === t ? 'today' : 'that day')) +
     '<div class="grow"><div class="mid">' + done + ' of ' + checks.length + ' done</div><div class="small muted">' +
-    (pct >= 100 ? 'Full day. Well played. 🔥' : pct >= 60 ? 'Good going, keep it up.' : d === t ? 'Tap a tile when it\'s done.' : 'How that day went.') + '</div>' +
+    (pct >= 100 ? 'Full day. Well played. 🔥' : d === t && hi < 12 && dayActive(addDays(t, -1)) ? 'Yesterday ' + ptsTxt(pointsOn(addDays(t, -1)).total) + ' pts · beat it today' : pct >= 60 ? 'Good going, keep it up.' : d === t ? 'Tap a tile when it\'s done.' : 'How that day went.') + '</div>' +
     '<button class="ptsline" data-act="go-points">Level ' + lv.lv + (al.cur ? ' · 🏆 ' + al.cur + '-day all-in' : '') + ' · points ›</button></div></div>' +
     '<div class="htiles">' + dos.map(function(c){
       var act = c.habit ? 'habit' : c.plus ? 'intake' : c.act;
-      return '<button class="htile' + (c.done ? ' done' : '') + '" data-gk="' + c.k + '" data-act="' + act + '" data-v="' + (c.habit || c.hid || c.sv || (c.plus ? 1 : '')) + '"' + (c.plus ? ' data-k="' + c.plus + '" data-day="' + d + '"' : '') + '>' +
+      // progress fill from "done / goal" in the tile's progress text
+      var fm = /^([\d.]+)\s*\/\s*([\d.]+)/.exec(c.prog || ''), frac = c.done ? 0 : fm && +fm[2] ? Math.min(1, fm[1] / fm[2]) : 0;
+      // a running streak that isn't done yet today; orange after 6 pm
+      var sk = d === t && !c.done ? streakKinds().filter(function(k){ return k.id === c.k; })[0] : null, sc = sk ? streakStats(sk).cur : 0;
+      var hb = c.hid ? (S.cfg.habits || []).filter(function(x){ return x.id === c.hid; })[0] : null, step = hb && habitKind(hb) === 'reach' ? habitStep(hb) : 0;
+      return '<button class="htile' + (c.done ? ' done' : '') + '" data-gk="' + c.k + '" data-act="' + act + '" data-v="' + (c.habit || c.hid || c.sv || (c.plus ? 1 : '')) + '"' + (c.plus ? ' data-k="' + c.plus + '" data-day="' + d + '"' : '') + (frac ? ' style="--f:' + Math.round(frac * 100) + '%"' : '') + '>' +
+        (frac ? '<span class="hfill"></span>' : '') +
         '<span class="hi">' + c.ic + '</span><span class="hn">' + esc(c.sh || c.label) + '</span><span class="hp">' + (c.done ? '✓ ' + (c.sv ? esc(c.prog) : 'Done') : esc(c.prog || 'Tap when done')) + '</span>' +
-        (c.plus ? '<span class="hplus">+1</span>' : '') + '</button>';
+        (sc >= 2 ? '<span class="hrisk' + (hi >= 18 ? ' late' : '') + '">🔥' + sc + '</span>' : '') +
+        (c.plus ? '<span class="hplus">+1</span>' : step ? '<span class="hplus" data-act="habit-step" data-v="' + hb.id + '">+' + step.toLocaleString('en-IN') + '</span>' : '') + '</button>';
     }).join('') + '</div>' +
     (lims.length ? '<div class="under"><span class="ul">Stay under</span>' + lims.map(function(c){
       var act = c.plus ? 'intake' : c.act;
@@ -1892,7 +1911,7 @@ function booksHtml(){
   var grp = groups.filter(function(g){ return g[2].some(function(x){ return x[0] === S.bseg; }); })[0] || groups[0];
   h += '<div class="seg">' + groups.map(function(g){ return '<button class="' + (g === grp ? 'on' : '') + '" data-act="seg" data-name="bseg" data-v="' + g[2][0][0] + '">' + g[1] + '</button>'; }).join('') + '</div>';
   h += '<div class="chips">' + grp[2].map(function(x){ return '<button class="chip ' + (x[0] === S.bseg ? 'on' : '') + '" data-act="seg" data-name="bseg" data-v="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>';
-  if (S.bseg === 'reading'){ h += todayPlanHtml(); var qd = quoteOfDay(); if (qd) h += quoteCard(qd, true); }
+  if (S.bseg === 'reading'){ h += todayPlanHtml(); h += recallHtml(); h += readInsightsHtml(); var qd = quoteOfDay(); if (qd) h += quoteCard(qd, true); }
   if (S.bseg === 'plan') return h + readPlanHtml();
   if (S.bseg === 'stats') return h + readStatsHtml();
   if (S.bseg === 'learn') return h + learnedHtml();
@@ -1909,7 +1928,77 @@ function bookCard(b){
     (b.status === 'done' && b.finished ? '<div class="small good">Finished ' + dShort(b.finished) + '</div>' : '') + '</div>' +
     (b.status === 'reading' && b.pages ? '<div class="t">' + bookPct(b) + '%</div>' : '') + '</div>' +
     (b.status === 'reading' && b.pages ? bar(bookPct(b)) : '') +
+    (b.status === 'reading' && bookForecast(b) ? '<div class="tiny muted" style="margin-top:6px">⏳ ' + esc(forecastTxt(bookForecast(b))) + '</div>' : '') +
     (b.status === 'reading' && (b.nextStart || b.leftOff) ? '<div class="pickup small"><div class="k">' + (b.nextStart ? 'START HERE' : 'LEFT OFF AT') + '</div>' + esc(b.nextStart || b.leftOff) + '</div>' : '') + '</button>';
+}
+// ---------- reading insights ----------
+// Pace comes from sessions that logged a page range (to > from). Forecasts use the book's own pace
+// over the last 21 days when there are 3+ such sessions, else your overall 30-day pace.
+function pagesOf(r){ return Math.max(0, (+r.to || 0) - (+r.from || 0)); }
+function readPace(days, bookId){
+  var t = today(), from = addDays(t, -days + 1);
+  var rs = reads().filter(function(r){ return r.date >= from && r.date <= t && (!bookId || r.bookId === bookId); });
+  var pg = rs.filter(function(r){ return pagesOf(r) > 0; }), pages = sum(pg.map(pagesOf)), pm = sum(pg, 'mins'), perHour = pm ? pages / pm * 60 : 0;
+  // sessions logged without page numbers still count, estimated from your reading speed
+  var est = pages + (perHour ? sum(rs.filter(function(r){ return !pagesOf(r); }), 'mins') * perHour / 60 : 0);
+  var first = rs.reduce(function(m, r){ return !m || r.date < m ? r.date : m; }, ''), span = first ? diffDays(first, t) + 1 : days;
+  return {sessions:rs.length, withPages:pg.length, pages:pages, mins:sum(rs, 'mins'), perDay:est / Math.max(1, Math.min(days, span)), perHour:perHour};
+}
+function bookForecast(b){
+  if (!b.pages || b.status !== 'reading') return null;
+  var left = Math.max(0, b.pages - (b.page || 0)); if (!left) return null;
+  var own = readPace(21, b.id), p = own.withPages >= 3 ? own : readPace(30), pd2 = p.perDay;
+  if (!(pd2 > 0)) return {left:left};
+  var n = Math.ceil(left / pd2), end = addDays(today(), n), plan = b.planEnd ? diffDays(end, b.planEnd) : null;
+  return {left:left, perDay:pd2, days:n, end:end, vsPlan:plan};
+}
+function forecastTxt(f){
+  if (!f) return '';
+  if (!f.perDay) return f.left + ' pages left · log pages to see a finish date';
+  return f.left + ' pages left · ~' + f.days + ' day' + (f.days === 1 ? '' : 's') + ' at ' + Math.round(f.perDay) + ' p/day · done ≈ ' + dShort(f.end) +
+    (f.vsPlan == null ? '' : f.vsPlan >= 0 ? ' · ' + (f.vsPlan ? f.vsPlan + 'd ahead of plan' : 'on plan') : ' · ' + (-f.vsPlan) + 'd behind plan');
+}
+function readInsightsHtml(){
+  var t = today(), p30 = readPace(30), ym = ymOf(t), dn = pd(t).getDate();
+  var thisM = sum(reads().filter(function(r){ return ymOf(r.date) === ym; }), 'mins');
+  var lm = addMonths(ym, -1), lastM = sum(reads().filter(function(r){ return ymOf(r.date) === lm && +r.date.slice(8) <= dn; }), 'mins');
+  var wd = [0, 0, 0, 0, 0, 0, 0], wc = [0, 0, 0, 0, 0, 0, 0];
+  for (var i = 1; i <= 84; i++){ var d = addDays(t, -i), k = pd(d).getDay(); wd[k] += readMinsOn(d); wc[k]++; }
+  var bestW = wd.indexOf(Math.max.apply(null, wd)), names = ['Sundays', 'Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays'];
+  var st = streakStats(kindById('read'));
+  var rows = [
+    ['📅 This month', mins(thisM) + (lastM || thisM ? ' <span class="' + (thisM >= lastM ? 'good' : 'bad') + '">' + (thisM >= lastM ? '▲' : '▼') + '</span> <span class="tiny muted">vs ' + mins(lastM) + ' by now last month</span>' : '')],
+    ['📈 Pace', p30.withPages ? Math.max(1, Math.round(p30.perDay)) + ' page' + (Math.round(p30.perDay) > 1 ? 's' : '') + ' a day' : '<span class="muted">log pages to see it</span>'],
+    ['⚡ Speed', p30.perHour ? Math.round(p30.perHour) + ' pages an hour' : '<span class="muted">–</span>'],
+    ['⏱ Average session', p30.sessions ? mins(p30.mins / p30.sessions) : '–'],
+    ['🗓️ You read most on', wd[bestW] ? names[bestW] : '–'],
+    ['🔥 Streak', st.cur + ' day' + (st.cur === 1 ? '' : 's') + ' · best ' + st.best]
+  ];
+  var cur = books().filter(function(b){ return b.status === 'reading' && b.pages; });
+  return '<div class="card"><div class="h2">📈 Your reading</div>' + rows.map(function(r){ return '<div class="row between small ptrow"><span>' + r[0] + '</span><b>' + r[1] + '</b></div>'; }).join('') +
+    (cur.length ? '<div class="lbl" style="margin-top:12px">When you\'ll finish</div>' + cur.map(function(b){ return '<div class="ptrow small"><b>📘 ' + esc(b.title) + '</b><div class="muted" style="margin-top:2px">' + esc(forecastTxt(bookForecast(b))) + '</div></div>'; }).join('') : '') + '</div>';
+}
+// 12 weeks of reading, one square a day (darker = more minutes, ring = goal met)
+function readHeatHtml(){
+  var t = today(), start = addDays(weekStart(t), -77), g = +S.cfg.readMin || 20, cells = '', tot = 0, days = 0;
+  for (var i = 0; i < 84; i++){
+    var d = addDays(start, i), m = d > t ? -1 : readMinsOn(d), lv = m < 0 ? 'fut' : !m ? 'l0' : m < g / 2 ? 'l1' : m < g ? 'l2' : m < g * 2 ? 'l3' : 'l4';
+    if (m > 0){ tot += m; days++; }
+    cells += '<i class="' + lv + (d === t ? ' now' : '') + '" title="' + dShort(d) + (m > 0 ? ': ' + mins(m) : '') + '"></i>';
+  }
+  return '<div class="card"><div class="h2">🟩 Last 12 weeks<span class="tiny muted">' + days + ' days · ' + mins(tot) + '</span></div><div class="heat">' + cells + '</div>' +
+    '<div class="heatkey tiny muted">Less <i class="l0"></i><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i> More · goal ' + g + ' min</div></div>';
+}
+// one saved concept or quote a day to keep what you read
+function recallHtml(){
+  var items = [];
+  reads().forEach(function(r){ (r.concepts || []).forEach(function(c){ items.push({ic:'💡', text:c, src:r.bookId, date:r.date}); }); });
+  list('quote').forEach(function(q){ if (q.text) items.push({ic:'❝', text:q.text, src:q.bookId, date:q.date}); });
+  if (items.length < 2) return '';
+  items.sort(function(a, b){ return (a.date || '') < (b.date || '') ? -1 : 1; });
+  var seed = +today().replace(/-/g, '') + (S.recallN || 0), x = items[seed % items.length], b = S.recs[x.src];
+  return '<div class="card recall"><div class="h2">🧠 Remember this?<button class="link" data-act="recall-next">Another ›</button></div><div class="rtext">' + x.ic + ' ' + esc(x.text) + '</div>' +
+    '<div class="tiny muted" style="margin-top:6px">' + (b ? esc(b.title) + ' · ' : '') + (x.date ? dShort(x.date) : '') + '</div></div>';
 }
 function learnedHtml(){
   var items = [];
@@ -2440,7 +2529,7 @@ function readStatsHtml(){
   var concepts = 0; rs.forEach(function(r){ concepts += (r.concepts || []).length; });
   var qs = list('quote').filter(function(q){ return inY(q.date); }).length;
   var isNow = +y === +today().slice(0, 4), frac = isNow ? (diffDays(y + '-01-01', today()) + 1) / (diffDays(y + '-01-01', y + '-12-31') + 1) : 1;
-  var h = '<div class="month"><button data-act="ryear" data-v="-1">‹</button><b>' + y + ' in books</b><button data-act="ryear" data-v="1">›</button></div>';
+  var h = readHeatHtml() + '<div class="month"><button data-act="ryear" data-v="-1">‹</button><b>' + y + ' in books</b><button data-act="ryear" data-v="1">›</button></div>';
   h += '<div class="card hero"><div class="row between"><div><div class="small muted">Books finished</div><div class="big">' + cnt(fin.length) + '</div>' +
     (isNow && fin.length ? '<div class="small muted">On pace for ' + Math.round(fin.length / frac) + ' this year</div>' : '') + '</div>' +
     '<div style="text-align:right"><div class="small muted">Time reading</div><div class="mid">' + mins(minsY) + '</div><div class="small muted" style="margin-top:4px">' + Object.keys(dayset).length + ' reading days</div></div></div></div>';
@@ -3328,7 +3417,7 @@ function settingsSheet(){
     fld('🌅 Up by', '<input id="set-wake" type="time" value="' + esc(S.cfg.wakeBy || '06:30') + '">') +
     fld('🌙 In bed by', '<input id="set-bed" type="time" value="' + esc(S.cfg.bedBy || '23:00') + '">') + '</div>' +
     '<div class="lbl">❄️ Streak freeze: one missed day a week won\'t break a streak</div>' + chips('freeze', [['on','On'],['off','Off']], S.cfg.freeze !== false ? 'on' : 'off') +
-    '<div class="btns"><button class="btn sm" data-act="set-save">Save targets</button><button class="btn sm ghost" data-act="tiles-edit">✎ Edit Today\'s tiles</button><button class="btn sm ghost" data-act="today-edit">⚙ Customize Today</button></div>' +
+    '<div class="btns"><button class="btn sm" data-act="set-save">Save targets</button><button class="btn sm ghost" data-act="tiles-edit">✎ Edit Today\'s tiles</button><button class="btn sm ghost" data-act="today-edit">⚙ Customize Today</button><button class="btn sm ghost" data-act="layout-reset">↺ Reset layout</button></div>' +
     '<div class="sec">Daily habits (count toward the day score)</div>' +
     (S.cfg.habits || []).map(function(hb){
       return '<div class="row between" style="padding:8px 0;border-top:1px solid var(--line)"><div class="grow"><div class="t">' + esc(hb.emoji || '✅') + ' ' + esc(hb.name) + '</div><div class="tiny muted">' + esc(habitDesc(hb)) + '</div></div>' +
@@ -3379,6 +3468,15 @@ function habitForm(h){
     '<input type="hidden" id="hb-id" value="' + (h.id || '') + '">' +
     '<div class="btns">' + (h.id ? '<button class="btn bad" data-act="habit-del" data-v="' + h.id + '">Remove</button>' : '') + '<button class="btn" data-act="habit-save">Save</button></div>';
   openSheet(html, h.id ? null : '#hb-name');
+}
+// the quick-add amount on a "reach" tile: about a tenth of the goal, rounded to a friendly number
+function habitStep(h){ var t = +h.target || 1; return t >= 5000 ? 1000 : t >= 500 ? 100 : t >= 100 ? 10 : t >= 20 ? 5 : 1; }
+// change a day's habit value with points pop and an Undo
+function habitSetVal(dd, hid, v, msg){
+  var d = dayRec(dd), r = strip(d), prev = (d.habits || {})[hid], bp = pointsOn(dd).total;
+  r.t = 'day'; r.date = dd; r.habits = Object.assign({}, d.habits || {}); r.habits[hid] = v; put('day_' + dd, r);
+  ptsPop(dd, bp, '[data-gk="h_' + hid + '"]');
+  toast(msg, '', function(){ var u = strip(dayRec(dd)); u.t = 'day'; u.date = dd; u.habits = Object.assign({}, u.habits || {}); if (prev === undefined) delete u.habits[hid]; else u.habits[hid] = prev; put('day_' + dd, u); toast('Undone'); });
 }
 function habitLogSheet(h){
   var v = habitVal(S.day, h), big = +h.target >= 30, k = habitKind(h);
@@ -3814,9 +3912,9 @@ var A = {
     S.day = el.dataset.v; S.tab = 'today'; lsSet('db-tab', 'today'); S.enter = true; render(); window.scrollTo(0, 0);
   },
   habit:function(el){
-    var d = dayRec(S.day), r = strip(d); r.t = 'day'; r.date = S.day; r.habits = Object.assign({}, d.habits || {});
-    var before = dayScore(S.day), bp = pointsOn(S.day).total, on = r.habits[el.dataset.v] = !r.habits[el.dataset.v]; put('day_' + S.day, r);
-    ptsPop(S.day, bp, '[data-gk="h_' + el.dataset.v + '"]');
+    var hv0 = el.dataset.v, hb0 = (S.cfg.habits || []).filter(function(x){ return x.id === hv0; })[0];
+    var before = dayScore(S.day), on = !(dayRec(S.day).habits || {})[hv0];
+    habitSetVal(S.day, hv0, on, (hb0 ? (hb0.emoji || '✅') + ' ' + hb0.name : 'Habit') + (on ? ' ✓' : ' unticked'));
     if (on){
       try { navigator.vibrate && navigator.vibrate(12); } catch (e) {}
       var hv = el.dataset.v;
@@ -4060,6 +4158,17 @@ var A = {
   },
   'habit-del':function(el){ if (confirm('Remove this tile? Past days keep their record.')){ saveCfg({habits:(S.cfg.habits || []).filter(function(h){ return h.id !== el.dataset.v; })}); if (S.habitBack === 'tiles' || el.dataset.from === 'tiles'){ S.habitBack = ''; setTimeout(tilesSheet, 0); } else settingsSheet(); toast('Tile removed'); } },
   'tile-add':function(){ addTileSheet(); },
+  'recall-next':function(){ S.recallN = (S.recallN || 0) + 1; render(); },
+  'habit-step':function(el){
+    var hb = (S.cfg.habits || []).filter(function(x){ return x.id === el.dataset.v; })[0]; if (!hb) return;
+    var v = habitVal(S.day, hb) + habitStep(hb);
+    try { navigator.vibrate && navigator.vibrate(10); } catch (e) {}
+    habitSetVal(S.day, hb.id, v, (hb.emoji || '✅') + ' ' + hb.name + ' ' + v.toLocaleString('en-IN') + ' / ' + (+hb.target).toLocaleString('en-IN') + (hb.unit ? ' ' + hb.unit : '') + (habitDone(hb, v) ? ' ✓' : ''));
+  },
+  'layout-reset':function(){
+    if (!confirm('Bring back all hidden sections, minimised cards and the default tile order?')) return;
+    FOLDS = {}; lsSet('db-folds', FOLDS); saveCfg({tileOrder:[], tileHide:{}, todayHide:{}}); closeSheet(); toast('Layout reset');
+  },
   'tile-preset':function(el){ var p = TILE_PRESETS[+el.dataset.v]; if (!p) return; S.habitBack = 'tiles'; habitForm({emoji:p.emoji, name:p.name, kind:p.kind, target:p.target, unit:p.unit}); },
   'tile-custom':function(){ S.habitBack = 'tiles'; habitForm(); },
   'tile-edit':function(el){ var hb = (S.cfg.habits || []).filter(function(x){ return 'h_' + x.id === el.dataset.v; })[0]; if (hb){ S.habitBack = 'tiles'; habitForm(hb); } },
