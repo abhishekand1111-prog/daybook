@@ -264,6 +264,11 @@ button.b{border:0;background:none;padding:0;font:inherit;cursor:pointer}
 .kg i{font-style:normal;width:100%;max-width:40px;aspect-ratio:1;border-radius:12px;display:grid;place-items:center;font-size:12px;font-weight:800;background:var(--chip);color:var(--mute)}
 .kg.ok i{background:var(--good);color:#fff}.kg.now i{background:var(--accbg);color:var(--acc);outline:2px solid var(--acc);outline-offset:-2px;font-size:10.5px}.kg.fut i{background:transparent;border:1.5px dashed var(--line)}
 .mline1{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;cursor:pointer;font:inherit;color:inherit;padding:12px 16px}.mline1 .em{font-size:22px}
+.tgrp{margin:6px 0 10px}.tglbl{display:flex;justify-content:space-between;font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;margin:0 0 2px}
+.tgrp.g-big .tglbl span:first-child{color:var(--acc)}.tgrp.g-big .ptask .tl{font-weight:700}
+.tslot{display:block;width:100%;text-align:left;border:1.5px dashed var(--line);background:none;border-radius:12px;padding:10px 12px;margin-top:6px;color:var(--mute);font:inherit;font-size:13px;cursor:pointer}
+.tgrp.g-big .tslot{border-color:var(--acc);color:var(--acc);font-weight:600}
+.tedit2{border:0;background:none;color:inherit;font:inherit;text-align:left;padding:0;cursor:pointer;min-width:0}
 .tedit{display:block;margin:0 0 0 auto;min-height:32px;padding:6px 4px !important;border:0;background:none;color:inherit;opacity:.6;font:inherit;font-size:12px;cursor:pointer}
 .trow{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line)}.trow .em{font-size:20px;width:28px;text-align:center}
 .trow.off b{opacity:.45;text-decoration:line-through}
@@ -481,7 +486,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 <script>
 (function(){
 'use strict';
-var APP_VERSION = 'v30';
+var APP_VERSION = 'v31';
 
 // ---------- utils ----------
 function $(s, r){ return (r || document).querySelector(s); }
@@ -901,8 +906,9 @@ function dayChecks(d, raw){
   }
   var spp = planProgress(d);
   if (spp.plan.length && !tplSkips(d, 'skills')) out.push({k:'splan', label:'Practice plan', done:spp.done >= spp.tot, prog:spp.done + ' / ' + spp.tot + ' min', act:'go-skills', ic:'🎯', sh:'Practice plan'});
-  var tops = (day.tasks || []).filter(function(x){ return x.top; });
-  if (tops.length) out.push({k:'top', label:'⭐ Finish your top ' + tops.length, done:tops.every(function(x){ return x.done; }), prog:tops.filter(function(x){ return x.done; }).length + ' / ' + tops.length, act:'go-planner', ic:'⭐', sh:'Top tasks'});
+  // 1-3-5: the main task is the day's check (shows its text on the tile)
+  var mains = tasksBySize(d).big;
+  if (mains.length) out.push({k:'top', label:'🎯 Main task', done:mains.every(function(x){ return x.done; }), prog:mains[0].text, act:'go-planner', ic:'🎯', sh:'Main task'});
   if (+c.workGoal > 0){ var wm = workMsOn(d) / 3600000; out.push({k:'work', label:'💼 Work ' + c.workGoal + 'h', done:wm >= c.workGoal, prog:(wm ? wm.toFixed(1) : 0) + ' / ' + c.workGoal + 'h', act:'go-work', ic:'💼', sh:'Work'}); }
   out.push({k:'note', label:'Write the day note', done:noteWritten(day), prog:'', act:'note', ic:'📝', sh:'Day review'});
   (c.habits || []).forEach(function(h){
@@ -1249,8 +1255,9 @@ function pointsOn(d){
       if (sp <= lim) add('🪙 Spent within the day\'s budget', PT.spendOk); else add('💸 Spent ' + money(sp - lim, 0) + ' over the day\'s budget', -PT.spendBad, '💸 Spent over the day\'s budget');
     }
     if (+c.workGoal > 0 && workMsOn(d) >= c.workGoal * 3600000) add('💼 Work goal met', PT.work);
-    var tops = (day.tasks || []).filter(function(x){ return x.top; });
-    if (tops.length && tops.every(function(x){ return x.done; })) add('⭐ Top tasks done', PT.top);
+    var tg = tasksBySize(d), tall = tg.big.concat(tg.med, tg.small);
+    if (tg.big.length && tg.big.every(function(x){ return x.done; })) add('🎯 Main task done', PT.top, '🎯 Main task done');
+    if (tg.big.length === 1 && tg.med.length === 3 && tg.small.length === 5 && tall.every(function(x){ return x.done; })) add('✅ Full 1-3-5 day', PT.top, '✅ Full 1-3-5 day');
     if (noteWritten(day)) add('📝 Day note written', PT.note);
     if (I.focus[d]) add('⏱ ' + I.focus[d] + ' focus block' + (I.focus[d] === 1 ? '' : 's'), Math.min(4, I.focus[d]) * PT.focus, '⏱ Focus blocks done');
     if (I.prac[d]) add('🎯 Practised a skill', PT.prac);
@@ -1297,7 +1304,7 @@ function reviewOf(d){
       else nx.push([c.label + (c.prog ? ' (' + c.prog + ')' : ''), '', false]);
     });
   }
-  (day.tasks || []).filter(function(x){ return !x.done; }).forEach(function(x){ nx.push([(d < t ? 'Carry over: ' : (x.top ? '⭐ ' : '')) + x.text, '', false]); });
+  (day.tasks || []).filter(function(x){ return !x.done; }).forEach(function(x){ nx.push([(d < t ? 'Carry over: ' : '') + TSIZE[tSize(x)].ic + ' ' + x.text, '', false]); });
   var yd = dayRec(addDays(d, -1));
   (yd.nx || []).forEach(function(x){ nx.push([x + ' · from ' + (d === t ? 'yesterday' : dShort(addDays(d, -1))), '', false]); });
   // next steps for broken limits only make sense once the day is over
@@ -1519,6 +1526,7 @@ function fabHtml(){
   // screens whose main action isn't "add a record" get a labelled button instead of a bare +
   if (S.tab === 'intake'){ a = 'intake'; extra = ' data-k="water" data-v="1" data-day="' + S.day + '"'; label = '+ 💧 Water'; }
   else if (S.tab === 'mood'){ a = 'note'; label = '+ Mood'; }
+  else if (S.tab === 'notes'){ a = S.nseg === 'notes' ? 'nt-add' : 'task-new'; label = S.nseg === 'notes' ? '+ Note' : '+ Task'; }
   else if (S.tab === 'work'){ var ow = openWd(); a = ow ? 'wd-out' : 'wd-in'; label = ow ? '🚪 Check out' : '💼 Check in'; }
   // checked in: the same Check out button floats on Today too
   else if (S.tab === 'today' && openWd() && S.day === today()){ a = wdActive(openWd()) ? 'wd-end' : 'wd-out'; label = wdActive(openWd()) ? '▶ Back to work' : '🚪 Check out'; }
@@ -1527,7 +1535,7 @@ function fabHtml(){
   else if (S.tab === 'books') a = 'add-book';
   else if (S.tab === 'fit') a = 'add-work';
   else if (S.tab === 'plan') a = S.pseg === 'review' ? '' : 'add-yg';
-  else if (S.tab === 'skills') a = 'add-skill';  else if (S.tab === 'notes') a = S.nseg === 'notes' ? 'nt-add' : '';  if (S.tab === 'money' && S.mseg === 'rec') a = 'add-rec';
+  else if (S.tab === 'skills') a = 'add-skill';  if (S.tab === 'money' && S.mseg === 'rec') a = 'add-rec';
   if (S.tab === 'books' && S.bseg === 'stats') a = '';
   if (S.tab === 'books' && S.bseg === 'quotes') a = 'add-quote';
   return a ? '<button class="fab" data-act="' + a + '" aria-label="Add">+</button>' : '';
@@ -1620,7 +1628,7 @@ function todayHtml(){
     h += '<div class="quick">' +
       '<button data-act="add-exp"><span>💸</span>Expense</button>' +
       '<button data-act="nt-add"><span>📝</span>Note</button>' +
-      '<button data-act="go-tasks"><span>✅</span>Task</button>' +
+      '<button data-act="task-new"><span>✅</span>Task</button>' +
       '<button data-act="quick"><span>＋</span>More</button></div>';
   }
 
@@ -2419,20 +2427,49 @@ function importDrTasks(uid){
 // Tasks live on the day doc (day.tasks). Unfinished ones from earlier days move to today once a day.
 function dayTasks(d){ return (dayRec(d).tasks || []).slice(); }
 function saveTasks(d, tasks){ var r = strip(dayRec(d)); r.t = 'day'; r.date = d; r.tasks = tasks; put('day_' + d, r); }
+// ---------- 1-3-5 tasks: one main task, three medium, five small a day ----------
+// A task's size is x.size (big/med/small); older tasks without one count as medium if they were starred, else small.
+var TSIZE = {big:{name:'Main', ic:'🎯', max:1, hint:'The one thing that makes the day count'}, med:{name:'Medium', ic:'◆', max:3, hint:'Real work, an hour or so each'}, small:{name:'Small', ic:'•', max:5, hint:'Quick ones: calls, replies, errands'}};
+var TORDER = ['big', 'med', 'small'];
+function tSize(x){ return TSIZE[x.size] ? x.size : x.top ? 'med' : 'small'; }
+function tasksBySize(d){ var g = {big:[], med:[], small:[]}; dayTasks(d).forEach(function(x){ g[tSize(x)].push(x); }); return g; }
+// the first size with room that day, starting from the one asked for
+function freeSize(d, want){ var g = tasksBySize(d), order = TORDER.slice(TORDER.indexOf(want || 'big')); for (var i = 0; i < order.length; i++) if (g[order[i]].length < TSIZE[order[i]].max) return order[i]; return 'small'; }
+function taskRow(x, d){
+  return '<div class="ptask' + (x.done ? ' done' : '') + '"><button class="tick-box" data-act="task-tog" data-v="' + x.id + '" data-day="' + d + '" aria-label="Done">' + (x.done ? '✓' : '') + '</button>' +
+    '<button class="grow tl tedit2" data-act="task-edit" data-v="' + x.id + '" data-day="' + d + '">' + esc(x.text) + (x.from ? ' <span class="badge">from ' + dShort(x.from) + '</span>' : '') + '</button>' +
+    '<button class="tdel" data-act="task-del" data-v="' + x.id + '" data-day="' + d + '" aria-label="Delete">×</button></div>';
+}
+// the three groups with their slots; empty slots are "+ add" buttons
+function slotsHtml(d){
+  var g = tasksBySize(d), h = '';
+  TORDER.forEach(function(k){
+    var z = TSIZE[k], arr = g[k], over = arr.length > z.max, left = z.max - arr.length;
+    h += '<div class="tgrp g-' + k + '"><div class="tglbl"><span>' + z.ic + ' ' + z.name + '</span><span class="' + (over ? 'bad' : 'muted') + '">' + arr.length + ' / ' + z.max + (over ? ' · too many' : '') + '</span></div>' +
+      arr.map(function(x){ return taskRow(x, d); }).join('') +
+      (left > 0 ? '<button class="tslot" data-act="task-new" data-day="' + d + '" data-size="' + k + '">＋ ' + (arr.length ? 'Add ' + z.name.toLowerCase() : k === 'big' ? 'Your main task · ' + z.hint.toLowerCase() : 'Add ' + z.name.toLowerCase() + ' · ' + z.hint.toLowerCase()) + '</button>' : '') + '</div>';
+  });
+  return h;
+}
 function plannerHtml(d){
-  var ts = dayTasks(d), top = ts.filter(function(x){ return x.top; }), rest = ts.filter(function(x){ return !x.top; });
-  var done = ts.filter(function(x){ return x.done; }).length;
-  function row(x){
-    return '<div class="ptask' + (x.done ? ' done' : '') + '"><button class="tick-box" data-act="task-tog" data-v="' + x.id + '" aria-label="Done">' + (x.done ? '✓' : '') + '</button>' +
-      '<span class="grow tl">' + esc(x.text) + (x.from ? ' <span class="badge">from ' + dShort(x.from) + '</span>' : '') + '</span>' +
-      '<button class="star' + (x.top ? ' on' : '') + '" data-act="task-top" data-v="' + x.id + '" aria-label="Top priority">★</button>' +
-      '<button class="tdel" data-act="task-del" data-v="' + x.id + '" aria-label="Delete">×</button></div>';
-  }
+  var ts = dayTasks(d), done = ts.filter(function(x){ return x.done; }).length;
   return '<div class="card" id="planner"><div class="h2">🗒️ Plan for the day' + (ts.length ? '<span class="tiny muted">' + done + ' / ' + ts.length + ' done</span>' : '') + '</div>' +
-    (top.length ? '<div class="lbl">⭐ Top ' + top.length + '</div>' + top.map(row).join('') : '') +
-    (rest.length ? (top.length ? '<div class="lbl" style="margin-top:10px">Also</div>' : '') + rest.map(row).join('') : '') +
-    (!ts.length ? '<div class="small muted" style="margin-bottom:10px">What do you want to get done? Star up to 3 as your top priorities.</div>' : '') +
-    '<div class="row" style="margin-top:10px;gap:8px"><input id="tk-new" data-day="' + d + '" placeholder="Add a task…" enterkeyhint="done"><button class="btn sm" data-act="task-add" data-day="' + d + '">Add</button></div></div>';
+    '<div class="tiny muted" style="margin:-6px 0 8px">1 main · 3 medium · 5 small. Do the main one first.</div>' + slotsHtml(d) + '</div>';
+}
+// add or edit a task: text, size and day (Today / Tomorrow / a date)
+function taskForm(o){
+  var x = o.x || {}, d = o.day || today(), size = x.id ? tSize(x) : o.size || freeSize(d), t = today(), g = tasksBySize(d);
+  var h = shead(x.id ? 'Edit task' : 'New task') +
+    fld('Task', '<input id="tf-text" value="' + esc(x.text || '') + '" placeholder="What needs doing?" enterkeyhint="done">') +
+    '<div class="lbl">Size</div><div class="chips" data-name="tfsize">' + TORDER.map(function(k){
+      var n = g[k].filter(function(y){ return y.id !== x.id; }).length;
+      return '<button type="button" class="chip' + (k === size ? ' on' : '') + '" data-act="chip" data-v="' + k + '">' + TSIZE[k].ic + ' ' + TSIZE[k].name + ' <span class="muted">' + n + '/' + TSIZE[k].max + '</span></button>';
+    }).join('') + '</div>' +
+    '<div class="lbl">Day</div><div class="chips" data-name="tfday">' + [[t, 'Today'], [addDays(t, 1), 'Tomorrow']].map(function(o2){ return '<button type="button" class="chip' + (d === o2[0] ? ' on' : '') + '" data-act="tf-day" data-v="' + o2[0] + '">' + o2[1] + '</button>'; }).join('') + '</div>' +
+    fld('Or pick a date', '<input id="tf-date" type="date" min="' + t + '" value="' + (d > addDays(t, 1) ? d : '') + '">') +
+    '<input type="hidden" id="tf-id" value="' + (x.id || '') + '"><input type="hidden" id="tf-from" value="' + (o.day || '') + '">' +
+    '<div class="btns">' + (x.id ? '<button class="btn bad" data-act="task-del" data-v="' + x.id + '" data-day="' + d + '" data-close="1">Delete</button>' : '') + '<button class="btn" data-act="task-save">Save</button></div>';
+  openSheet(h, x.id ? null : '#tf-text');
 }
 // tasks planned for later days: a short list so they are not forgotten until the day arrives
 function upcomingTasksHtml(){
@@ -2490,13 +2527,13 @@ function tasksPaneHtml(){
     return '<div class="ptask"><button class="tick-box" data-act="task-tog" data-v="' + r.x.id + '" data-day="' + r.d + '" aria-label="Done"></button><span class="grow tl">' + esc(r.x.text) + (r.x.from ? ' <span class="badge">from ' + dShort(r.x.from) + '</span>' : '') + '</span>' +
       '<button class="tdel" data-act="task-del" data-v="' + r.x.id + '" data-day="' + r.d + '" aria-label="Delete">×</button></div>';
   }
-  var h = '<div class="card"><div class="row" style="gap:8px"><input id="tp-new" class="grow" placeholder="Add a task…" enterkeyhint="done"><input type="date" id="tp-date" value="' + t + '" style="width:140px"><button class="btn sm" data-act="tp-add">Add</button></div></div>';
-  if (!rows.length) return h + '<div class="card">' + empty('✅', 'Nothing left to do. Add a task above, or pick a later date to plan ahead.') + '</div>';
-  var days = [], by = {};
-  rows.forEach(function(r){ if (!by[r.d]){ by[r.d] = []; days.push(r.d); } by[r.d].push(r); });
+  // Today and Tomorrow always show their 1-3-5 slots; later days show only once they have tasks. Add with the + button.
+  var h = '<div class="small muted" style="margin:0 2px 10px">Each day: <b>1 main</b>, <b>3 medium</b>, <b>5 small</b>. Tap a task to change it, its size or its day.</div>';
+  var days = [t, addDays(t, 1)];
+  rows.forEach(function(r){ if (days.indexOf(r.d) < 0) days.push(r.d); });
   days.forEach(function(d){
-    var label = d === t ? 'Today' : d === addDays(t, 1) ? 'Tomorrow' : dayLabel(d);
-    h += '<div class="card"><div class="h2">' + label + '<span class="tiny muted">' + by[d].length + '</span></div>' + by[d].map(row).join('') + '</div>';
+    var label = d === t ? 'Today' : d === addDays(t, 1) ? 'Tomorrow' : dayLabel(d), all = dayTasks(d), open = all.filter(function(x){ return !x.done; }).length;
+    h += '<div class="card"><div class="h2">' + label + '<span class="tiny muted">' + dShort(d) + (all.length ? ' · ' + open + ' open' : '') + '</span></div>' + slotsHtml(d) + '</div>';
   });
   return h + (doneToday.length ? '<div class="small muted" style="text-align:center;margin:6px 0 14px">✓ ' + doneToday.length + ' done today</div>' : '');
 }
@@ -2507,6 +2544,7 @@ function notesHtml(){
   if (seg === 'tasks') return h + tasksPaneHtml();
   return h + '<div class="card" style="padding:10px 12px"><input id="nq" placeholder="Search notes…" value="' + esc(S.nq || '') + '" enterkeyhint="search"></div><div id="nlist">' + notesListHtml() + '</div>';
 }document.addEventListener('input', function(e){
+  if (e.target && e.target.id === 'tf-date' && e.target.value) setChip('tfday', '');
   if (e.target && e.target.id === 'nq'){ S.nq = e.target.value; var l = $('#nlist'); if (l) l.innerHTML = notesListHtml(); }
 });
 function memoForm(n){
@@ -3655,34 +3693,36 @@ var A = {
   'day-today':function(){ S.day = today(); render(); },
   noop:function(){},
   // day planner
-  'go-planner':function(){ var p = $('#planner'); if (p) p.scrollIntoView({behavior:'smooth', block:'center'}); setTimeout(function(){ var i = $('#tk-new'); if (i) i.focus(); }, 400); },
-  'task-add':function(el){
-    var i = $('#tk-new'), text = i ? i.value.trim() : ''; if (!text){ if (i) i.focus(); return; }
-    var d = el.dataset.day || S.day, ts = dayTasks(d); ts.push({id:uid(), text:text, done:false, top:ts.filter(function(x){ return x.top; }).length < 3 && !ts.length}); saveTasks(d, ts);
-    setTimeout(function(){ var n = $('#tk-new'); if (n) n.focus(); }, 30);
+  'go-planner':function(){ var p = $('#planner'); if (p) p.scrollIntoView({behavior:'smooth', block:'center'}); },
+  'task-new':function(el){ var d = el.dataset.day || (S.tab === 'today' ? S.day : today()); if (d < today()) d = today(); taskForm({day:d, size:el.dataset.size}); },
+  'task-edit':function(el){ var d = el.dataset.day || S.day, x = dayTasks(d).filter(function(y){ return y.id === el.dataset.v; })[0]; if (x) taskForm({day:d, x:x}); },
+  'tf-day':function(el){ setChip('tfday', el.dataset.v); var di = $('#tf-date'); if (di) di.value = ''; },
+  'task-save':function(){
+    var text = val('tf-text').trim(); if (!text){ toast('Write the task first', 'warn'); var f = $('#tf-text'); if (f) f.focus(); return; }
+    var id = val('tf-id'), from = val('tf-from'), d = val('tf-date') || getChip('tfday') || today(), size = getChip('tfsize') || 'small';
+    if (d < today()) d = today();
+    var g = tasksBySize(d), n = g[size].filter(function(y){ return y.id !== id; }).length;
+    if (n >= TSIZE[size].max){ toast(TSIZE[size].name + ' is full for ' + (d === today() ? 'today' : dShort(d)) + ' (' + n + '/' + TSIZE[size].max + '). Pick another size or day.', 'warn'); return; }
+    var old = id && from ? dayTasks(from).filter(function(y){ return y.id === id; })[0] : null;
+    var x = Object.assign({}, old || {id:uid(), done:false}, {text:text, size:size}); delete x.top;
+    if (old && from !== d) saveTasks(from, dayTasks(from).filter(function(y){ return y.id !== id; }));
+    var ts = dayTasks(d), i2 = ts.map(function(y){ return y.id; }).indexOf(x.id);
+    if (i2 >= 0) ts[i2] = x; else ts.push(x);
+    saveTasks(d, ts); closeSheet();
+    toast(TSIZE[size].ic + ' ' + (old ? 'Task updated' : TSIZE[size].name + ' task added') + (d !== today() ? ' for ' + (d === addDays(today(), 1) ? 'tomorrow' : dShort(d)) : ''));
   },
   'task-tog':function(el){
     var d = el.dataset.day || S.day, before = dayScore(d), ts = dayTasks(d).map(function(x){ return x.id === el.dataset.v ? Object.assign({}, x, {done:!x.done}) : x; }); saveTasks(d, ts);
     var x = ts.filter(function(t2){ return t2.id === el.dataset.v; })[0];
     if (x && x.done){ try { navigator.vibrate && navigator.vibrate(10); } catch (e) {} if (before < 100 && dayScore(d) >= 100){ confetti(); toast('Full day! 🔥'); } }
   },
-  'task-top':function(el){
-    var d = el.dataset.day || S.day, ts = dayTasks(d), x = ts.filter(function(t2){ return t2.id === el.dataset.v; })[0]; if (!x) return;
-    if (!x.top && ts.filter(function(t2){ return t2.top; }).length >= 3){ toast('Keep it to 3 top priorities', 'warn'); return; }
-    saveTasks(d, ts.map(function(t2){ return t2.id === x.id ? Object.assign({}, t2, {top:!t2.top}) : t2; }));
-  },
-  'task-del':function(el){ var d = el.dataset.day || S.day; saveTasks(d, dayTasks(d).filter(function(x){ return x.id !== el.dataset.v; })); },
+  'task-del':function(el){ var d = el.dataset.day || S.day, ts = dayTasks(d), x = ts.filter(function(y){ return y.id === el.dataset.v; })[0]; if (!x) return; saveTasks(d, ts.filter(function(y){ return y.id !== x.id; })); if (el.dataset.close) closeSheet();
+    toast('Task deleted', '', function(){ saveTasks(d, dayTasks(d).concat([x])); toast('Undone'); }); },
   // recurring
   'add-rec':function(){ subForm({kind:'rec', per:'month', next:today(), cat:'bills', pay:'Cash', autoLog:true, remind:1, status:'active'}); },
   // notes
   'nseg':function(el){ S.nseg = el.dataset.v; render(); },
-  'tp-add':function(){
-    var i = $('#tp-new'), text = i ? i.value.trim() : ''; if (!text){ if (i) i.focus(); return; }
-    var d = val('tp-date') || today(); if (d < today()) d = today();
-    saveTasks(d, dayTasks(d).concat([{id:uid(), text:text, done:false, top:false}]));
-    setTimeout(function(){ var n = $('#tp-new'); if (n) n.focus(); }, 30);
-  },
-  'go-tasks':function(){ if (sheetOpen) hideSheet(); S.tab = 'notes'; S.nseg = 'tasks'; S.enter = true; render(); window.scrollTo(0, 0); setTimeout(function(){ var n = $('#tp-new'); if (n) n.focus(); }, 200); },  'nt-add':function(){ if (sheetOpen) hideSheet(); memoForm(); },
+  'go-tasks':function(){ if (sheetOpen) hideSheet(); S.tab = 'notes'; S.nseg = 'tasks'; S.enter = true; render(); window.scrollTo(0, 0); },  'nt-add':function(){ if (sheetOpen) hideSheet(); memoForm(); },
   'nt-open':function(el){ var n = notesAll().filter(function(x){ return x.id === el.dataset.id; })[0]; if (n) memoForm(n); },
   'nt-save':function(){
     var text = val('nt-text').trim(), title = val('nt-title').trim(); if (!text && !title){ toast('Write something first', 'warn'); return; }
@@ -3857,7 +3897,7 @@ var A = {
     var added = 0;
     if ($('#eve-carry') && $('#eve-carry').checked && r.nx.length){
       var tm = addDays(d, 1), ts = dayTasks(tm), have = ts.map(function(x){ return x.text.toLowerCase(); });
-      r.nx.forEach(function(x){ if (have.indexOf(x.toLowerCase()) < 0){ ts.push({id:uid(), text:x, done:false, top:ts.filter(function(y){ return y.top; }).length < 3}); added++; } });
+      r.nx.forEach(function(x){ if (have.indexOf(x.toLowerCase()) < 0){ ts.push({id:uid(), text:x, done:false, size:(function(){ var g = {big:0, med:0, small:0}; ts.forEach(function(y){ g[tSize(y)]++; }); return g.med < 3 ? 'med' : 'small'; })()}); added++; } });
       if (added) saveTasks(tm, ts);
     }
     closeSheet(); confetti();
@@ -4319,7 +4359,7 @@ document.addEventListener('input', function(e){
 });
 document.addEventListener('keydown', function(e){
   if (e.key === 'Enter' && (e.target.id === 'a-pass' || e.target.id === 'a-email')) A.signin();
-  if (e.key === 'Enter' && e.target.id === 'tk-new'){ e.preventDefault(); A['task-add'](e.target); }
+  if (e.key === 'Enter' && e.target.id === 'tf-text'){ e.preventDefault(); A['task-save'](); }
   if (S.locked && /^[0-9]$/.test(e.key)) A['lock-key']({dataset:{v:e.key}});
   if (S.locked && e.key === 'Backspace') A['lock-key']({dataset:{v:'del'}});
 });
