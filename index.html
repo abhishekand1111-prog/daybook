@@ -473,7 +473,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 <script>
 (function(){
 'use strict';
-var APP_VERSION = 'v22';
+var APP_VERSION = 'v23';
 
 // ---------- utils ----------
 function $(s, r){ return (r || document).querySelector(s); }
@@ -564,10 +564,10 @@ var DEFAULT_CATS = [
   {id:'other', name:'Other', emoji:'📦'}
 ];
 var ACTS = [
-  {id:'run', name:'Run', emoji:'🏃', f:['mins','km']},
+  {id:'run', name:'Run', emoji:'🏃', f:['mins','km','steps']},
   {id:'skip', name:'Skipping', emoji:'🪢', f:['mins','count']},
   {id:'gym', name:'Gym', emoji:'🏋️', f:['mins','focus']},
-  {id:'walk', name:'Walk', emoji:'🚶', f:['mins','km']},
+  {id:'walk', name:'Walk', emoji:'🚶', f:['mins','km','steps']},
   {id:'cycle', name:'Cycling', emoji:'🚴', f:['mins','km']},
   {id:'yoga', name:'Yoga', emoji:'🧘', f:['mins']},
   {id:'sport', name:'Sport', emoji:'⚽', f:['mins']},
@@ -589,7 +589,7 @@ var GOAL_EMOJI = ['🎯','🛟','🏍️','🚗','🏠','✈️','💻','📱','
 var DEFAULT_CFG = {
   cur:'₹', total:0, alertPct:80, budgets:{}, cats:DEFAULT_CATS,
   readMin:20, moveMin:30, moveDays:5,
-  waterGoal:8, glassMl:250, colaMax:0, sweetMax:1, freeze:true, pagesPerDay:20, workGoal:0, wdImported:false, tplWeek:{}, wakeBy:'06:30', bedBy:'23:00', tileOrder:[], tileHide:{}, todayHide:{},
+  waterGoal:8, glassMl:250, colaMax:0, sweetMax:1, freeze:true, pagesPerDay:20, workGoal:0, stepsGoal:8000, wdImported:false, tplWeek:{}, wakeBy:'06:30', bedBy:'23:00', tileOrder:[], tileHide:{}, todayHide:{},
   rewards:[{id:'rw1', emoji:'🍰', name:'Guilt-free dessert', cost:150, free:'sweet'}, {id:'rw2', emoji:'🍕', name:'Cheat meal', cost:300}, {id:'rw3', emoji:'🎬', name:'Movie night', cost:500}, {id:'rw4', emoji:'📚', name:'A new book', cost:800}],
   habits:[{id:'wake', name:'Up by 6:30', emoji:'⏰'}]
 };
@@ -718,7 +718,7 @@ function del(id){
 }
 function saveCfg(patch){
   var c = {};
-  ['cur','total','alertPct','budgets','cats','readMin','moveMin','moveDays','habits','waterGoal','glassMl','colaMax','sweetMax','freeze','pagesPerDay','workGoal','wdImported','wdImported2','tasksImported','reminders','tplWeek','wakeBy','bedBy','tileOrder','tileHide','rewards','todayHide'].forEach(function(k){ c[k] = S.cfg[k]; });
+  ['cur','total','alertPct','budgets','cats','readMin','moveMin','moveDays','habits','waterGoal','glassMl','colaMax','sweetMax','freeze','pagesPerDay','workGoal','wdImported','wdImported2','tasksImported','reminders','tplWeek','wakeBy','bedBy','tileOrder','tileHide','rewards','todayHide','stepsGoal'].forEach(function(k){ c[k] = S.cfg[k]; });
   for (var k in patch) c[k] = patch[k];
   c.t = 'config';
   put('config', c);
@@ -820,11 +820,11 @@ function budgetCheck(catId, ym){
 var IDX = null;
 function idx(){
   if (IDX) return IDX;
-  var I = {read:{}, move:{}, spend:{}, work:{}, focus:{}, prac:{}, first:'', intakeFirst:'', expFirst:'', workFirst:'', focusFirst:'', pracFirst:'', openW:null};
+  var I = {steps:{}, km:{}, walk:{}, walkFirst:'', read:{}, move:{}, spend:{}, work:{}, focus:{}, prac:{}, first:'', intakeFirst:'', expFirst:'', workFirst:'', focusFirst:'', pracFirst:'', openW:null};
   for (var k in S.recs){
     var r = S.recs[k]; if (!r || !r.date) continue;
     if (r.t === 'read') I.read[r.date] = (I.read[r.date] || 0) + (+r.mins || 0);
-    else if (r.t === 'work') I.move[r.date] = (I.move[r.date] || 0) + (+r.mins || 0);
+    else if (r.t === 'work'){ I.move[r.date] = (I.move[r.date] || 0) + (+r.mins || 0); I.steps[r.date] = (I.steps[r.date] || 0) + (+r.steps || 0); I.km[r.date] = (I.km[r.date] || 0) + (+r.km || 0); if (r.type === 'walk' || r.steps){ I.walk[r.date] = 1; if (!I.walkFirst || r.date < I.walkFirst) I.walkFirst = r.date; } }
     else if (r.t === 'exp'){ I.spend[r.date] = (I.spend[r.date] || 0) + (+r.amt || 0); if (!I.expFirst || r.date < I.expFirst) I.expFirst = r.date; }
     else if (r.t === 'focus'){ I.focus[r.date] = (I.focus[r.date] || 0) + 1; if (!I.focusFirst || r.date < I.focusFirst) I.focusFirst = r.date; continue; }
     else if (r.t === 'prac'){ I.prac[r.date] = (I.prac[r.date] || 0) + (+r.mins || 0); if (!I.pracFirst || r.date < I.pracFirst) I.pracFirst = r.date; continue; }
@@ -842,12 +842,20 @@ function idx(){
 }
 function readMinsOn(d){ return idx().read[d] || 0; }
 function moveMinsOn(d){ return idx().move[d] || 0; }
+function stepsOn(d){ return idx().steps[d] || 0; }
+function kmOn(d){ return Math.round((idx().km[d] || 0) * 100) / 100; }
+function stepsGoal(){ return +S.cfg.stepsGoal || 8000; }
+// a move day: the active-minutes goal, or the steps goal from walks and runs
+function moveDone(d){ return moveMinsOn(d) >= moveGoal(d) || stepsOn(d) >= stepsGoal(); }
+// a Steps habit also counts the steps logged with walks and runs that day
+function isStepsHabit(h){ return /step/i.test((h.unit || '') + ' ' + h.name); }
 function spendOn(d){ return idx().spend[d] || 0; }
 function intake(d, k){ return +(dayRec(d)[k]) || 0; }
 // Habits: 'yes' = tick it off; 'reach' = at least <target> <unit>; 'limit' = at most <target> <unit>.
 // The day stores true/false for yes-habits and a number for the others (day.habits[id]).
 function habitKind(h){ return h.kind === 'reach' || h.kind === 'limit' ? h.kind : (+h.target > 0 ? 'reach' : 'yes'); }
-function habitVal(d, h){ var v = (dayRec(d).habits || {})[h.id]; return v === true ? 1 : +v || 0; }
+function habitOwn(d, h){ var v = (dayRec(d).habits || {})[h.id]; return v === true ? 1 : +v || 0; }
+function habitVal(d, h){ return habitOwn(d, h) + (isStepsHabit(h) && habitKind(h) === 'reach' ? stepsOn(d) : 0); }
 function habitDone(h, v){ var k = habitKind(h); return k === 'yes' ? v > 0 : k === 'reach' ? v >= (+h.target || 1) : v <= (+h.target || 0); }
 function habitDesc(h){ var k = habitKind(h); return k === 'yes' ? 'Tick it off daily' : (k === 'reach' ? 'At least ' : 'At most ') + h.target + ' ' + (h.unit || '') + ' a day'; }
 function streakTxt(n, what){ return n ? '🔥 ' + n + '-day ' + what + ' streak' : 'No ' + what + ' streak yet'; }
@@ -864,7 +872,7 @@ function dayChecks(d, raw){
   var c = S.cfg, out = [];
   var rm = readMinsOn(d), mm = moveMinsOn(d), day = dayRec(d);
   out.push({k:'read', label:'Read ' + c.readMin + ' min', done:rm >= c.readMin, prog:rm + ' / ' + c.readMin + ' min', act:'add-read', ic:'📖', sh:'Read'});
-  var mg = moveGoal(d); out.push({k:'move', label:'Move ' + mg + ' min', done:mm >= mg, prog:mm + ' / ' + mg + ' min', act:'add-work', ic:'💪', sh:'Move'});
+  var mg = moveGoal(d), st = stepsOn(d); out.push({k:'move', label:'Move ' + mg + ' min', done:moveDone(d), prog:(st >= stepsGoal() && mm < mg ? st.toLocaleString('en-IN') + ' steps' : mm + ' / ' + mg + ' min'), act:'add-work', ic:'💪', sh:'Move'});
   if (+c.total > 0){
     var lim = c.total / daysIn(ymOf(d)), sp = spendOn(d);
     out.push({k:'spend', label:'Spend under ' + money(lim, 0), done:sp <= lim, prog:money(sp, 0) + ' spent', act:'add-exp', auto:true, lim:true, ic:'💸', cnt:money(sp, 0) + ' / ' + money(lim, 0)});
@@ -1132,7 +1140,8 @@ function streakKinds(){
     {id:'allin', name:'All-in', emoji:'🏆', desc:'Every habit kept that day', start:I.first, test:function(d){ var h = habitChecks(d); return h.length > 0 && h.every(function(x){ return x.done; }); }, part:function(d){ return habitChecks(d).some(function(x){ return x.done; }); }},
     {id:'score', name:'Good days', emoji:'⭐', desc:GOOD_PTS + '+ points in a day', start:I.first, test:goodDay, part:function(d){ return pointsOn(d).total > 0; }},
     {id:'read', name:'Reading', emoji:'📖', desc:c.readMin + ' min a day', start:I.first, test:function(d){ return readMinsOn(d) >= c.readMin; }, part:function(d){ return readMinsOn(d) > 0; }},
-    {id:'move', name:'Move', emoji:'💪', desc:c.moveMin + ' active min a day', start:I.first, test:function(d){ return moveMinsOn(d) >= moveGoal(d); }, part:function(d){ return moveMinsOn(d) > 0; }},
+    {id:'move', name:'Move', emoji:'💪', desc:c.moveMin + ' active min a day', start:I.first, test:moveDone, part:function(d){ return moveMinsOn(d) > 0 || stepsOn(d) > 0; }},
+    {id:'walk', name:'Walking', emoji:'🚶', desc:'A walk or steps logged that day', start:I.walkFirst || t, test:function(d){ return !!I.walk[d]; }},
     {id:'water', name:'Water', emoji:'💧', desc:c.waterGoal + ' glasses a day', start:I.intakeFirst || t, test:function(d){ return intake(d, 'water') >= c.waterGoal; }, part:function(d){ return intake(d, 'water') > 0; }},
     {id:'cola', name:+c.colaMax ? 'Cola in limit' : 'Cola-free', emoji:'🥤', desc:+c.colaMax ? 'Max ' + c.colaMax + ' a day' : 'No cola', start:I.intakeFirst || '9999', limit:true, test:function(d){ return intake(d, 'cola') <= c.colaMax; }},
     {id:'sweet', name:+c.sweetMax ? 'Desserts in limit' : 'Dessert-free', emoji:'🍰', desc:+c.sweetMax ? 'Max ' + c.sweetMax + ' a day' : 'No desserts', start:I.intakeFirst || '9999', limit:true, test:function(d){ return intake(d, 'sweet') <= sweetMaxOn(d); }},
@@ -1211,6 +1220,7 @@ function pointsOn(d){
     if (rm >= rg){ add('📖 Read ' + rm + ' min', PT.goal, '📖 Reading goal met'); add('📖 Extra reading', Math.min(10, Math.floor((rm - rg) / 10)), '📖 Read past the goal'); }
     else if (rm) add('📖 Some reading', PT.part);
     var mm = moveMinsOn(d), mg = moveGoal(d), tp = tplOf(d);
+    if (mm < mg && stepsOn(d) >= stepsGoal()) add('👣 ' + stepsOn(d).toLocaleString('en-IN') + ' steps', PT.goal, '💪 Move goal met');
     if (mm >= mg){ add('💪 Moved ' + mm + ' min', PT.goal, '💪 Move goal met'); add('💪 Went ' + (mm - mg) + ' min past goal', Math.min(20, Math.floor((mm - mg) / 10) * 2), '💪 Went past the move goal'); }
     else if (mm) add('💪 Some movement', PT.part);
     var wa = intake(d, 'water'), wg = +c.waterGoal || 1;
@@ -2015,6 +2025,7 @@ function learnedHtml(){
 function workItem(w){
   var a = act(w.type), bits = [mins(w.mins)];
   if (w.km) bits.push(w.km + ' km');
+  if (w.steps) bits.push(w.steps.toLocaleString('en-IN') + ' steps');
   if (w.km && w.mins && (w.type === 'run' || w.type === 'walk')) bits.push(pace(w.mins, w.km) + '/km');
   if (w.count) bits.push(w.count + ' skips');
   if (w.focus) bits.push(w.focus);
@@ -2024,8 +2035,9 @@ function pace(m, km){ var s = Math.round(m * 60 / km); return Math.floor(s / 60)
 function fitHtml(){
   var t = today(), ws = weekStart(t), all = works(), h = topHtml('Fitness', streakTxt(moveStreak(), 'move') + ' · goal ' + S.cfg.moveMin + ' min a day');
   var wk = []; for (var i = 0; i < 7; i++) wk.push(addDays(ws, i));
-  var activeDays = wk.filter(function(d){ return moveMinsOn(d) > 0; }).length, tm = moveMinsOn(t);
-  h += '<div class="card"><div class="row between"><div><div class="small muted">Today</div><div class="mid">' + mins(tm) + ' <span class="small muted">/ ' + S.cfg.moveMin + ' min</span></div></div>' +
+  var activeDays = wk.filter(function(d){ return moveMinsOn(d) > 0; }).length, tm = moveMinsOn(t), tst = stepsOn(t), tkm = kmOn(t);
+  h += '<div class="card"><div class="row between"><div><div class="small muted">Today</div><div class="mid">' + mins(tm) + ' <span class="small muted">/ ' + S.cfg.moveMin + ' min</span></div>' +
+    (tst || tkm ? '<div class="small" style="margin-top:2px">' + (tst ? '👣 ' + tst.toLocaleString('en-IN') + ' / ' + stepsGoal().toLocaleString('en-IN') + ' steps' : '') + (tst && tkm ? ' · ' : '') + (tkm ? '📍 ' + tkm + ' km' : '') + '</div>' : '') + '</div>' +
     '<div style="text-align:right"><div class="small muted">Active days this week</div><div class="t ' + (activeDays >= S.cfg.moveDays ? 'good' : '') + '">' + activeDays + ' / ' + S.cfg.moveDays + '</div></div></div>' + bar(tm / (S.cfg.moveMin || 1) * 100) +
     '<div class="week" style="margin-top:12px">' + wk.map(function(d){
       var m = moveMinsOn(d), cls = m >= S.cfg.moveMin ? 'on' : m > 0 ? 'part' : '';
@@ -2034,20 +2046,34 @@ function fitHtml(){
     }).join('') + '</div></div>';
 
   var ym = ymOf(t), mw = all.filter(function(w){ return ymOf(w.date) === ym; });
-  var runs = mw.filter(function(w){ return w.type === 'run'; }), skips = mw.filter(function(w){ return w.type === 'skip'; }), gym = mw.filter(function(w){ return w.type === 'gym'; });
-  h += '<div class="sec">' + monthName(ym) + '</div><div class="stats">' +
-    '<div class="stat"><div class="k">🏃 Run</div><div class="v">' + (Math.round(sum(runs, 'km') * 10) / 10) + ' km</div><div class="tiny muted">' + runs.length + ' runs</div></div>' +
-    '<div class="stat"><div class="k">🪢 Skipping</div><div class="v">' + sum(skips, 'count').toLocaleString('en-IN') + '</div><div class="tiny muted">' + skips.length + ' sessions</div></div>' +
-    '<div class="stat"><div class="k">🏋️ Gym</div><div class="v">' + gym.length + '</div><div class="tiny muted">' + mins(sum(gym, 'mins')) + '</div></div>' +
-    '<div class="stat"><div class="k">⏱ Active time</div><div class="v">' + mins(sum(mw, 'mins')) + '</div><div class="tiny muted">' + mw.length + ' workouts</div></div></div>';
+  // this month: totals first, then one tile per activity you actually did (nothing shows as 0)
+  function of(type){ return mw.filter(function(w){ return w.type === type; }); }
+  function km1(arr){ return Math.round(sum(arr, 'km') * 10) / 10; }
+  var tiles = ['<div class="stat"><div class="k">📍 Total distance</div><div class="v">' + km1(mw) + ' km</div><div class="tiny muted">walks, runs &amp; rides</div></div>',
+    '<div class="stat"><div class="k">⏱ Active time</div><div class="v">' + mins(sum(mw, 'mins')) + '</div><div class="tiny muted">' + mw.length + ' workout' + (mw.length === 1 ? '' : 's') + '</div></div>'];
+  if (sum(mw, 'steps')){
+    var sdays = {}; mw.forEach(function(w){ if (w.steps) sdays[w.date] = 1; }); var nsd = Object.keys(sdays).length;
+    tiles.push('<div class="stat"><div class="k">👣 Steps</div><div class="v">' + sum(mw, 'steps').toLocaleString('en-IN') + '</div><div class="tiny muted">' + (nsd > 1 ? Math.round(sum(mw, 'steps') / nsd).toLocaleString('en-IN') + ' a day on ' + nsd + ' days' : 'on 1 day') + '</div></div>');
+  }
+  ACTS.forEach(function(a){
+    var arr = of(a.id); if (!arr.length) return;
+    var v = a.f.indexOf('km') > -1 && km1(arr) ? km1(arr) + ' km' : a.id === 'skip' && sum(arr, 'count') ? sum(arr, 'count').toLocaleString('en-IN') + ' skips' : mins(sum(arr, 'mins'));
+    tiles.push('<div class="stat"><div class="k">' + a.emoji + ' ' + a.name + '</div><div class="v">' + v + '</div><div class="tiny muted">' + arr.length + ' time' + (arr.length === 1 ? '' : 's') + '</div></div>');
+  });
+  h += '<div class="sec">' + monthName(ym) + '</div>' + (mw.length ? '<div class="stats">' + tiles.join('') + '</div>' : '<div class="card"><div class="small muted">Nothing logged this month yet.</div></div>');
 
   // personal bests
   var allRuns = all.filter(function(w){ return w.type === 'run' && w.km > 0; });
   var longest = allRuns.slice().sort(function(a, b){ return b.km - a.km; })[0];
   var fastest = allRuns.filter(function(w){ return w.km >= 1 && w.mins > 0; }).sort(function(a, b){ return a.mins / a.km - b.mins / b.km; })[0];
   var mostSkip = all.filter(function(w){ return w.type === 'skip' && w.count > 0; }).sort(function(a, b){ return b.count - a.count; })[0];
-  if (longest || mostSkip){
+  var longWalk = all.filter(function(w){ return w.type === 'walk' && w.km > 0; }).sort(function(a, b){ return b.km - a.km; })[0];
+  var stepDays = {}; all.forEach(function(w){ if (w.steps) stepDays[w.date] = (stepDays[w.date] || 0) + w.steps; });
+  var bestStepDay = Object.keys(stepDays).sort(function(a, b){ return stepDays[b] - stepDays[a]; })[0];
+  if (longest || mostSkip || longWalk || bestStepDay){
     h += '<div class="card"><div class="h2">Personal bests 🏆</div>' +
+      (longWalk ? '<div class="row between small" style="margin:4px 0"><span>Longest walk</span><b>' + longWalk.km + ' km · ' + dShort(longWalk.date) + '</b></div>' : '') +
+      (bestStepDay ? '<div class="row between small" style="margin:4px 0"><span>Most steps in a day</span><b>' + stepDays[bestStepDay].toLocaleString('en-IN') + ' · ' + dShort(bestStepDay) + '</b></div>' : '') +
       (longest ? '<div class="row between small" style="margin:4px 0"><span>Longest run</span><b>' + longest.km + ' km · ' + dShort(longest.date) + '</b></div>' : '') +
       (fastest ? '<div class="row between small" style="margin:4px 0"><span>Fastest pace</span><b>' + pace(fastest.mins, fastest.km) + ' /km · ' + dShort(fastest.date) + '</b></div>' : '') +
       (mostSkip ? '<div class="row between small" style="margin:4px 0"><span>Most skips</span><b>' + mostSkip.count.toLocaleString('en-IN') + ' · ' + dShort(mostSkip.date) + '</b></div>' : '') + '</div>';
@@ -3345,7 +3371,9 @@ function workFields(a, w){
   var h = '<div class="two">' + fld('Minutes', '<input id="w-mins" inputmode="numeric" value="' + (w.mins || '') + '">');
   if (a.f.indexOf('km') > -1) h += fld('Distance (km)', '<input id="w-km" inputmode="decimal" value="' + (w.km || '') + '">');
   if (a.f.indexOf('count') > -1) h += fld('Skips', '<input id="w-count" inputmode="numeric" value="' + (w.count || '') + '">');
+  if (a.f.indexOf('steps') > -1) h += fld('👣 Steps', '<input id="w-steps" inputmode="numeric" value="' + (w.steps || '') + '" placeholder="from your phone or watch">');
   h += '</div>';
+  if (a.f.indexOf('steps') > -1) h += '<div class="hint" style="margin-top:-4px">Minutes are optional for a walk: steps alone count toward your move goal (' + stepsGoal().toLocaleString('en-IN') + ' steps).</div>';
   if (a.f.indexOf('focus') > -1) h += '<div class="lbl">Focus</div>' + chips('wfocus', FOCUS, w.focus);
   return h;
 }
@@ -3413,6 +3441,7 @@ function settingsSheet(){
     fld('Glass size (ml)', '<input id="set-ml" inputmode="numeric" value="' + S.cfg.glassMl + '">') +
     fld('🥤 Cola max a day', '<input id="set-cola" inputmode="numeric" value="' + S.cfg.colaMax + '">') +
     fld('🍰 Desserts max a day', '<input id="set-sweet" inputmode="numeric" value="' + S.cfg.sweetMax + '">') +
+    fld('👣 Steps a day', '<input id="set-steps" inputmode="numeric" value="' + stepsGoal() + '">') +
     fld('💼 Work hours a day', '<input id="set-work" inputmode="decimal" value="' + (+S.cfg.workGoal || '') + '" placeholder="0 = off">') +
     fld('🌅 Up by', '<input id="set-wake" type="time" value="' + esc(S.cfg.wakeBy || '06:30') + '">') +
     fld('🌙 In bed by', '<input id="set-bed" type="time" value="' + esc(S.cfg.bedBy || '23:00') + '">') + '</div>' +
@@ -3479,11 +3508,12 @@ function habitSetVal(dd, hid, v, msg){
   toast(msg, '', function(){ var u = strip(dayRec(dd)); u.t = 'day'; u.date = dd; u.habits = Object.assign({}, u.habits || {}); if (prev === undefined) delete u.habits[hid]; else u.habits[hid] = prev; put('day_' + dd, u); toast('Undone'); });
 }
 function habitLogSheet(h){
-  var v = habitVal(S.day, h), big = +h.target >= 30, k = habitKind(h);
+  var v = habitOwn(S.day, h), big = +h.target >= 30, k = habitKind(h), extra = habitVal(S.day, h) - v;
   var html = shead((h.emoji || '✅') + ' ' + esc(h.name)) +
     '<div class="small muted" style="margin:-8px 0 12px">' + esc(habitDesc(h)) + ' · ' + dayLabel(S.day) + '</div>' +
     '<div class="amtin"><input id="hl-val" inputmode="decimal" value="' + (v || '') + '" placeholder="0"><span style="font-size:20px">' + esc(h.unit || '') + '</span></div>' +
     '<div class="chips">' + (big ? [-10, -5, 5, 10, 30] : [-1, 1, 2, 5, 10]).map(function(s){ return '<button type="button" class="chip" data-act="hl-step" data-v="' + s + '">' + (s > 0 ? '+' : '−') + Math.abs(s) + '</button>'; }).join('') + '</div>' +
+    (extra ? '<div class="small good" style="margin:-4px 0 8px">+ ' + extra.toLocaleString('en-IN') + ' ' + esc(h.unit || '') + ' from your walks and runs, counted automatically</div>' : '') +
     '<div class="hint">' + (k === 'limit' ? 'Stay at or under ' + h.target + ' ' + esc(h.unit || '') + '.' : 'Goal: ' + h.target + ' ' + esc(h.unit || '') + '.') + '</div>' +
     '<input type="hidden" id="hl-id" value="' + h.id + '"><div class="btns"><button class="btn" data-act="hl-save">Save</button></div>';
   openSheet(html, '#hl-val');
@@ -4106,17 +4136,20 @@ var A = {
   'add-work':function(){ workForm(); },
   work:function(el){ var w = works().filter(function(x){ return x.id === el.dataset.id; })[0]; if (w) workForm(w); },
   'work-save':function(){
-    var type = getChip('wtype') || 'other', m = +num(val('w-mins'));
-    if (!(m > 0)){ toast('How many minutes?', 'warn'); return; }
+    var type = getChip('wtype') || 'other', m = +num(val('w-mins')), stp = $('#w-steps') ? Math.round(+num(val('w-steps')) || 0) : 0, kmv = $('#w-km') ? +num(val('w-km')) || 0 : 0;
+    // a walk logged with only steps or distance gets an estimated time (about 100 steps or 12 min per km)
+    if (!(m > 0) && (stp > 0 || kmv > 0)) m = Math.max(1, Math.round(stp ? stp / 100 : kmv * 12));
+    if (!(m > 0)){ toast('Add minutes, steps or distance', 'warn'); return; }
     var id = val('w-id') || 'work_' + uid(), date = val('w-date') || today();
     var r = {t:'work', type:type, date:date, mins:m, note:val('w-note').trim()};
     if ($('#w-km')) r.km = Math.round(num(val('w-km')) * 100) / 100 || 0;
     if ($('#w-count')) r.count = +num(val('w-count')) || 0;
+    if ($('#w-steps')) r.steps = stp;
     if ($('.chips[data-name="wfocus"]')) r.focus = getChip('wfocus');
     lsSet('db-lastact', type);
     put(id, r); closeSheet();
     var tot = moveMinsOn(today());
-    toast(date === today() && tot >= S.cfg.moveMin ? 'Move goal done ✓ (' + tot + ' min today)' : 'Logged ' + act(type).name.toLowerCase());
+    toast(date === today() && moveDone(today()) ? 'Move goal done ✓ (' + tot + ' min' + (stepsOn(today()) ? ' · ' + stepsOn(today()).toLocaleString('en-IN') + ' steps' : '') + ' today)' : 'Logged ' + act(type).name.toLowerCase() + (stp ? ' · ' + stp.toLocaleString('en-IN') + ' steps' : '') + (kmv ? ' · ' + kmv + ' km' : ''));
   },
   'work-del':function(el){ if (confirm('Delete this workout?')){ del(el.dataset.id); closeSheet(); } },
 
@@ -4142,7 +4175,7 @@ var A = {
     var cur = val('set-cur').trim() || '₹';
     saveCfg({cur:cur, readMin:Math.max(1, +num(val('set-read')) || 20), moveMin:Math.max(1, +num(val('set-move')) || 30), moveDays:Math.min(7, Math.max(1, +num(val('set-days')) || 5)),
       waterGoal:Math.max(1, +num(val('set-water')) || 8), glassMl:Math.max(50, +num(val('set-ml')) || 250),
-      colaMax:Math.max(0, Math.round(num(val('set-cola')))), sweetMax:Math.max(0, Math.round(num(val('set-sweet')))), workGoal:Math.max(0, Math.min(16, num(val('set-work')))), wakeBy:val('set-wake') || '06:30', bedBy:val('set-bed') || '23:00'});
+      colaMax:Math.max(0, Math.round(num(val('set-cola')))), sweetMax:Math.max(0, Math.round(num(val('set-sweet')))), workGoal:Math.max(0, Math.min(16, num(val('set-work')))), wakeBy:val('set-wake') || '06:30', bedBy:val('set-bed') || '23:00', stepsGoal:Math.max(500, Math.round(+num(val('set-steps')) || 8000))});
     toast('Saved'); settingsSheet();
   },
   'habit-edit':function(el){ S.habitBack = ''; habitForm((S.cfg.habits || []).filter(function(h){ return h.id === el.dataset.v; })[0]); },
@@ -4161,9 +4194,9 @@ var A = {
   'recall-next':function(){ S.recallN = (S.recallN || 0) + 1; render(); },
   'habit-step':function(el){
     var hb = (S.cfg.habits || []).filter(function(x){ return x.id === el.dataset.v; })[0]; if (!hb) return;
-    var v = habitVal(S.day, hb) + habitStep(hb);
+    var v = habitOwn(S.day, hb) + habitStep(hb), all = v + habitVal(S.day, hb) - habitOwn(S.day, hb);
     try { navigator.vibrate && navigator.vibrate(10); } catch (e) {}
-    habitSetVal(S.day, hb.id, v, (hb.emoji || '✅') + ' ' + hb.name + ' ' + v.toLocaleString('en-IN') + ' / ' + (+hb.target).toLocaleString('en-IN') + (hb.unit ? ' ' + hb.unit : '') + (habitDone(hb, v) ? ' ✓' : ''));
+    habitSetVal(S.day, hb.id, v, (hb.emoji || '✅') + ' ' + hb.name + ' ' + all.toLocaleString('en-IN') + ' / ' + (+hb.target).toLocaleString('en-IN') + (hb.unit ? ' ' + hb.unit : '') + (habitDone(hb, all) ? ' ✓' : ''));
   },
   'layout-reset':function(){
     if (!confirm('Bring back all hidden sections, minimised cards and the default tile order?')) return;
@@ -4177,10 +4210,10 @@ var A = {
   'hl-save':function(){
     var hid = val('hl-id'), h = (S.cfg.habits || []).filter(function(x){ return x.id === hid; })[0]; if (!h) return;
     var d = dayRec(S.day), r = strip(d); r.t = 'day'; r.date = S.day; r.habits = Object.assign({}, d.habits || {});
-    var before = dayScore(S.day), v = Math.max(0, num(val('hl-val')));
+    var before = dayScore(S.day), v = Math.max(0, num(val('hl-val'))), tot = v + (habitVal(S.day, h) - habitOwn(S.day, h));
     r.habits[hid] = v; put('day_' + S.day, r); closeSheet();
-    var ok = habitDone(h, v);
-    toast(ok ? (h.emoji || '✅') + ' ' + h.name + ' done ✓' : habitKind(h) === 'limit' ? 'Over your limit of ' + h.target + ' ' + (h.unit || '') : v + ' / ' + h.target + ' ' + (h.unit || ''), ok ? '' : 'warn');
+    var ok = habitDone(h, tot);
+    toast(ok ? (h.emoji || '✅') + ' ' + h.name + ' done ✓' : habitKind(h) === 'limit' ? 'Over your limit of ' + h.target + ' ' + (h.unit || '') : tot + ' / ' + h.target + ' ' + (h.unit || ''), ok ? '' : 'warn');
     if (ok && before < 100 && dayScore(S.day) >= 100){ confetti(); toast('Full day! 🔥'); }
   },
   backup:function(){ download('daybook-backup-' + today() + '.json', JSON.stringify({app:'daybook', v:1, at:new Date().toISOString(), recs:S.recs}, null, 1), 'application/json'); lsSet('db-lastdl', Date.now()); renderSoon(); },
