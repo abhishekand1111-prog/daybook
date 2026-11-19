@@ -473,7 +473,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 <script>
 (function(){
 'use strict';
-var APP_VERSION = 'v24';
+var APP_VERSION = 'v25';
 
 // ---------- utils ----------
 function $(s, r){ return (r || document).querySelector(s); }
@@ -891,6 +891,8 @@ function dayChecks(d, raw){
     out.push({k:'wake', label:'Up by ' + clock12(c.wakeBy || '06:30'), done:wakeOk(d), prog:day.wake ? 'Up ' + clock12(day.wake) + (sl ? ' · ' + mins(sl) + ' sleep' : '') : 'Goal ' + clock12(c.wakeBy || '06:30'), act:'sleep-log', sv:'wake', ic:'🌅', sh:'Wake up'});
     out.push({k:'bed', label:'In bed by ' + clock12(c.bedBy || '23:00'), done:bedOk(d), prog:day.bed ? 'Bed ' + clock12(day.bed) : 'Goal ' + clock12(c.bedBy || '23:00'), act:'sleep-log', sv:'bed', ic:'🌙', sh:'Bed time'});
   }
+  var spp = planProgress(d);
+  if (spp.plan.length && !tplSkips(d, 'skills')) out.push({k:'splan', label:'Practice plan', done:spp.done >= spp.tot, prog:spp.done + ' / ' + spp.tot + ' min', act:'go-skills', ic:'🎯', sh:'Practice plan'});
   var tops = (day.tasks || []).filter(function(x){ return x.top; });
   if (tops.length) out.push({k:'top', label:'⭐ Finish your top ' + tops.length, done:tops.every(function(x){ return x.done; }), prog:tops.filter(function(x){ return x.done; }).length + ' / ' + tops.length, act:'go-planner', ic:'⭐', sh:'Top tasks'});
   if (+c.workGoal > 0){ var wm = workMsOn(d) / 3600000; out.push({k:'work', label:'💼 Work ' + c.workGoal + 'h', done:wm >= c.workGoal, prog:(wm ? wm.toFixed(1) : 0) + ' / ' + c.workGoal + 'h', act:'go-work', ic:'💼', sh:'Work'}); }
@@ -1244,6 +1246,7 @@ function pointsOn(d){
     if (noteWritten(day)) add('📝 Day note written', PT.note);
     if (I.focus[d]) add('⏱ ' + I.focus[d] + ' focus block' + (I.focus[d] === 1 ? '' : 's'), Math.min(4, I.focus[d]) * PT.focus, '⏱ Focus blocks done');
     if (I.prac[d]) add('🎯 Practised a skill', PT.prac);
+    var spl = planProgress(d); if (spl.plan.length && spl.done >= spl.tot) add('🗓️ Practice plan done', PT.top, '🗓️ Practice plan done');
     if (wakeOk(d)) add('🌅 Up on time (' + clock12(day.wake) + ')', PT.sleep, '🌅 Up on time');
     if (bedOk(d)) add('🌙 In bed on time (' + clock12(day.bed) + ')', PT.sleep, '🌙 In bed on time');
     (c.habits || []).forEach(function(h){
@@ -2482,11 +2485,36 @@ function skillCard(s){
     (tgt ? '<div class="row between tiny muted" style="margin-top:10px"><span>This week</span><span>' + (Math.round(wk * 10) / 10) + ' / ' + tgt + ' h</span></div>' + bar(wk / tgt * 100) : '') +
     '<div class="row between tiny muted" style="margin-top:10px"><span>Level</span><span>' + (lv.next ? (Math.round((lv.next[0] - h) * 10) / 10) + ' h to ' + lv.next[1] : 'Top level') + '</span></div><div class="ygbar" style="margin-top:6px"><i style="width:' + lp + '%"></i></div></button>';
 }
+// ---------- practice plan: set tomorrow's minutes per skill; tomorrow it becomes today's plan ----------
+// Stored on that day's record as skillPlan [{id, mins}]; only today and tomorrow are ever shown.
+function skillPlan(d){ return (dayRec(d).skillPlan || []).filter(function(x){ return S.recs[x.id] && x.mins > 0; }); }
+function pracMinsOn(d, id){ return sum(pracs(id).filter(function(p){ return p.date === d; }), 'mins'); }
+function planProgress(d){ var pl = skillPlan(d), done = 0, tot = 0; pl.forEach(function(x){ tot += x.mins; done += Math.min(x.mins, pracMinsOn(d, x.id)); }); return {plan:pl, done:done, tot:tot}; }
+function todayPracticeHtml(){
+  var t = today(), pp = planProgress(t); if (!pp.plan.length) return '';
+  return '<div class="card"><div class="h2">🎯 Today\'s practice plan<span class="tiny muted">' + pp.done + ' / ' + pp.tot + ' min</span></div>' + pp.plan.map(function(x){
+    var s = S.recs[x.id], m = pracMinsOn(t, x.id), ok = m >= x.mins;
+    return '<div class="ptrow"><div class="row between small"><span>' + (s.emoji || '🎯') + ' <b>' + esc(s.name) + '</b> <span class="muted">' + m + ' / ' + x.mins + ' min</span></span>' +
+      (ok ? '<b class="good">✓ Done</b>' : S.focus ? '' : '<button class="btn sm" data-act="sp-focus" data-id="' + x.id + '" data-m="' + Math.max(5, x.mins - m) + '">▶ ' + Math.min(90, Math.max(5, x.mins - m)) + ' min</button>') + '</div>' + bar(m / x.mins * 100, ok ? 'good' : '') + '</div>';
+  }).join('') + '</div>';
+}
+function tomorrowPlanHtml(){
+  var tm = addDays(today(), 1), pl = skillPlan(tm), by = {}; pl.forEach(function(x){ by[x.id] = x.mins; });
+  var tot = sum(pl, 'mins');
+  return '<div class="card"><div class="h2">🗓️ Plan for tomorrow<span class="tiny muted">' + esc(dShort(tm)) + (tot ? ' · ' + mins(tot) : '') + '</span></div>' +
+    '<div class="tiny muted" style="margin:-4px 0 6px">Pick how long to practise each skill tomorrow. Tomorrow it shows here as today\'s plan, with a ▶ button to start a focus block.</div>' +
+    skills().map(function(s){
+      return '<div class="ptrow"><div class="small" style="margin-bottom:6px">' + (s.emoji || '🎯') + ' <b>' + esc(s.name) + '</b></div><div class="chips" style="margin:0">' + [0, 15, 30, 45, 60, 90].map(function(m){
+        return '<button class="chip ' + ((by[s.id] || 0) === m ? 'on' : '') + '" data-act="sp-set" data-id="' + s.id + '" data-m="' + m + '">' + (m ? m + 'm' : 'Off') + '</button>';
+      }).join('') + '</div></div>';
+    }).join('') + '</div>';
+}
 function skillsHtml(){
   var h = topHtml('Skills', 'Practice time for what you\'re getting good at');
   h += focusCard();
   var ss = skills();
   if (!ss.length) return h + '<div class="card">' + empty('🎯', 'Track hours on the skills you\'re building: sales, design, cooking, a language, an instrument. Levels go up as the hours add up.', '<button class="btn sm" data-act="add-skill">Add a skill</button>') + '</div>';
+  h += todayPracticeHtml() + tomorrowPlanHtml();
   var wk = sum(ss.map(function(s){ return skillWeek(s.id); }));
   h += '<div class="stats"><div class="stat"><div class="k">This week</div><div class="v">' + (Math.round(wk * 10) / 10) + ' h</div></div><div class="stat"><div class="k">All time</div><div class="v">' + Math.round(sum(pracs(), 'mins') / 60) + ' h</div></div></div>';
   return h + ss.map(skillCard).join('');
@@ -3667,6 +3695,20 @@ var A = {
     S.focus = {start:Date.now(), dur:dur, label:sk ? sk.name : 'Work', skillId:sk ? target : '', phase:'focus'};
     lsSet('db-focus', S.focus); lsSet('db-focus-last', {dur:dur, target:target}); render();
     toast('⏱ Focus for ' + dur + ' min. You\'ve got this.');
+  },
+  'go-skills':function(){ S.tab = 'skills'; lsSet('db-tab', 'skills'); S.enter = true; render(); window.scrollTo(0, 0); },
+  'sp-set':function(el){
+    var tm = addDays(today(), 1), r = strip(dayRec(tm)), id = el.dataset.id, m = +el.dataset.m;
+    r.t = 'day'; r.date = tm; r.skillPlan = (r.skillPlan || []).filter(function(x){ return x.id !== id; });
+    if (m) r.skillPlan.push({id:id, mins:m});
+    put('day_' + tm, r);
+  },
+  'sp-focus':function(el){
+    var sk = S.recs[el.dataset.id], dur = Math.min(90, Math.max(5, +el.dataset.m || 25)); if (!sk) return;
+    if (window.Notification && Notification.permission === 'default') Notification.requestPermission();
+    S.focus = {start:Date.now(), dur:dur, label:sk.name, skillId:el.dataset.id, phase:'focus'};
+    lsSet('db-focus', S.focus); render(); window.scrollTo(0, 0);
+    toast('⏱ ' + sk.name + ' for ' + dur + ' min. You\'ve got this.');
   },
   'focus-done':function(){ focusComplete(true); },
   'focus-stop':function(){ if (S.focus && S.focus.phase !== 'break' && !confirm('Cancel this focus block? It won\'t be logged.')) return; S.focus = null; lsDel('db-focus'); render(); },
