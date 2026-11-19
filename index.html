@@ -473,7 +473,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 <script>
 (function(){
 'use strict';
-var APP_VERSION = 'v23';
+var APP_VERSION = 'v24';
 
 // ---------- utils ----------
 function $(s, r){ return (r || document).querySelector(s); }
@@ -1483,12 +1483,14 @@ function drawerHtml(){
 }
 // bottom bar: the three screens used most, everything else under More (the drawer)
 function bnavHtml(){
-  var main = ['today', 'notes', 'money'], more = main.indexOf(S.tab) < 0;
-  return '<nav class="bnav">' + [['today', 'Today'], ['notes', 'Tasks'], ['money', 'Money']].map(function(x){
-    return '<button class="' + (S.tab === x[0] ? 'on' : '') + '" data-act="tab" data-v="' + x[0] + '">' + svg(x[0]) + (x[0] === 'today' && S.tab !== 'today' && liveCount() ? '<i class="bdot"></i>' : '') + '<span>' + x[1] + '</span></button>';
+  var main = ['work', 'notes', 'skills'], more = main.indexOf(S.tab) < 0;
+  return '<nav class="bnav">' + [['work', 'Work'], ['notes', 'Tasks'], ['skills', 'Skills']].map(function(x){
+    // a green dot while you're checked in (Work) or a focus block is running (Skills)
+    var live = S.tab !== x[0] && (x[0] === 'work' ? !!openWd() : x[0] === 'skills' ? !!S.focus : false);
+    return '<button class="' + (S.tab === x[0] ? 'on' : '') + '" data-act="tab" data-v="' + x[0] + '">' + svg(x[0]) + (live ? '<i class="bdot"></i>' : '') + '<span>' + x[1] + '</span></button>';
   }).join('') + '<button class="' + (more ? 'on' : '') + '" data-act="drawer">' + svg('menu') + '<span>' + (more ? esc(TAB_NAMES[S.tab] || 'More') : 'More') + '</span></button></nav>';
 }
-var TAB_NAMES = {stats:'Insights', work:'Work day', books:'Books', fit:'Fitness', intake:'Intake', mood:'Mood', skills:'Skills', plan:'Year plan', notes:'Tasks & notes'};
+var TAB_NAMES = {today:'Today', money:'Money', stats:'Insights', work:'Work day', books:'Books', fit:'Fitness', intake:'Intake', mood:'Mood', skills:'Skills', plan:'Year plan', notes:'Tasks & notes'};
 function fabHtml(){
   var a = '', extra = '', label = '';
   // screens whose main action isn't "add a record" get a labelled button instead of a bare +
@@ -1647,6 +1649,8 @@ function toggleFold(card){
 function livePillHtml(){
   if (S.tab === 'today' || !liveCount() || (S.cfg.todayHide || {}).live) return '';
   var w = openWd(), n = liveCount(), body, btn;
+  // no pill on the screen that already shows the running thing
+  if ((w && S.tab === 'work') || (!w && !S.timer && S.tab === 'skills')) return '';
   if (w){
     var a = wdActive(w), ac = a ? awayOf(a) : null;
     body = (ac ? ac.icon + ' ' + ac.verb : '💼 Working') + ' · <span class="wtick" data-k="' + (a ? 'away' : 'work') + '">' + (a ? hms(wdAway(w, a)) : hm(wdWork(w))) + '</span>';
