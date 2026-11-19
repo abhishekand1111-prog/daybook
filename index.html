@@ -259,6 +259,7 @@ button.b{border:0;background:none;padding:0;font:inherit;cursor:pointer}
 .tedit{display:block;margin:0 0 0 auto;min-height:32px;padding:6px 4px !important;border:0;background:none;color:inherit;opacity:.6;font:inherit;font-size:12px;cursor:pointer}
 .trow{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line)}.trow .em{font-size:20px;width:28px;text-align:center}
 .trow.off b{opacity:.45;text-decoration:line-through}
+.tname{border:0;background:none;color:inherit;font:inherit;text-align:left;padding:0;cursor:pointer;min-width:0}
 .tbtn{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:15px;cursor:pointer}.tbtn:disabled{opacity:.3;cursor:default}
 .tplchip.set{background:rgba(96,165,250,.2);border-color:#60a5fa;color:#bfdbfe}
 .item.tplon{background:var(--accbg);border-radius:14px}
@@ -461,7 +462,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 <script>
 (function(){
 'use strict';
-var APP_VERSION = 'v20';
+var APP_VERSION = 'v21';
 
 // ---------- utils ----------
 function $(s, r){ return (r || document).querySelector(s); }
@@ -1090,11 +1091,12 @@ function tileList(){
 function tileKeys(){ return tileList().map(function(x){ return x.k; }); }
 function tilesSheet(){
   var ts = tileList(), hide = S.cfg.tileHide || {};
-  var h = shead('Edit tiles') + '<div class="small muted" style="margin:-4px 0 10px">Move tiles up or down, or hide the ones you don\'t want. Hidden ones are off: they don\'t count toward your day.</div>' +
+  var h = shead('Edit tiles') + '<div class="small muted" style="margin:-4px 0 10px">Add new tiles, move them up or down, hide the built-in ones, or tap one of your own to change its goal or remove it.</div>' +
+    '<button class="btn block" style="margin-bottom:8px" data-act="tile-add">＋ Add a tile</button>' +
     ts.map(function(x, i){
       var off = !!hide[x.k], nm = x.sh || x.label || '';
       if (nm.indexOf(x.ic) === 0) nm = nm.slice(x.ic.length).trim();
-      return '<div class="trow' + (off ? ' off' : '') + '"><span class="em">' + x.ic + '</span><span class="grow"><b>' + esc(nm) + '</b><br><span class="tiny muted">' + (x.lim ? 'Stay under' : x.note || 'Tile') + '</span></span>' +
+      return '<div class="trow' + (off ? ' off' : '') + '"><span class="em">' + x.ic + '</span>' + (x.k.indexOf('h_') === 0 ? '<button class="grow tname" data-act="tile-edit" data-v="' + x.k + '"><b>' + esc(nm) + '</b><br><span class="tiny muted">' + (x.lim ? 'Stay under · ' : '') + 'Yours · tap to change or remove ✎</span></button>' : '<span class="grow"><b>' + esc(nm) + '</b><br><span class="tiny muted">' + (x.lim ? 'Stay under' : x.note || 'Built-in') + '</span></span>') +
         '<button class="tbtn" data-act="tile-move" data-v="' + x.k + '" data-d="-1"' + (i ? '' : ' disabled') + ' aria-label="Move up">↑</button>' +
         '<button class="tbtn" data-act="tile-move" data-v="' + x.k + '" data-d="1"' + (i < ts.length - 1 ? '' : ' disabled') + ' aria-label="Move down">↓</button>' +
         '<button class="chip' + (off ? '' : ' on') + '" data-act="tile-hide" data-v="' + x.k + '">' + (off ? 'Hidden' : 'Shown') + '</button></div>';
@@ -3342,9 +3344,31 @@ function settingsSheet(){
     '<p class="tiny muted" style="text-align:center;margin-top:14px">Daybook ' + APP_VERSION + '</p>';
   openSheet(h);
 }
+// ready-made tiles for "+ Add a tile"; the goal can be changed before saving
+var TILE_PRESETS = [
+  {emoji:'👣', name:'Steps', kind:'reach', target:10000, unit:'steps'}, {emoji:'🧘', name:'Meditate', kind:'reach', target:10, unit:'min'},
+  {emoji:'💪', name:'Push-ups', kind:'reach', target:50, unit:'reps'}, {emoji:'🤸', name:'Stretch', kind:'reach', target:10, unit:'min'},
+  {emoji:'🏃', name:'Run', kind:'reach', target:3, unit:'km'}, {emoji:'🗣️', name:'Language practice', kind:'reach', target:15, unit:'min'},
+  {emoji:'📓', name:'Journal', kind:'yes'}, {emoji:'💊', name:'Vitamins', kind:'yes'}, {emoji:'🚿', name:'Cold shower', kind:'yes'},
+  {emoji:'🥗', name:'Eat a salad', kind:'yes'}, {emoji:'🙏', name:'Gratitude', kind:'yes'}, {emoji:'🍟', name:'No junk food', kind:'yes'},
+  {emoji:'📱', name:'Screen time', kind:'limit', target:120, unit:'min'}, {emoji:'📵', name:'Social media', kind:'limit', target:60, unit:'min'},
+  {emoji:'☕', name:'Coffee', kind:'limit', target:2, unit:'cups'}, {emoji:'🚬', name:'Cigarettes', kind:'limit', target:0, unit:''}
+];
+function addTileSheet(){
+  var have = (S.cfg.habits || []).map(function(h){ return h.name.toLowerCase(); });
+  var ps = TILE_PRESETS.map(function(p, i){ return [p, i]; }).filter(function(x){ return have.indexOf(x[0].name.toLowerCase()) < 0; });
+  function grp(kind, title){
+    var g = ps.filter(function(x){ return x[0].kind === kind; }); if (!g.length) return '';
+    return '<div class="lbl" style="margin-top:10px">' + title + '</div><div class="chips">' + g.map(function(x){ var p = x[0];
+      return '<button class="chip" data-act="tile-preset" data-v="' + x[1] + '">' + p.emoji + ' ' + esc(p.name) + (p.kind === 'yes' ? '' : ' · ' + (p.kind === 'limit' ? 'max ' : '') + p.target + (p.unit ? ' ' + p.unit : '')) + '</button>'; }).join('') + '</div>';
+  }
+  openSheet(shead('Add a tile') + '<div class="small muted" style="margin:-4px 0 6px">Pick one and set your own goal, or make your own. "Stay under" ones show as counters under the tiles.</div>' +
+    grp('reach', '▲ Reach a goal') + grp('yes', '✓ Tick it off') + grp('limit', '▼ Stay under') +
+    '<div class="btns" style="margin-top:14px"><button class="btn ghost" data-act="tiles-edit">‹ Back</button><button class="btn" data-act="tile-custom">＋ Make my own</button></div>');
+}
 function habitForm(h){
   h = h || {kind:'yes'};
-  var k = h.id ? habitKind(h) : 'yes';
+  var k = h.id ? habitKind(h) : h.kind || 'yes';
   var html = shead(h.id ? 'Edit habit' : 'New habit') +
     '<div class="row" style="gap:8px">' + fld('Icon', '<input id="hb-emoji" value="' + esc(h.emoji || '') + '" placeholder="🧘" maxlength="4" style="width:70px;text-align:center">') +
     '<div class="grow">' + fld('Habit', '<input id="hb-name" value="' + esc(h.name || '') + '" placeholder="Meditate, push-ups, screen time…">') + '</div></div>' +
@@ -4023,7 +4047,7 @@ var A = {
       colaMax:Math.max(0, Math.round(num(val('set-cola')))), sweetMax:Math.max(0, Math.round(num(val('set-sweet')))), workGoal:Math.max(0, Math.min(16, num(val('set-work')))), wakeBy:val('set-wake') || '06:30', bedBy:val('set-bed') || '23:00'});
     toast('Saved'); settingsSheet();
   },
-  'habit-edit':function(el){ habitForm((S.cfg.habits || []).filter(function(h){ return h.id === el.dataset.v; })[0]); },
+  'habit-edit':function(el){ S.habitBack = ''; habitForm((S.cfg.habits || []).filter(function(h){ return h.id === el.dataset.v; })[0]); },
   'habit-save':function(){
     var n = val('hb-name').trim(); if (!n){ toast('Name the habit', 'warn'); return; }
     var kind = getChip('hbkind') || 'yes', tgt = num(val('hb-target'));
@@ -4032,9 +4056,13 @@ var A = {
     var h = {id:id || 'h' + uid().slice(-6), name:n, emoji:val('hb-emoji').trim(), kind:kind, target:kind === 'yes' ? 0 : tgt, unit:kind === 'yes' ? '' : val('hb-unit').trim(),
       since:old && old.since ? old.since : today()};
     if (old) list2[list2.indexOf(old)] = h; else list2.push(h);
-    saveCfg({habits:list2}); settingsSheet(); toast(old ? 'Habit updated' : 'Habit added');
+    saveCfg({habits:list2}); if (S.habitBack === 'tiles'){ S.habitBack = ''; setTimeout(tilesSheet, 0); } else settingsSheet(); toast(old ? 'Tile updated' : (h.emoji || '✅') + ' ' + h.name + ' added to Today');
   },
-  'habit-del':function(el){ if (confirm('Remove this habit? Past days keep their record.')){ saveCfg({habits:(S.cfg.habits || []).filter(function(h){ return h.id !== el.dataset.v; })}); settingsSheet(); } },
+  'habit-del':function(el){ if (confirm('Remove this tile? Past days keep their record.')){ saveCfg({habits:(S.cfg.habits || []).filter(function(h){ return h.id !== el.dataset.v; })}); if (S.habitBack === 'tiles' || el.dataset.from === 'tiles'){ S.habitBack = ''; setTimeout(tilesSheet, 0); } else settingsSheet(); toast('Tile removed'); } },
+  'tile-add':function(){ addTileSheet(); },
+  'tile-preset':function(el){ var p = TILE_PRESETS[+el.dataset.v]; if (!p) return; S.habitBack = 'tiles'; habitForm({emoji:p.emoji, name:p.name, kind:p.kind, target:p.target, unit:p.unit}); },
+  'tile-custom':function(){ S.habitBack = 'tiles'; habitForm(); },
+  'tile-edit':function(el){ var hb = (S.cfg.habits || []).filter(function(x){ return 'h_' + x.id === el.dataset.v; })[0]; if (hb){ S.habitBack = 'tiles'; habitForm(hb); } },
   'habit-log':function(el){ var h = (S.cfg.habits || []).filter(function(x){ return x.id === el.dataset.v; })[0]; if (h) habitLogSheet(h); },
   'hl-step':function(el){ var i = $('#hl-val'); i.value = Math.max(0, Math.round((num(i.value) + (+el.dataset.v)) * 10) / 10); },
   'hl-save':function(){
