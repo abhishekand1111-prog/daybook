@@ -487,7 +487,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 <script>
 (function(){
 'use strict';
-var APP_VERSION = 'v33';
+var APP_VERSION = 'v34';
 
 // ---------- utils ----------
 function $(s, r){ return (r || document).querySelector(s); }
@@ -1494,7 +1494,7 @@ function drawerHtml(){
     ['#', 'Daily'],
     ['today', 'Today', '⚡ ' + ptsTxt(pointsOn(t).total) + ' pts · ' + dn + ' of ' + dt + ' done'],
     ['#', 'Grow'],
-    ['books', 'Books', streakTxt(readStreak(), 'reading')],
+    ['skills', 'Skills', S.focus && S.focus.phase !== 'break' ? '⏱ Focus · ' + esc(S.focus.label) : planProgress(t).plan.length ? '🎯 ' + planProgress(t).done + ' / ' + planProgress(t).tot + ' min planned today' : 'Practice & focus'],
     ['fit', 'Health', streakTxt(moveStreak(), 'move') + ' · 💧 ' + intake(t, 'water') + '/' + S.cfg.waterGoal, ['fit', 'intake', 'mood']],
     ['#', 'Progress'],
     ['stats', 'Progress', 'Level ' + levelOf(pointsTotal()).lv + (top && top[1] ? ' · 🔥 ' + top[1] + '-day ' + top[0].name.toLowerCase() : ' · points & streaks')],
@@ -1514,10 +1514,10 @@ function drawerHtml(){
 }
 // bottom bar: the three screens used most, everything else under More (the drawer)
 function bnavHtml(){
-  var main = ['work', 'notes', 'skills'], more = main.indexOf(S.tab) < 0 && S.tab !== 'today';
-  return '<nav class="bnav">' + [['work', 'Work'], ['notes', 'Tasks'], ['skills', 'Skills']].map(function(x){
-    // a green dot while you're checked in (Work) or a focus block is running (Skills)
-    var live = S.tab !== x[0] && (x[0] === 'work' ? !!openWd() : x[0] === 'skills' ? !!S.focus : x[0] === 'today' ? !!S.timer : false);
+  var main = ['work', 'notes', 'books'], more = main.indexOf(S.tab) < 0 && S.tab !== 'today';
+  return '<nav class="bnav">' + [['work', 'Work'], ['notes', 'Tasks'], ['books', 'Books']].map(function(x){
+    // a green dot while you're checked in (Work) or a reading timer is running (Books)
+    var live = S.tab !== x[0] && (x[0] === 'work' ? !!openWd() : x[0] === 'books' ? !!S.timer : false);
     return '<button class="' + (S.tab === x[0] ? 'on' : '') + '" data-act="tab" data-v="' + x[0] + '">' + svg(x[0]) + (live ? '<i class="bdot"></i>' : '') + '<span>' + x[1] + '</span></button>';
   }).join('') + '<button class="' + (more ? 'on' : '') + '" data-act="drawer">' + svg('menu') + '<span>' + (more ? esc(TAB_NAMES[S.tab] || 'More') : 'More') + '</span></button></nav>';
 }
