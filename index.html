@@ -269,6 +269,7 @@ button.b{border:0;background:none;padding:0;font:inherit;cursor:pointer}
 .tslot{display:block;width:100%;text-align:left;border:1.5px dashed var(--line);background:none;border-radius:12px;padding:10px 12px;margin-top:6px;color:var(--mute);font:inherit;font-size:13px;cursor:pointer}
 .tgrp.g-big .tslot{border-color:var(--acc);color:var(--acc);font-weight:600}
 .tedit2{border:0;background:none;color:inherit;font:inherit;text-align:left;padding:0;cursor:pointer;min-width:0}
+.fjust{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--goodbg);border-radius:14px;padding:10px 12px;margin:0 0 12px;font-size:14px}
 .tedit{display:block;margin:0 0 0 auto;min-height:32px;padding:6px 4px !important;border:0;background:none;color:inherit;opacity:.6;font:inherit;font-size:12px;cursor:pointer}
 .trow{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line)}.trow .em{font-size:20px;width:28px;text-align:center}
 .trow.off b{opacity:.45;text-decoration:line-through}
@@ -486,7 +487,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 <script>
 (function(){
 'use strict';
-var APP_VERSION = 'v31';
+var APP_VERSION = 'v32';
 
 // ---------- utils ----------
 function $(s, r){ return (r || document).querySelector(s); }
@@ -2639,23 +2640,37 @@ function focusCard(){
       '<div class="grow"><div class="small muted">' + (isBreak ? '☕ Break' : '⏱ Focus · ' + esc(F.label)) + '</div><div class="mid">' + F.dur + ' min</div>' +
       '<div class="btns" style="margin-top:10px">' + (isBreak ? '<button class="btn sm" data-act="focus-stop">Skip break</button>' : '<button class="btn sm" data-act="focus-done">Finish now</button><button class="btn sm ghost" data-act="focus-stop">Cancel</button>') + '</div></div></div></div>';
   }
-  var ss = skills(), last = lsGet('db-focus-last', {dur:25, target:'work'});
+  var ss = skills(), last = lsGet('db-focus-last', {dur:25, target:'work'}), just = S.focusJust || lsGet('db-focus-just', null);
+  if (just && Date.now() - just.at > 30 * 60000) just = null;   // the "just finished" line stays for 30 minutes
   return '<div class="card"><div class="h2">⏱ Focus timer<span class="tiny muted">' + (fo.n ? fo.n + ' today · ' + mins(fo.mins) : 'Pomodoro') + '</span></div>' +
+    (just ? '<div class="fjust"><div><b>✓ ' + mins(just.mins) + ' saved</b> to ' + esc(just.label) + '<div class="tiny muted">finished at ' + clockOf(just.at) + '</div></div><button class="btn sm ghost" data-act="focus-break">☕ 5-min break</button></div>' : '') +
     chips('fdur', [[25,'25 min'],[50,'50 min'],[90,'90 min']], last.dur) +
     '<div class="lbl">For</div>' + chips('ffor', [['work','💼 Work']].concat(ss.map(function(s){ return [s.id, (s.emoji || '🎯') + ' ' + esc(s.name)]; })), last.target, 'scroll') +
-    '<button class="btn block" data-act="focus-start">▶ Start focus</button></div>';
+    '<button class="btn block" data-act="focus-start">▶ Start focus</button>' + focusTodayHtml() + '</div>';
 }
 function focusComplete(early){
   var F = S.focus; if (!F) return;
   if (F.phase === 'break'){ S.focus = null; lsDel('db-focus'); notify('☕ Break over', 'Ready for the next block?'); render(); return; }
   var m = early ? Math.max(1, Math.round((Date.now() - F.start) / 60000)) : F.dur, d = iso(new Date(F.start));
-  put('focus_' + uid(), {t:'focus', date:d, mins:m, label:F.label, skillId:F.skillId || ''});
+  put('focus_' + uid(), {t:'focus', date:d, mins:m, label:F.label, skillId:F.skillId || '', at:Date.now()});
   if (F.skillId) put('prac_' + uid(), {t:'prac', skillId:F.skillId, date:d, mins:m, note:'Focus block', via:'focus'});
   try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch (e) {}
-  notify('⏱ Focus done: ' + m + ' min', F.label + '. Take a 5-minute break.');
-  S.focus = {start:Date.now(), dur:5, label:'Break', phase:'break'}; lsSet('db-focus', S.focus);
-  toast('Focus block done ✓ ' + m + ' min. 5-minute break started.');
+  // The block is saved to what it was for. A break is offered, not started, so the screen keeps showing
+  // the block you just finished instead of jumping to a break timer.
+  notify('⏱ Focus done: ' + m + ' min', F.label + ' · saved. Take a 5-minute break if you like.');
+  S.focus = null; lsDel('db-focus');
+  S.focusJust = {mins:m, label:F.label, at:Date.now()}; lsSet('db-focus-just', S.focusJust);
+  toast('✓ ' + m + ' min of focus saved to ' + F.label);
   render();
+}
+// today's finished blocks, newest first, for the focus card
+function focusTodayHtml(){
+  var t = today(), fs = focusList().filter(function(x){ return x.date === t; }).sort(function(a, b){ return (b.at || 0) - (a.at || 0); });
+  if (!fs.length) return '';
+  return '<div class="lbl" style="margin-top:12px">Done today</div>' + fs.slice(0, 5).map(function(x){
+    var sk = x.skillId ? S.recs[x.skillId] : null;
+    return '<div class="row between small ptrow"><span>' + (sk ? (sk.emoji || '🎯') + ' ' + esc(sk.name) : '💼 ' + esc(x.label || 'Work')) + '</span><b>' + mins(x.mins) + (x.at ? ' <span class="tiny muted">· ' + clockOf(x.at) + '</span>' : '') + '</b></div>';
+  }).join('');
 }
 
 // ---------- READING STATS for a year ----------
@@ -3755,6 +3770,7 @@ var A = {
   'focus-start':function(){
     var dur = +getChip('fdur') || 25, target = getChip('ffor') || 'work', sk = target === 'work' ? null : S.recs[target];
     if (window.Notification && Notification.permission === 'default') Notification.requestPermission();
+    S.focusJust = null; lsDel('db-focus-just');
     S.focus = {start:Date.now(), dur:dur, label:sk ? sk.name : 'Work', skillId:sk ? target : '', phase:'focus'};
     lsSet('db-focus', S.focus); lsSet('db-focus-last', {dur:dur, target:target}); render();
     toast('⏱ Focus for ' + dur + ' min. You\'ve got this.');
@@ -3770,11 +3786,13 @@ var A = {
   'sp-focus':function(el){
     var sk = S.recs[el.dataset.id], dur = Math.min(90, Math.max(5, +el.dataset.m || 25)); if (!sk) return;
     if (window.Notification && Notification.permission === 'default') Notification.requestPermission();
+    S.focusJust = null; lsDel('db-focus-just');
     S.focus = {start:Date.now(), dur:dur, label:sk.name, skillId:el.dataset.id, phase:'focus'};
     lsSet('db-focus', S.focus); render(); window.scrollTo(0, 0);
     toast('⏱ ' + sk.name + ' for ' + dur + ' min. You\'ve got this.');
   },
   'focus-done':function(){ focusComplete(true); },
+  'focus-break':function(){ S.focusJust = null; lsDel('db-focus-just'); S.focus = {start:Date.now(), dur:5, label:'Break', phase:'break'}; lsSet('db-focus', S.focus); render(); toast('☕ 5-minute break'); },
   'focus-stop':function(){ if (S.focus && S.focus.phase !== 'break' && !confirm('Cancel this focus block? It won\'t be logged.')) return; S.focus = null; lsDel('db-focus'); render(); },
   // reading stats
   ryear:function(el){ S.ryear += +el.dataset.v; render(); },
