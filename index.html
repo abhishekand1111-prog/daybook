@@ -487,7 +487,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 <script>
 (function(){
 'use strict';
-var APP_VERSION = 'v32';
+var APP_VERSION = 'v33';
 
 // ---------- utils ----------
 function $(s, r){ return (r || document).querySelector(s); }
@@ -2663,14 +2663,16 @@ function focusComplete(early){
   toast('✓ ' + m + ' min of focus saved to ' + F.label);
   render();
 }
-// today's finished blocks, newest first, for the focus card
+// finished blocks from the last 7 days, newest first, for the focus card
 function focusTodayHtml(){
-  var t = today(), fs = focusList().filter(function(x){ return x.date === t; }).sort(function(a, b){ return (b.at || 0) - (a.at || 0); });
-  if (!fs.length) return '';
-  return '<div class="lbl" style="margin-top:12px">Done today</div>' + fs.slice(0, 5).map(function(x){
+  var t = today(), from = addDays(t, -6);
+  var fs = focusList().filter(function(x){ return x.date >= from && x.date <= t; }).sort(function(a, b){ return a.date === b.date ? (b.at || 0) - (a.at || 0) : a.date < b.date ? 1 : -1; });
+  if (!fs.length) return '<div class="tiny muted" style="margin-top:12px">Finished blocks show here, with what they were for.</div>';
+  return '<div class="lbl" style="margin-top:12px">Your focus blocks · last 7 days</div>' + fs.slice(0, 8).map(function(x){
     var sk = x.skillId ? S.recs[x.skillId] : null;
-    return '<div class="row between small ptrow"><span>' + (sk ? (sk.emoji || '🎯') + ' ' + esc(sk.name) : '💼 ' + esc(x.label || 'Work')) + '</span><b>' + mins(x.mins) + (x.at ? ' <span class="tiny muted">· ' + clockOf(x.at) + '</span>' : '') + '</b></div>';
-  }).join('');
+    return '<div class="row between small ptrow"><span>' + (sk ? (sk.emoji || '🎯') + ' ' + esc(sk.name) : '💼 ' + esc(x.label || 'Work')) + '</span><b>' + mins(x.mins) +
+      ' <span class="tiny muted">· ' + (x.date === t ? 'today' : x.date === addDays(t, -1) ? 'yesterday' : dShort(x.date)) + (x.at ? ' ' + clockOf(x.at) : '') + '</span></b></div>';
+  }).join('') + (fs.length > 8 ? '<div class="tiny muted" style="margin-top:6px">+ ' + (fs.length - 8) + ' more this week · ' + mins(sum(fs, 'mins')) + ' in all</div>' : '');
 }
 
 // ---------- READING STATS for a year ----------
