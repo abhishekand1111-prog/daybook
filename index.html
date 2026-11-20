@@ -487,7 +487,7 @@ hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 <script>
 (function(){
 'use strict';
-var APP_VERSION = 'v34';
+var APP_VERSION = 'v35';
 
 // ---------- utils ----------
 function $(s, r){ return (r || document).querySelector(s); }
@@ -1468,6 +1468,7 @@ function countUp(el){
 function onScroll(){ var t = $('.top'); if (t) t.classList.toggle('scrolled', window.scrollY > 6); }
 window.addEventListener('scroll', onScroll, {passive:true});
 function bannerHtml(){
+  if (S.updReady) return '<button class="alert info" style="width:100%;border:0;text-align:left;cursor:pointer" data-act="upd-now">⬆️<div><b>' + esc(S.updReady) + ' is ready.</b> Tap to update now.</div></button>';
   if (!S.syncErr) return '';
   var msg = S.syncErr === 'permission-denied'
     ? '<b>Sync is blocked.</b> Firestore rules don\'t allow Day yet. Paste the updated rules file in the Firebase console.'
@@ -1510,7 +1511,7 @@ function drawerHtml(){
         '<span class="grow"><span class="nt">' + x[1] + '</span><br><span class="nm">' + x[2] + '</span></span></button>';
     }).join('') +
     '<div class="dfoot"><button class="nav-i" style="--i:11" data-act="settings"><span class="ic">' + svg('gear') + '</span><span class="nt">Settings</span></button>' +
-    '<div class="tiny muted" style="padding:6px 12px">Day ' + APP_VERSION + '</div></div></div></div>';
+    '<button class="link" style="padding:6px 12px;font-size:12px" data-act="upd-check">Day ' + APP_VERSION + ' · check for updates</button></div></div></div>';
 }
 // bottom bar: the three screens used most, everything else under More (the drawer)
 function bnavHtml(){
@@ -3778,6 +3779,8 @@ var A = {
     toast('⏱ Focus for ' + dur + ' min. You\'ve got this.');
   },
   'go-today':function(){ S.tab = 'today'; S.day = today(); lsSet('db-tab', 'today'); closeIfOpen(); S.enter = true; if (S.drawer) setDrawer(false); render(); window.scrollTo(0, 0); },
+  'upd-check':function(){ checkUpdate(true); },
+  'upd-now':function(){ location.reload(); },
   'go-skills':function(){ S.tab = 'skills'; lsSet('db-tab', 'skills'); S.enter = true; render(); window.scrollTo(0, 0); },
   'sp-set':function(el){
     var tm = addDays(today(), 1), r = strip(dayRec(tm)), id = el.dataset.id, m = +el.dataset.m;
@@ -4508,6 +4511,26 @@ function seed(){
 applyTheme();
 S.lastDay = today();
 if ('serviceWorker' in navigator && !LOCAL && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function(){});
+// ---------- updates ----------
+// An installed app usually resumes from memory instead of reloading, so it would keep running an old
+// version for days. Whenever it comes back to the screen (and every 30 min) it asks the server, skipping
+// every cache, which version is live; if it's newer it reloads itself, unless a form is open, in which
+// case a banner offers the update.
+var updLast = 0;
+function checkUpdate(manual){
+  if (LOCAL || !navigator.onLine) { if (manual) toast(LOCAL ? 'Updates are off in test mode' : 'You\'re offline'); return; }
+  if (!manual && Date.now() - updLast < 60000) return; updLast = Date.now();
+  fetch('index.html?u=' + Date.now(), {cache:'no-store'}).then(function(r){ return r.text(); }).then(function(txt){
+    var m = /APP_VERSION = '([^']+)'/.exec(txt), v = m && m[1];
+    if (!v || v === APP_VERSION){ if (manual) toast('✓ You have the latest version (' + APP_VERSION + ')'); return; }
+    try { navigator.serviceWorker && navigator.serviceWorker.getRegistration().then(function(g){ if (g) g.update(); }); } catch (e) {}
+    if (sheetOpen && !manual){ S.updReady = v; render(); return; }
+    toast('Updating to ' + v + '…'); setTimeout(function(){ location.reload(); }, 600);
+  }).catch(function(){ if (manual) toast('Couldn\'t check for updates', 'warn'); });
+}
+document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible') checkUpdate(false); });
+setInterval(function(){ if (document.visibilityState === 'visible') checkUpdate(false); }, 30 * 60000);
+setTimeout(function(){ checkUpdate(false); }, 4000);
 if (lockCfg()) lockNow();
 Store.start();
 render();
